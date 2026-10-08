@@ -1024,7 +1024,20 @@
       GB.drawMobilePreview($('gb-side-canvas'), myP.mobile);
 
       $('stat-atk').style.width = Math.round((mob.stats.Dano || 0.7) * 100) + '%';
-      $('stat-def').style.width = Math.round((mob.stats.Destruição || 0.5) * 100) + '%';
+      
+      // Defesa: Máximo é 10% (10% = 100% da barra)
+      const defVal = (mob.defense != null ? mob.defense : 0);
+      const defPct = Math.min(100, Math.round((defVal / 0.10) * 100));
+      $('stat-def').style.width = defPct + '%';
+      $('stat-def').title = `Defesa: ${Math.round(defVal * 100)}% de redução de dano`;
+
+      // Destruição de Terreno (Pá): 0 a 100%
+      const destFill = $('stat-dest');
+      if (destFill) {
+        destFill.style.width = Math.round((mob.stats.Destruição || 0.5) * 100) + '%';
+        destFill.title = `Destruição de mapa: ${Math.round((mob.stats.Destruição || 0.5) * 100)}%`;
+      }
+
       $('stat-hp').style.width = Math.round((mob.stats.HP || 0.6) * 100) + '%';
       $('stat-spd').style.width = Math.round((mob.stats.Mobilidade || 0.6) * 100) + '%';
 

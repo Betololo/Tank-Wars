@@ -634,6 +634,7 @@ button { font-family: inherit; color: inherit; border: 0; background: none; curs
 .gb-stat-fill { height: 100%; width: 50%; border-radius: 3px; transition: width .2s; }
 #stat-atk { background: linear-gradient(90deg, #ff7b00, #ff2a2a); }
 #stat-def { background: linear-gradient(90deg, #2a94ff, #00d4ff); }
+#stat-dest { background: linear-gradient(90deg, #c47c38, #ffb049); }
 #stat-hp { background: linear-gradient(90deg, #2cd960, #a0ff3a); }
 #stat-spd { background: linear-gradient(90deg, #d442ff, #ff73e6); }
 

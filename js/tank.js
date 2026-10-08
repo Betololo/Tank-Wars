@@ -203,7 +203,15 @@
 
     damage(amount) {
       if (!this.alive) return 0;
-      const d = Math.min(this.hp, Math.round(amount));
+      if (amount < 0) {
+        const prev = this.hp;
+        this.hp = Math.min(this.maxHp, this.hp - Math.round(amount));
+        return -(this.hp - prev);
+      }
+      // DANO RECEBIDO REAL = DANO RECEBIDO * (1 - DEFESA DO PERSONAGEM)
+      const def = (this.mobile && this.mobile.defense != null) ? this.mobile.defense : 0;
+      const realAmount = amount * (1 - def);
+      const d = Math.min(this.hp, Math.round(realAmount));
       this.hp -= d;
       this.hurt = 0.35;
       if (this.hp <= 0) { this.hp = 0; this.alive = false; }

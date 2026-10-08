@@ -28,6 +28,7 @@
       name: 'Armor',
       desc: 'Equilibrado e fácil de usar. Ótimo para começar.',
       hp: 1000, speed: 46, maxClimb: 3.5, fuelPerPx: 0.32, windInfl: 1.0,
+      defense: 0.10,
       stats: { HP: 0.65, Dano: 0.7, Destruição: 0.55, Mobilidade: 0.6 },
       pivot: [2, -22], barrel: 20, hitR: 18,
       shots: [
@@ -41,6 +42,7 @@
       name: 'Bigfoot',
       desc: 'Robusto e destruidor de terreno: mísseis em leque. Sobe mal rampas.',
       hp: 1150, speed: 36, maxClimb: 2.8, fuelPerPx: 0.4, windInfl: 1.1,
+      defense: 0.06,
       stats: { HP: 0.85, Dano: 0.6, Destruição: 1.0, Mobilidade: 0.3 },
       pivot: [2, -36], barrel: 20, hitR: 18,
       shots: [
@@ -54,6 +56,7 @@
       name: 'Grub',
       desc: 'Escala quase qualquer rampa e sofre pouco com o vento. HP baixo.',
       hp: 880, speed: 50, maxClimb: 9, fuelPerPx: 0.26, windInfl: 0.45,
+      defense: 0.01,
       stats: { HP: 0.45, Dano: 0.7, Destruição: 0.6, Mobilidade: 1.0 },
       pivot: [-4, -21], barrel: 21, hitR: 18,
       shots: [
@@ -67,6 +70,7 @@
       name: 'DJ',
       desc: 'Manipula o posicionamento inimigo com sucção e repulsão sonoras.',
       hp: 900, speed: 40, maxClimb: 4, fuelPerPx: 0.35, windInfl: 0.8,
+      defense: 0.01,
       stats: { HP: 0.5, Dano: 0.5, Destruição: 0.3, Mobilidade: 0.5 },
       pivot: [-1.5, -26], barrel: 22, hitR: 18,
       shots: [
@@ -80,6 +84,7 @@
       name: 'Raon Launcher',
       desc: 'Mestre em invocações: correntes e mini-robôs rastreadores.',
       hp: 1000, speed: 45, maxClimb: 5, fuelPerPx: 0.3, windInfl: 1.0,
+      defense: 0.01,
       stats: { HP: 0.65, Dano: 0.7, Destruição: 0.4, Mobilidade: 0.6 },
       pivot: [2, -26], barrel: 20, hitR: 18,
       shots: [
@@ -93,6 +98,7 @@
       name: 'Khan',
       desc: 'Atira de costas pelo abdômen! Seu T2 viaja por baixo da terra.',
       hp: 950, speed: 48, maxClimb: 7, fuelPerPx: 0.28, windInfl: 0.8,
+      defense: 0.10,
       stats: { HP: 0.55, Dano: 0.8, Destruição: 0.3, Mobilidade: 0.75 },
       pivot: [-7, -14], barrel: 23, hitR: 18,
       minAngle: -35, maxAngle: 35, shootsBackwards: true,
@@ -107,6 +113,7 @@
       name: 'Doc',
       desc: 'Médico tático: T1 reduz o ataque do alvo, T2/SS curam aliados e concedem defesa acumulável.',
       hp: 1000, speed: 44, maxClimb: 4.5, fuelPerPx: 0.3, windInfl: 0.85,
+      defense: 0.04,
       stats: { HP: 0.65, Dano: 0.45, Destruição: 0.3, Mobilidade: 0.6 },
       pivot: [5.5, -22], barrel: 21, hitR: 18,
       shots: [
@@ -120,6 +127,7 @@
       name: 'Frigo',
       desc: 'Robô-gorila de gelo: disparos orbitais independentes. Cada stack de Blizzard reduz ângulo, mobilidade e 15% da defesa. Com 5 stacks congela e perde o turno.',
       hp: 960, speed: 42, maxClimb: 3.8, fuelPerPx: 0.32, windInfl: 0.9,
+      defense: 0.04,
       stats: { HP: 0.6, Dano: 0.65, Destruição: 0.45, Mobilidade: 0.55 },
       pivot: [6, -21], barrel: 17, hitR: 18,
       shots: [
@@ -133,6 +141,7 @@
       name: 'Driller',
       desc: 'Veículo escavador: T1 planta minas subterrâneas de alto impacto, T2 fixa brocas magnéticas de pulso e SS convoca um Air Strike devastador.',
       hp: 1020, speed: 42, maxClimb: 4.0, fuelPerPx: 0.33, windInfl: 0.95,
+      defense: 0.06,
       stats: { HP: 0.7, Dano: 0.75, Destruição: 0.85, Mobilidade: 0.5 },
       pivot: [-3, -27], barrel: 28, hitR: 18,
       shots: [
@@ -146,6 +155,7 @@
       name: 'Kuda',
       desc: 'Centopeia mecânica: atira pela bunda como o Khan. Invoca o satélite Thor que sobrevoa o mapa e sobe de nível a cada dano causado!',
       hp: 950, speed: 46, maxClimb: 6, fuelPerPx: 0.28, windInfl: 0.85,
+      defense: 0.06,
       stats: { HP: 0.55, Dano: 0.8, Destruição: 0.4, Mobilidade: 0.7 },
       pivot: [-8, -14], barrel: 24, hitR: 18,
       minAngle: -25, maxAngle: 45, shootsBackwards: true,
