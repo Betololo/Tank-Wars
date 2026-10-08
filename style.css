@@ -629,7 +629,8 @@ button { font-family: inherit; color: inherit; border: 0; background: none; curs
 
 .gb-stat-list { display: flex; flex-direction: column; gap: 3px; }
 .gb-stat-row { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; color: #c4d0ec; }
-.gb-stat-lbl { width: 62px; text-align: left; }
+.gb-stat-lbl { width: 78px; display: inline-flex; align-items: center; gap: 4px; text-align: left; white-space: nowrap; }
+.gb-stat-icon { width: 13px; height: 13px; flex-shrink: 0; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.5)); }
 .gb-stat-bar { flex: 1; height: 9px; background: rgba(0,0,0,0.4); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
 .gb-stat-fill { height: 100%; width: 50%; border-radius: 3px; transition: width .2s; }
 #stat-atk { background: linear-gradient(90deg, #ff7b00, #ff2a2a); }
