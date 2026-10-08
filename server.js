@@ -252,5 +252,5 @@ const heartbeat = setInterval(() => {
 wss.on('close', () => clearInterval(heartbeat));
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Mini GunBound Server + WebSocket Relay running on http://localhost:${PORT}`);
+  console.log(`Tank Wars Server + WebSocket Relay running on http://localhost:${PORT}`);
 });

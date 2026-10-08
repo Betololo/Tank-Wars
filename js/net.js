@@ -1,11 +1,11 @@
-/* Rede online de alta performance para Mini GunBound (1v1 até 4v4).
+/* Rede online de alta performance para Tank Wars (1v1 até 4v4).
    Utiliza WebSocket nativo com o servidor dedicado / Cloudflare Tunnel para latência instantânea (<20ms)
    e conexão garantida para até 8 jogadores simultâneos, sem travas de NAT/STUN/TURN.
    Possui fallback automático para PeerJS caso esteja rodando offline via arquivo local. */
 (function (GB) {
   'use strict';
 
-  const PREFIX = 'minigunbound-v1-';
+  const PREFIX = 'tankwars-v1-';
   const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
   const PEER_CONFIG = {

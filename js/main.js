@@ -1,4 +1,4 @@
-/* UI principal: fluxo de telas, GunBound Room Lobby (1v1 até 4v4), estados e integração DOM. */
+/* UI principal: fluxo de telas, Tank Wars Room Lobby (1v1 até 4v4), estados e integração DOM. */
 (function (GB) {
   'use strict';
 
@@ -71,7 +71,7 @@
       $('on-create').addEventListener('click', () => this.hostOnline());
       $('on-join').addEventListener('click', () => this.joinOnline($('on-code').value));
 
-      // Botões da Sala GunBound (Lobby)
+      // Botões da Sala Tank Wars (Lobby)
       $('lobby-back').addEventListener('click', () => {
         GB.Sfx.click();
         GB.Net.close();
@@ -399,7 +399,7 @@
       this.mySlotIdx = 0;
       this.room = {
         code: '----',
-        title: 'SALA 01 - MINI GUNBOUND',
+        title: 'SALA 01 - TANK WARS',
         format: '4v4',
         map: 'large',
         mode: 'single_life',

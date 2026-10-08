@@ -408,7 +408,7 @@
       if (forcedTurn !== undefined && forcedTurn >= 0 && forcedTurn < this.tanks.length && this.tanks[forcedTurn].alive) {
         this.turn = forcedTurn;
       } else {
-        // Sistema de Delay GunBound: próximo turno é do jogador vivo com MENOR delay acumulado
+        // Sistema de Delay Tank Wars: próximo turno é do jogador vivo com MENOR delay acumulado
         let lowest = Infinity;
         let nextIdx = 0;
         for (let i = 0; i < this.tanks.length; i++) {
@@ -596,10 +596,12 @@
 
         bulletsToLaunch.push(...baseBullets);
 
-        if (this.itemActive === 'dual') {
+        const activeItem1 = this.itemActive;
+        const activeItem2 = this.itemActive2;
+
+        if (activeItem1 === 'dual') {
            bulletsToLaunch.push(...baseBullets.map(b => ({ ...b, delay: b.delay + 0.6 })));
-           this.itemActive = null;
-        } else if (this.itemActive === 'dualplus') {
+        } else if (activeItem1 === 'dualplus') {
            if (isNuclear || isNapalm || isOnda) {
               bulletsToLaunch.push(...baseBullets.map(b => ({ ...b, delay: b.delay + 0.6 })));
            } else {
@@ -607,14 +609,16 @@
               const otherShot = t.mobile.shots[otherShotIdx];
               bulletsToLaunch.push(...otherShot.bullets.map(b => ({ off: b.off || 0, pm: b.pm || 1, delay: (b.delay || 0) + 0.6, shot: otherShot, isNuclear, isNapalm, isOnda })));
            }
-           this.itemActive = null;
         }
 
-        if (this.itemActive2 === 'superdual') {
+        if (activeItem2 === 'superdual') {
            const duplicated = bulletsToLaunch.map(b => ({ ...b, delay: b.delay + 1.2 }));
            bulletsToLaunch.push(...duplicated);
         }
       }
+      const usedItem1 = isTeleport ? 'teleport' : this.itemActive;
+      const usedItem2 = this.itemActive2;
+      this.itemActive = null;
       this.itemActive2 = null;
 
       for (const b of bulletsToLaunch) {
@@ -631,6 +635,20 @@
       // Adiciona o delay da ação + tempo gasto
       const timeSpent = Math.max(0, GB.TURN_TIME - this.timer);
       t.delay += (shot.delay || 750) + Math.floor(timeSpent) * 10;
+
+      // DELAY DE ITENS: O DUAL+ TEM DELAY MENOR QUE O DUAL! (250 < 600)
+      if (usedItem1 === 'dual') {
+        t.delay += 600; // Dual: alto delay (+600)
+      } else if (usedItem1 === 'dualplus') {
+        t.delay += 250; // Dual+: DELAY MENOR QUE O DUAL! (+250 < +600)
+      } else if (usedItem1 === 'teleport') {
+        t.delay += 150;
+      }
+
+      if (usedItem2) {
+        const delays2 = { 'nuclear': 1500, 'napalm': 1000, 'superdual': 1200, 'onda': 1000 };
+        t.delay += (delays2[usedItem2] || 1000);
+      }
 
       const ai = t.aimInfo();
       this.effects.muzzle(ai.mx, ai.my, ai.dx, ai.dy);
@@ -1397,16 +1415,14 @@
           
           if (item === 'dual' || item === 'dualplus') {
             this.itemActive = item;
-            t.delay += item === 'dual' ? 600 : 250;
-            this.toast(item === 'dual' ? 'Dual: 2 Tiros!' : 'Dual+: Tiros Misto (Atraso Menor)');
+            this.toast(item === 'dual' ? 'Dual: 2 Tiros do mesmo tipo! (+600 Delay)' : 'Dual+: Tiro Misto (T1 + T2)! (+250 Delay - Menor que o Dual)');
             if (t.shotSel === 2) {
                t.shotSel = 1;
                this.toast('SS bloqueado pelo Dual! Tiro 2 selecionado.');
             }
           } else if (item === 'teleport') {
-            t.delay += 150;
             this.itemActive = 'teleport';
-            this.toast('Teleport: Atire para mover!');
+            this.toast('Teleport: Atire para mover! (+150 Delay)');
             if (t.shotSel === 2) {
                t.shotSel = 1;
                this.toast('SS não afeta Teleport! Tiro 2 selecionado.');
@@ -1415,7 +1431,7 @@
             t.delay += 150;
             const heal = t.damage(-t.maxHp * 0.25);
             this.effects.text(t.x, t.y - 30, '+' + (-heal), '#5cff8a', true);
-            this.toast('Cura!');
+            this.toast('Cura! (+150 Delay)');
             this.skipTurn();
           }
         });
@@ -1434,8 +1450,7 @@
          t.item2Used = true;
          this.itemActive2 = t.items2;
          const delays = { 'nuclear': 1500, 'napalm': 1000, 'superdual': 1200, 'onda': 1000 };
-         t.delay += delays[t.items2] || 1000;
-         this.toast(`Ativou ${t.items2.toUpperCase()}!`);
+         this.toast(`Ativou ${t.items2.toUpperCase()}! (+${delays[t.items2] || 1000} Delay)`);
          if (t.items2 === 'superdual' && t.shotSel === 2 && (this.itemActive === 'dual' || this.itemActive === 'dualplus')) {
              t.shotSel = 1;
              this.toast('SS bloqueado pelo Dual! Tiro 2 selecionado.');

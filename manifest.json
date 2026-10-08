@@ -1,6 +1,6 @@
 {
-  "name": "Mini GunBound",
-  "short_name": "MiniGB",
+  "name": "Tank Wars",
+  "short_name": "TankWars",
   "start_url": ".",
   "display": "fullscreen",
   "orientation": "landscape",

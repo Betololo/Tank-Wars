@@ -1,7 +1,7 @@
 {
-  "name": "mini-gunbound",
+  "name": "tank-wars",
   "version": "1.0.0",
-  "description": "Mini GunBound Web Multiplayer",
+  "description": "Tank Wars Web Multiplayer",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

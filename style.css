@@ -350,7 +350,7 @@ button { font-family: inherit; color: inherit; border: 0; background: none; curs
 .result-title { font-size: clamp(34px, 10vh, 54px) !important; background: linear-gradient(180deg, #ffe08a, var(--primary)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .result-title.lose { background: linear-gradient(180deg, #d7d2ff, #7a6fb5); -webkit-background-clip: text; background-clip: text; }
 
-/* ===================== GUNBOUND ROOM LOBBY ===================== */
+/* ===================== TANK WARS ROOM LOBBY ===================== */
 .online-name-box { margin-bottom: 14px; text-align: left; }
 .gb-input-nick { width: 100%; margin-top: 5px; padding: 10px 14px; background: rgba(0,0,0,.5); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; font-family: var(--font); font-size: 15px; font-weight: 600; outline: none; }
 .gb-input-nick:focus { border-color: var(--primary); }
@@ -452,7 +452,7 @@ button { font-family: inherit; color: inherit; border: 0; background: none; curs
   overflow-y: auto;
 }
 
-/* Slot Styling (GunBound Chevrons) */
+/* Slot Styling (Tank Wars Chevrons) */
 .gb-slot {
   height: 64px;
   border-radius: 6px;
@@ -744,7 +744,7 @@ button { font-family: inherit; color: inherit; border: 0; background: none; curs
   .mcard { padding: 6px; }
 }
 
-/* ===================== CATEGORIZED MOBILES MODAL (GUNBOUND STYLE) ===================== */
+/* ===================== CATEGORIZED MOBILES MODAL (TANK WARS STYLE) ===================== */
 .gb-modal-top {
   display: flex;
   justify-content: space-between;
