@@ -636,11 +636,11 @@
       const timeSpent = Math.max(0, GB.TURN_TIME - this.timer);
       t.delay += (shot.delay || 750) + Math.floor(timeSpent) * 10;
 
-      // DELAY DE ITENS: O DUAL+ TEM DELAY MENOR QUE O DUAL! (250 < 600)
+      // DELAY DE ITENS: O DUAL+ TEM DELAY MENOR QUE O DUAL! (250 < 400)
       if (usedItem1 === 'dual') {
-        t.delay += 600; // Dual: alto delay (+600)
+        t.delay += 400; // Dual: delay (+400)
       } else if (usedItem1 === 'dualplus') {
-        t.delay += 250; // Dual+: DELAY MENOR QUE O DUAL! (+250 < +600)
+        t.delay += 250; // Dual+: DELAY MENOR QUE O DUAL! (+250 < +400)
       } else if (usedItem1 === 'teleport') {
         t.delay += 150;
       }
@@ -1415,7 +1415,7 @@
           
           if (item === 'dual' || item === 'dualplus') {
             this.itemActive = item;
-            this.toast(item === 'dual' ? 'Dual: 2 Tiros do mesmo tipo! (+600 Delay)' : 'Dual+: Tiro Misto (T1 + T2)! (+250 Delay - Menor que o Dual)');
+            this.toast(item === 'dual' ? 'Dual: 2 Tiros do mesmo tipo! (+400 Delay)' : 'Dual+: Tiro Misto (T1 + T2)! (+250 Delay - Menor que o Dual)');
             if (t.shotSel === 2) {
                t.shotSel = 1;
                this.toast('SS bloqueado pelo Dual! Tiro 2 selecionado.');
