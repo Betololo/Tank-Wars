@@ -1,0 +1,316 @@
+/* Tanque/mobile em jogo: física de queda, movimento seguindo o relevo, inclinação e mira. */
+(function (GB) {
+  'use strict';
+
+  const FEET = [-7, -3, 0, 3, 7];
+
+  class Tank {
+    constructor(opts) {
+      this.mobile = GB.MOBILES[opts.mobileId];
+      this.mobileId = opts.mobileId;
+      this.team = opts.team;
+      this.name = opts.name;
+      this.color = opts.color;
+      this.terrain = opts.terrain;
+      this.x = opts.x;
+      this.y = 0;
+      this.vy = 0;
+      this.facing = opts.facing || 1;
+      this.angle = this.mobile.minAngle != null ? (this.mobile.minAngle + this.mobile.maxAngle) / 2 : 45;
+      this.hp = this.mobile.hp;
+      this.maxHp = this.mobile.hp;
+      this.ssCooldown = 0;
+      this.atkDebuff = 0;
+      this.defBuff = 0;
+      this.defDebuff = 0;
+      this.blizzardStacks = 0;
+      this.frozen = false;
+      this.fuel = GB.MAX_FUEL;
+      this.alive = true;
+      this.tilt = 0;
+      this.lastPower = -1;
+      this.hurt = 0;
+      this.moving = false;
+      this.falling = false;
+      this.dispHp = this.hp;
+      const sy = this.terrain.surfaceBelow(this.x, 0);
+      this.y = sy < 0 ? 0 : sy;
+      this.updateTilt(true);
+    }
+
+    supported() {
+      const t = this.terrain;
+      let supportPoints = 0;
+      for (const dx of FEET) {
+         if (t.isSolid(this.x + dx, this.y) || t.isSolid(this.x + dx, this.y + 1) || t.isSolid(this.x + dx, this.y + 2)) {
+            // É chão e não parede vertical contínua
+            if (!t.isSolid(this.x + dx, this.y - 4)) {
+               supportPoints++;
+            }
+         }
+      }
+      return supportPoints > 0;
+    }
+
+    groundNear(x) {
+      const t = this.terrain;
+      for (let yy = this.y - 14; yy < this.y + 22; yy++) if (t.isSolid(x, yy)) return yy;
+      return this.y;
+    }
+
+    updateTilt(instant) {
+      const hl = this.groundNear(this.x - 10), hr = this.groundNear(this.x + 10);
+      const target = GB.clamp(Math.atan2(hr - hl, 20), -0.75, 0.75);
+      this.tilt = instant ? target : GB.lerp(this.tilt, target, 0.25);
+    }
+
+    // Retorna true enquanto estiver caindo.
+    updatePhysics(dt) {
+      if (!this.alive) return false;
+      this.hurt = Math.max(0, this.hurt - dt);
+      this.dispHp = GB.lerp(this.dispHp, this.hp, Math.min(1, dt * 6));
+      // Se o chão sumiu por baixo da posição atual, ajusta para baixo
+      if (!this.supported()) {
+        this.falling = true;
+        this.vy = Math.min(this.vy + GB.GRAVITY * 1.4 * dt, 900);
+        let dy = this.vy * dt;
+        while (dy > 0) {
+          this.y += 1; dy -= 1;
+          if (this.supported()) { this.vy = 0; break; }
+          if (this.y > GB.WORLD_H + 60) break;
+        }
+      } else {
+        // empurra para fora se ficou "enterrado"
+        let guard = 0;
+        while (this.terrain.isSolid(this.x, this.y - 1) && guard++ < 6) this.y -= 1;
+        if (this.falling) { this.falling = false; this.vy = 0; }
+      }
+      if (this.y > GB.WORLD_H + 40) {
+        this.alive = false;
+        this.hp = 0;
+        this.fellOff = true;
+      }
+      this.updateTilt(false);
+      return this.falling;
+    }
+
+    // Movimento horizontal seguindo o relevo; retorna px andados.
+    move(dir, dt) {
+      if (!this.alive || this.falling || this.fuel <= 0 || this.frozen) return 0;
+      this.facing = dir;
+      const t = this.terrain;
+      const climb = Math.ceil(this.mobile.maxClimb);
+      const blizzardSlow = Math.max(0, 1 - (this.blizzardStacks || 0) * 0.05);
+      let steps = this.mobile.speed * (this.speedMult || 1) * blizzardSlow * dt + (this._carry || 0);
+      let moved = 0;
+      while (steps >= 1 && this.fuel > 0) {
+        steps -= 1;
+        const nx = this.x + dir;
+        const top = this.y - climb;
+        if (t.isSolid(nx, top) || t.isSolid(nx, top - 10)) { steps = 0; break; } // parede íngreme
+        let ny = -1;
+        for (let yy = top; yy <= this.y + 3; yy++) if (t.isSolid(nx, yy)) { ny = yy; break; }
+        this.x = nx;
+        if (ny >= 0) this.y = ny;
+        this.fuel = Math.max(0, this.fuel - this.mobile.fuelPerPx);
+        moved++;
+        if (!this.supported()) break; // vai cair
+      }
+      this._carry = steps;
+      return moved;
+    }
+
+    get effectiveMinAngle() {
+      const base = this.mobile.minAngle != null ? this.mobile.minAngle : 0;
+      const penalty = (this.blizzardStacks || 0) * 5;
+      const baseMax = this.mobile.maxAngle != null ? this.mobile.maxAngle : 90;
+      return Math.min(baseMax, base + penalty);
+    }
+
+    get effectiveMaxAngle() {
+      const base = this.mobile.maxAngle != null ? this.mobile.maxAngle : 90;
+      const penalty = (this.blizzardStacks || 0) * 5;
+      const baseMin = this.mobile.minAngle != null ? this.mobile.minAngle : 0;
+      return Math.max(baseMin, base - penalty);
+    }
+
+    get relativeAngle() {
+      let slopeDeg = this.tilt * (180 / Math.PI);
+      if (this.mobile.shootsBackwards) {
+        return this.facing > 0 ? (this.angle - slopeDeg) : (this.angle + slopeDeg);
+      }
+      return this.facing > 0 ? (this.angle + slopeDeg) : (this.angle - slopeDeg);
+    }
+
+    // Ponto de giro do canhão e direção do disparo em coordenadas do mundo
+    aimInfo(angleOverride) {
+      const m = this.mobile;
+      const a = (angleOverride != null ? angleOverride : this.angle) * GB.DEG;
+      const c = Math.cos(this.tilt), s = Math.sin(this.tilt);
+      const rot = (lx, ly) => [lx * c - ly * s, lx * s + ly * c];
+      const [pxr, pyr] = rot(m.pivot[0] * this.facing, m.pivot[1]);
+      
+      const px = this.x + pxr, py = this.y + pyr;
+      const fDir = m.shootsBackwards ? -this.facing : this.facing;
+      const dx = Math.cos(a) * fDir;
+      const dy = -Math.sin(a);
+      
+      return { px, py, dx, dy, mx: px + dx * m.barrel, my: py + dy * m.barrel };
+    }
+
+    center() {
+      return { x: this.x - Math.sin(this.tilt) * -12, y: this.y - Math.cos(this.tilt) * 12 };
+    }
+
+    damage(amount) {
+      if (!this.alive) return 0;
+      const d = Math.min(this.hp, Math.round(amount));
+      this.hp -= d;
+      this.hurt = 0.35;
+      if (this.hp <= 0) { this.hp = 0; this.alive = false; }
+      return d;
+    }
+
+    heal(amount) {
+      if (!this.alive) return 0;
+      const prev = this.hp;
+      this.hp = Math.min(this.maxHp, this.hp + Math.max(0, Math.round(amount)));
+      return this.hp - prev;
+    }
+
+    draw(ctx, opts) {
+      if (!this.alive && !this.drawDead) return;
+      const shake = this.hurt > 0 ? Math.sin(this.hurt * 80) * 2 : 0;
+      ctx.save();
+      ctx.translate(this.x + shake, this.y + 1);
+      ctx.rotate(this.tilt);
+      // sombra/brilho do time
+      ctx.fillStyle = this.color + '55';
+      ctx.beginPath(); ctx.ellipse(0, 0, 24, 4, 0, 0, 7); ctx.fill();
+      ctx.scale(this.facing, 1);
+      GB.drawMobile(ctx, this.mobileId, this.relativeAngle, this.color);
+      ctx.restore();
+
+      if (opts.showAim) this.drawAim(ctx);
+
+      // Bloco de gelo se estiver congelado (5 stacks de blizzard)
+      if (this.blizzardStacks >= 5 || this.frozen) {
+        ctx.save();
+        ctx.translate(this.x, this.y - 12);
+        ctx.fillStyle = 'rgba(140, 220, 255, 0.45)';
+        ctx.strokeStyle = 'rgba(210, 245, 255, 0.9)';
+        ctx.lineWidth = 2.5;
+        GB.roundRect(ctx, -26, -26, 52, 44, 8);
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-18, -20); ctx.lineTo(-8, -6); ctx.lineTo(-14, 8);
+        ctx.moveTo(12, -18); ctx.lineTo(16, -4); ctx.lineTo(6, 6);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // etiqueta + barra de vida
+      const ty = this.y - 54;
+      ctx.save();
+      ctx.font = '700 12px Outfit, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(0,0,0,.7)';
+      ctx.strokeText(this.name, this.x, ty - 6);
+      ctx.fillStyle = this.color;
+      ctx.fillText(this.name, this.x, ty - 6);
+      const w = 44, h = 5;
+      ctx.fillStyle = 'rgba(0,0,0,.6)';
+      GB.roundRect(ctx, this.x - w / 2 - 1, ty - 1, w + 2, h + 2, 3); ctx.fill();
+      ctx.fillStyle = '#ff5050';
+      ctx.fillRect(this.x - w / 2, ty, w * (this.dispHp / this.maxHp), h);
+      ctx.fillStyle = this.hp / this.maxHp > 0.35 ? '#5cff8a' : '#ffcf4a';
+      ctx.fillRect(this.x - w / 2, ty, w * (this.hp / this.maxHp), h);
+
+      // Indicadores visuais de Buff/Debuff (Doc, Frigo e outros)
+      if (this.defBuff > 0 || this.atkDebuff > 0 || this.defDebuff > 0 || this.blizzardStacks > 0) {
+        ctx.font = '800 9px Outfit, sans-serif';
+        let badges = [];
+        if (this.defBuff > 0) badges.push({ text: `+${Math.round(this.defBuff * 100)}% DEF`, color: '#4cd3e6' });
+        if (this.atkDebuff > 0) badges.push({ text: `-${Math.round(this.atkDebuff * 100)}% ATQ`, color: '#ff6b6b' });
+        if (this.defDebuff > 0) badges.push({ text: `-${Math.round(this.defDebuff * 100)}% DEF`, color: '#ff7043' });
+        if (this.blizzardStacks > 0) badges.push({ text: `❄ ${this.blizzardStacks}/5`, color: '#79b9e7' });
+        const by = ty + 12;
+        let totalW = 0;
+        badges.forEach(b => { totalW += ctx.measureText(b.text).width + 6; });
+        let curX = this.x - totalW / 2;
+        badges.forEach(b => {
+          const bw = ctx.measureText(b.text).width + 4;
+          ctx.fillStyle = 'rgba(0,0,0,0.7)';
+          GB.roundRect(ctx, curX, by - 8, bw, 10, 2);
+          ctx.fill();
+          ctx.fillStyle = b.color;
+          ctx.fillText(b.text, curX + bw / 2, by);
+          curX += bw + 2;
+        });
+      }
+      ctx.restore();
+
+      if (opts.active) {
+        const bob = Math.sin(opts.time * 6) * 4;
+        ctx.save();
+        ctx.translate(this.x, ty - 26 + bob);
+        ctx.fillStyle = '#ffe08a';
+        ctx.strokeStyle = 'rgba(80,30,0,.8)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-8, -8); ctx.lineTo(8, -8); ctx.lineTo(0, 4); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // Arco de ângulo e linha de mira (só do jogador local da vez)
+    drawAim(ctx) {
+      const ai = this.aimInfo();
+      const minAng = this.effectiveMinAngle;
+      const maxAng = this.effectiveMaxAngle;
+      const R = 58;
+      ctx.save();
+      ctx.lineWidth = 7;
+      ctx.strokeStyle = 'rgba(255,255,255,.18)';
+      ctx.beginPath();
+      const steps = 18;
+      for (let s = 0; s <= steps; s++) {
+        const testAng = minAng + (maxAng - minAng) * (s / steps);
+        const pt = this.aimInfo(testAng);
+        const ax = ai.px + pt.dx * R;
+        const ay = ai.py + pt.dy * R;
+        if (s === 0) ctx.moveTo(ax, ay);
+        else ctx.lineTo(ax, ay);
+      }
+      ctx.stroke();
+      ctx.setLineDash([6, 6]);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255,240,180,.9)';
+      ctx.beginPath();
+      ctx.moveTo(ai.mx, ai.my);
+      ctx.lineTo(ai.px + ai.dx * (R + 18), ai.py + ai.dy * (R + 18));
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ffe08a';
+      ctx.beginPath(); ctx.arc(ai.px + ai.dx * R, ai.py + ai.dy * R, 4.5, 0, 7); ctx.fill();
+      
+      if (this.lastAngle !== undefined) {
+         const lastAi = this.aimInfo(this.lastAngle);
+         ctx.lineWidth = 1;
+         ctx.strokeStyle = 'rgba(255,100,100,.6)';
+         ctx.beginPath();
+         ctx.moveTo(lastAi.mx, lastAi.my);
+         ctx.lineTo(lastAi.px + lastAi.dx * (R + 18), lastAi.py + lastAi.dy * (R + 18));
+         ctx.stroke();
+      }
+      
+      ctx.restore();
+    }
+  }
+
+  GB.Tank = Tank;
+})(window.GB);

@@ -1,0 +1,21 @@
+{
+  "name": "Mini GunBound",
+  "short_name": "MiniGB",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0d0a1f",
+  "theme_color": "#0d0a1f",
+  "icons": [
+    {
+      "src": "assets/icon.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "assets/icon.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Preview Driller</title>
+  <style>
+    body {
+      background: #1e1e24;
+      color: #fff;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      display: flex;
+      gap: 30px;
+      align-items: center;
+      margin-top: 20px;
+    }
+    .box {
+      background: #2b2b36;
+      border: 2px solid #3f3f4f;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    canvas {
+      background: #3a3a4c;
+      border-radius: 8px;
+    }
+    img {
+      max-width: 320px;
+      border-radius: 8px;
+    }
+    .controls {
+      margin-top: 20px;
+    }
+    input[type=range] {
+      width: 280px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Comparação Visual: Driller</h1>
+  <div class="container">
+    <div class="box">
+      <h3>Referência Original</h3>
+      <img src="img/driller_ref.png" alt="Driller Ref">
+    </div>
+    <div class="box">
+      <h3>Renderização Vetorial (In-Game)</h3>
+      <canvas id="c" width="340" height="260"></canvas>
+    </div>
+  </div>
+
+  <div class="controls">
+    <label>Ângulo do Canhão: <span id="deg">25</span>°</label><br>
+    <input type="range" id="angle" min="0" max="90" value="25">
+  </div>
+
+  <script src="js/util.js"></script>
+  <script src="js/mobiles.js"></script>
+  <script>
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+    const slider = document.getElementById('angle');
+    const degSpan = document.getElementById('deg');
+
+    function render() {
+      const angle = Number(slider.value);
+      degSpan.textContent = angle;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Fundo e chão
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height * 0.72);
+      ctx.scale(3.8, 3.8);
+
+      // Chão de teste
+      ctx.fillStyle = '#4a7536';
+      ctx.fillRect(-45, 0, 90, 8);
+
+      GB.drawMobile(ctx, 'driller', angle, '#4cb82c');
+      ctx.restore();
+    }
+
+    slider.addEventListener('input', render);
+    render();
+  </script>
+</body>
+</html>

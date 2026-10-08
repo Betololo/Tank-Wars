@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Mini GunBound — Artilharia por turnos no celular</title>
+  <meta name="description" content="Mini GunBound: jogo de artilharia por turnos com terreno destrutível, vento e os mobiles Armor, Bigfoot e Grub. Jogue contra a CPU, com um amigo no mesmo celular ou online.">
+  <meta name="theme-color" content="#140f2b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/icon.jpg">
+  <link rel="apple-touch-icon" href="assets/icon.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=20261008">
+</head>
+<body>
+  <main id="app">
+    <canvas id="game" aria-label="Campo de batalha"></canvas>
+
+    <!-- ================= HUD ================= -->
+    <section id="hud" class="hidden" aria-label="Interface da partida">
+      <header class="hud-top">
+        <div class="hud-team-cards" id="hud-team-a">
+          <div class="player-card" id="pc0">
+            <span class="pc-name" id="pc0-name">P1</span>
+            <div class="hp-bar"><div class="hp-fill" id="pc0-hp"></div></div>
+          </div>
+        </div>
+
+        <div class="hud-center">
+          <div class="wind" id="wind-box" title="Vento">
+            <div class="wind-current">
+              <span class="wind-arrow" id="wind-arrow">➤</span>
+              <span class="wind-val" id="wind-val">0</span>
+            </div>
+            <div class="wind-history hidden" id="wind-history" title="Último vento">
+              <span class="wind-arrow" id="wind-prev-arrow">➤</span>
+              <span class="wind-val" id="wind-prev-val">0</span>
+            </div>
+          </div>
+          <div class="turn-info">
+            <span id="turn-name">—</span>
+            <span class="timer" id="timer">20</span>
+          </div>
+          <div class="turn-order" id="turn-order"></div>
+        </div>
+
+        <div class="hud-team-cards right" id="hud-team-b">
+          <div class="player-card right" id="pc1">
+            <span class="pc-name" id="pc1-name">P2</span>
+            <div class="hp-bar"><div class="hp-fill" id="pc1-hp"></div></div>
+          </div>
+        </div>
+      </header>
+
+      <canvas id="minimap" width="200" height="90" aria-label="Minimapa"></canvas>
+      <button class="icon-btn" id="btn-pause" aria-label="Pausar">❚❚</button>
+      <button class="icon-btn" id="btn-center" aria-label="Centralizar câmera">◎</button>
+
+      <footer class="hud-bottom" id="controls">
+        <div class="pad left-pad">
+          <button class="ctl" id="btn-left" aria-label="Mover para a esquerda">◀</button>
+          <button class="ctl" id="btn-right" aria-label="Mover para a direita">▶</button>
+        </div>
+
+        <div class="center-panel">
+          <div class="combat-log" id="combat-log"></div>
+          <div class="stat-row">
+            <span class="stat-label">ÂNGULO</span>
+            <span class="angle-val" id="angle-val">45°</span>
+            <span class="angle-last" id="angle-last-val"></span>
+            <div class="mini-bar fuel"><div id="fuel-fill"></div><span>COMB.</span></div>
+          </div>
+          <div class="power-bar" id="power-bar">
+            <div class="power-fill" id="power-fill"></div>
+            <div class="power-last" id="power-last"></div>
+            <div class="power-ticks"></div>
+          </div>
+          <div class="shot-row">
+            <button class="shot-btn active" id="shot-0" data-shot="0">1</button>
+            <button class="shot-btn" id="shot-1" data-shot="1">2</button>
+            <button class="shot-btn ss" id="shot-2" data-shot="2">SS<i id="ss-fill"></i></button>
+            <div class="item-bar" id="item-bar">
+               <button class="item-use-btn" id="item-btn-0"></button>
+               <button class="item-use-btn" id="item-btn-1"></button>
+               <button class="item-use-btn" id="item-btn-2"></button>
+               <button class="item-use-btn i2" id="item-btn-3"></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="pad right-pad">
+          <div class="angle-pad">
+            <button class="ctl small" id="btn-up" aria-label="Aumentar ângulo">▲</button>
+            <button class="ctl small" id="btn-down" aria-label="Diminuir ângulo">▼</button>
+          </div>
+          <button class="fire-btn" id="btn-fire" aria-label="Atirar (segure para carregar a força)">FIRE</button>
+        </div>
+      </footer>
+
+      <div class="toast" id="toast"></div>
+    </section>
+
+    <!-- ================= MENU ================= -->
+    <section class="screen active" id="scr-menu">
+      <div class="menu-wrap">
+        <h1 class="logo">MINI<span>GUNBOUND</span></h1>
+        <p class="tagline">Artilharia por turnos • terreno destrutível • vento</p>
+        <nav class="menu-buttons">
+          <button class="btn primary" id="m-pve">🤖 Jogar vs CPU</button>
+          <button class="btn" id="m-local">👥 2 Jogadores (mesmo celular)</button>
+          <button class="btn accent" id="m-online">🌐 Online</button>
+        </nav>
+        <button class="link-btn" id="m-help">Como jogar</button>
+      </div>
+    </section>
+
+    <!-- ================= SELEÇÃO DE MOBILE ================= -->
+    <section class="screen" id="scr-select">
+      <div class="panel wide">
+        <h2 id="sel-title">Escolha seu mobile</h2>
+        <div class="mobile-cards" id="mobile-cards"></div>
+        <div class="sel-extra" id="sel-diff">
+          <span>Dificuldade da CPU:</span>
+          <div class="seg" id="diff-seg">
+            <button data-d="0">Fácil</button>
+            <button data-d="1" class="on">Médio</button>
+            <button data-d="2">Difícil</button>
+          </div>
+        </div>
+        <div class="row-buttons">
+          <button class="btn ghost" id="sel-back">Voltar</button>
+          <button class="btn primary" id="sel-ok">Confirmar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ONLINE ================= -->
+    <section class="screen" id="scr-online">
+      <div class="panel">
+        <h2>Jogar Online Multiplayer</h2>
+        <div class="online-name-box">
+          <label for="on-name" class="muted small">Seu Nickname:</label>
+          <input id="on-name" maxlength="14" placeholder="Digite seu nome" value="Jogador" autocomplete="off" class="gb-input-nick">
+        </div>
+        <div id="on-choose">
+          <button class="btn primary" id="on-create">👑 Criar Sala</button>
+          <div class="join-row">
+            <input id="on-code" maxlength="100" placeholder="CÓDIGO OU LINK" autocomplete="off" autocapitalize="characters" aria-label="Código da sala">
+            <button class="btn accent" id="on-join">🚀 Entrar</button>
+          </div>
+        </div>
+        <div id="on-wait" class="hidden">
+          <p>Conectando ao servidor...</p>
+          <div class="room-code" id="on-room">----</div>
+          <p class="muted" id="on-status">Aguardando...</p>
+        </div>
+        <p class="muted small" id="on-msg"></p>
+        <div class="row-buttons">
+          <button class="btn ghost" id="on-back">Voltar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SALA GUNBOUND (LOBBY MULTIPLAYER ATÉ 4v4) ================= -->
+    <section class="screen" id="scr-lobby">
+      <div class="gb-room-window">
+        <!-- Topo da Sala: Clima, Título, Código, Formato e Mapa -->
+        <header class="gb-room-topbar">
+          <div class="gb-room-weather">
+            <span class="gb-w-icon" title="Sol">☀️</span>
+            <span class="gb-w-icon" title="Vento">🌀</span>
+            <span class="gb-w-icon" title="Lua">🌙</span>
+            <span class="gb-w-icon" title="Raio Thor">⚡</span>
+            <span class="gb-w-icon active" title="Thor Satélite" id="gb-weather-thor">🛰️</span>
+          </div>
+
+          <div class="gb-room-meta">
+            <div class="gb-meta-line">
+              <span class="gb-meta-title" id="gb-room-title">SALA 01</span>
+              <div class="gb-code-box">
+                <span class="gb-code-lbl">CÓDIGO:</span>
+                <span class="gb-code-val" id="gb-room-code">----</span>
+                <button class="gb-btn-copy" id="gb-btn-copy" title="Copiar código ou link da sala">📋 Copiar</button>
+              </div>
+            </div>
+            <div class="gb-meta-options">
+              <div class="gb-opt-group">
+                <label for="gb-opt-mode">Modo:</label>
+                <select id="gb-opt-mode" class="gb-select">
+                  <option value="single_life" selected>Single Life</option>
+                  <option value="score">Score (4 Vidas)</option>
+                </select>
+              </div>
+              <div class="gb-opt-group">
+                <label for="gb-opt-format">Formato:</label>
+                <select id="gb-opt-format" class="gb-select">
+                  <option value="1v1">1 vs 1</option>
+                  <option value="2v2">2 vs 2</option>
+                  <option value="3v3">3 vs 3</option>
+                  <option value="4v4" selected>4 vs 4</option>
+                </select>
+              </div>
+              <div class="gb-opt-group">
+                <label for="gb-opt-map">Mapa:</label>
+                <select id="gb-opt-map" class="gb-select">
+                  <option value="large">Grande (2200x1000)</option>
+                  <option value="small">Pequeno (1200x600)</option>
+                </select>
+              </div>
+              <div class="gb-opt-group">
+                <label>Vento:</label>
+                <span class="gb-tag-opt">NORMAL</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="gb-room-topright">
+            <div class="gb-badge-server">Servidor P2P WebRTC</div>
+            <button class="btn ghost small" id="lobby-back" title="Sair da sala">✕ Sair</button>
+          </div>
+        </header>
+
+        <!-- Corpo da Sala: Time A (Esquerda), Ações Centrais (Meio), Time B (Direita), Sidebar (Direita) -->
+        <div class="gb-room-main">
+          <!-- TIME A (VERMELHO) -->
+          <div class="gb-team-panel team-a">
+            <div class="gb-team-header team-a-header">
+              <span class="gb-team-lbl">TIME A (VERMELHO)</span>
+              <span class="gb-team-count" id="team-a-count">1/4</span>
+            </div>
+            <div class="gb-slots-container">
+              <div class="gb-slot team-a-slot" id="gb-slot-0" data-slot="0"></div>
+              <div class="gb-slot team-a-slot" id="gb-slot-1" data-slot="1"></div>
+              <div class="gb-slot team-a-slot" id="gb-slot-2" data-slot="2"></div>
+              <div class="gb-slot team-a-slot" id="gb-slot-3" data-slot="3"></div>
+            </div>
+          </div>
+
+          <!-- ÁREA CENTRAL: Botão START e Botões Rápidos -->
+          <div class="gb-center-panel">
+            <button class="gb-btn-start" id="lobby-start">
+              <span class="gb-start-f5">F5</span>
+              <span class="gb-start-txt" id="gb-start-label">START</span>
+              <span class="gb-start-chick">🐥</span>
+            </button>
+
+            <div class="gb-quick-bar">
+              <button class="gb-qbtn" id="gb-btn-mobile" title="Trocar Mobile (F3)">
+                <span class="qbtn-f">F3</span>
+                <span class="qbtn-icon">🚗</span>
+                <span class="qbtn-text">Mobile</span>
+              </button>
+              <button class="gb-qbtn" id="gb-btn-team" title="Trocar Time (F4)">
+                <span class="qbtn-f">F4</span>
+                <span class="qbtn-icon">🔄</span>
+                <span class="qbtn-text">Time</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- TIME B (AZUL) -->
+          <div class="gb-team-panel team-b">
+            <div class="gb-team-header team-b-header">
+              <span class="gb-team-lbl">TIME B (AZUL)</span>
+              <span class="gb-team-count" id="team-b-count">0/4</span>
+            </div>
+            <div class="gb-slots-container">
+              <div class="gb-slot team-b-slot" id="gb-slot-4" data-slot="4"></div>
+              <div class="gb-slot team-b-slot" id="gb-slot-5" data-slot="5"></div>
+              <div class="gb-slot team-b-slot" id="gb-slot-6" data-slot="6"></div>
+              <div class="gb-slot team-b-slot" id="gb-slot-7" data-slot="7"></div>
+            </div>
+          </div>
+
+          <!-- SIDEBAR: Mobile Stats & Itens -->
+          <aside class="gb-room-sidebar">
+            <div class="gb-side-card gb-mobile-info">
+              <div class="gb-card-title" id="gb-side-mob-name">Armor</div>
+              <div class="gb-side-canvas-box">
+                <canvas id="gb-side-canvas" width="130" height="75"></canvas>
+              </div>
+              <div class="gb-stat-list">
+                <div class="gb-stat-row">
+                  <span class="gb-stat-lbl">⚔️ Ataque</span>
+                  <div class="gb-stat-bar"><div class="gb-stat-fill" id="stat-atk"></div></div>
+                </div>
+                <div class="gb-stat-row">
+                  <span class="gb-stat-lbl">🛡️ Defesa</span>
+                  <div class="gb-stat-bar"><div class="gb-stat-fill" id="stat-def"></div></div>
+                </div>
+                <div class="gb-stat-row">
+                  <span class="gb-stat-lbl">❤️ Vida</span>
+                  <div class="gb-stat-bar"><div class="gb-stat-fill" id="stat-hp"></div></div>
+                </div>
+                <div class="gb-stat-row">
+                  <span class="gb-stat-lbl">⏳ Delay</span>
+                  <div class="gb-stat-bar"><div class="gb-stat-fill" id="stat-spd"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="gb-side-card gb-items-equip">
+              <div class="gb-card-title">Itens Equipados</div>
+              <div class="gb-equipped-row" id="gb-equipped-items">
+                <div class="item-slot" data-slot="0" title="Item 1"></div>
+                <div class="item-slot" data-slot="1" title="Item 1"></div>
+                <div class="item-slot" data-slot="2" title="Item 1"></div>
+                <div class="item-slot item2-slot" data-slot="3" title="Item 2 (Especial)"></div>
+              </div>
+
+              <div class="gb-card-subtitle">Itens Básicos (Item 1)</div>
+              <div class="palette-grid gb-pgrid">
+                <div class="item-btn" data-item="dual" title="Dual: Atira 2x. Atraso médio.">Dual</div>
+                <div class="item-btn" data-item="dualplus" title="Dual+: Atira 2x seguidas. Atraso alto.">Dual+</div>
+                <div class="item-btn" data-item="teleport" title="Teleport: Muda sua posição.">TP</div>
+                <div class="item-btn" data-item="cure" title="Cure: Restaura HP e passa a vez.">Cure</div>
+              </div>
+
+              <div class="gb-card-subtitle">Item Especial (Item 2)</div>
+              <div class="palette-grid gb-pgrid">
+                <div class="item-btn i2" data-item="nuclear" title="Nuclear: Cratera gigante, atração.">Nuke</div>
+                <div class="item-btn i2" data-item="napalm" title="Napalm: Fogo no chão, reduz mobilidade, dano por turno.">Napalm</div>
+                <div class="item-btn i2" data-item="superdual" title="Super Dual: Atira duas vezes. Combina com Dual/SS.">S.Dual</div>
+                <div class="item-btn i2" data-item="onda" title="Onda: Empurra tanques na horizontal sem dar dano.">Onda</div>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <!-- Rodapé da Sala: Chat GunBound -->
+        <footer class="gb-room-footer">
+          <div class="gb-chat-container">
+            <div class="chat-log gb-room-chat-log" id="lobby-chat"></div>
+            <form class="chat-input-row" id="lobby-form">
+              <input type="text" id="lobby-input" placeholder="Digite uma mensagem na sala..." autocomplete="off">
+              <button type="submit" class="btn primary small">Enviar</button>
+            </form>
+          </div>
+        </footer>
+      </div>
+    </section>
+
+    <!-- ================= MODAL DE SELEÇÃO DE MOBILE (F3) ================= -->
+    <section class="screen overlay" id="scr-mobile-modal">
+      <div class="panel wide gb-mobile-modal-panel">
+        <div class="gb-modal-top">
+          <h2 class="gb-modal-title">SELEÇÃO DE MOBILES</h2>
+          <button class="btn ghost small gb-modal-x" id="gb-modal-x" title="Fechar">✕</button>
+        </div>
+        <div class="gb-cat-grid" id="gb-modal-cards"></div>
+        <div class="gb-modal-bottom-bar">
+          <button class="btn accent gb-btn-rnd" id="gb-modal-random">🎲 Aleatório (Random)</button>
+          <button class="btn primary" id="gb-modal-close">Confirmar Escolha</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= AJUDA ================= -->
+    <section class="screen" id="scr-help">
+      <div class="panel">
+        <h2>Como jogar</h2>
+        <ul class="help-list">
+          <li><b>◀ ▶</b> movem o mobile (gasta combustível).</li>
+          <li><b>▲ ▼</b> ajustam o ângulo do canhão.</li>
+          <li><b>Segure FIRE</b> para carregar a força e <b>solte</b> para atirar. O traço branco mostra a força do último tiro.</li>
+          <li>Fique de olho no <b>vento</b> no topo da tela.</li>
+          <li><b>1 / 2 / SS</b> escolhem o tiro. O SS carrega conforme você causa dano.</li>
+          <li>Destrua o chão embaixo do inimigo: cair do mapa é morte instantânea!</li>
+          <li>Arraste o campo para olhar ao redor. ◎ recentraliza.</li>
+          <li>No PC: setas, espaço, teclas 1, 2, 3.</li>
+        </ul>
+        <div class="row-buttons"><button class="btn primary" id="help-back">Entendi</button></div>
+      </div>
+    </section>
+
+    <!-- ================= OVERLAYS ================= -->
+    <section class="screen overlay" id="scr-pass">
+      <div class="panel center">
+        <h2 id="pass-title">Vez do Jogador 2</h2>
+        <p class="muted">Passe o celular e toque para continuar</p>
+        <button class="btn primary" id="pass-ok">Estou pronto!</button>
+      </div>
+    </section>
+
+    <section class="screen overlay" id="scr-pause">
+      <div class="panel center">
+        <h2>Pausado</h2>
+        <div class="menu-buttons">
+          <button class="btn primary" id="pause-resume">Continuar</button>
+          <button class="btn ghost" id="pause-quit">Sair para o menu</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen overlay" id="scr-result">
+      <div class="panel center">
+        <h2 class="result-title" id="res-title">Vitória!</h2>
+        <p class="muted" id="res-sub"></p>
+        <div class="menu-buttons">
+          <button class="btn primary" id="res-again">Revanche</button>
+          <button class="btn ghost" id="res-menu">Menu</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="rotate-hint" aria-hidden="true">
+      <div class="phone-icon"></div>
+      <p>Gire o celular para jogar</p>
+    </div>
+  </main>
+
+  <script src="js/peerjs.min.js?v=20261008b" defer></script>
+  <script src="js/util.js?v=20261008b" defer></script>
+  <script src="js/items.js?v=20261008b" defer></script>
+  <script src="js/terrain.js?v=20261008b" defer></script>
+  <script src="js/mobiles.js?v=20261008b" defer></script>
+  <script src="js/tank.js?v=20261008b" defer></script>
+  <script src="js/projectile.js?v=20261008b" defer></script>
+  <script src="js/ai.js?v=20261008b" defer></script>
+  <script src="js/net.js?v=20261008b" defer></script>
+  <script src="js/input.js?v=20261008b" defer></script>
+  <script src="js/game.js?v=20261008b" defer></script>
+  <script src="js/main.js?v=20261008b" defer></script>
+</body>
+</html>

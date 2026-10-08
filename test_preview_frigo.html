@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Frigo Mobile Preview</title>
+  <style>
+    body { background: #1a1e29; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+    canvas { background: #262c3d; border: 2px solid #3d4663; border-radius: 8px; margin: 10px; }
+    .container { display: flex; gap: 20px; align-items: center; }
+    img { border: 2px solid #3d4663; border-radius: 8px; height: 260px; }
+  </style>
+</head>
+<body>
+  <h2>Novo Visual do Frigo (Render vs Imagem de Referência)</h2>
+  <div class="container">
+    <img src="img/frigo_ref.png" alt="Frigo Reference">
+    <canvas id="c" width="550" height="260"></canvas>
+  </div>
+  <script src="js/util.js"></script>
+  <script>
+    function outline(ctx, w = 1.6) {
+      ctx.strokeStyle = '#142230';
+      ctx.lineWidth = w;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+    function rr(ctx, x, y, w, h, r = 2) {
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h);
+    }
+
+    function drawFrigo(ctx, angle, team) {
+      const cIceBase = '#7bb8e8';    // Azul celeste base da armadura
+      const cIceLight = '#b2e2ff';   // Reflexo e topo iluminado das curvas
+      const cIceMid = '#5fa8df';     // Meio tom
+      const cIceDark = '#3d82bb';    // Sombra inferior da blindagem
+      const cLine = '#142230';       // Linhas pretas de contorno cartoon
+      const cDarkMetal = '#2b3642';  // Metal cinza escuro (esteira, canhão)
+      const cSeatBlue = '#174878';   // Estofamento azul marinho
+      const cSeatLight = '#2665a3';
+
+      // 1. Pata Dianteira de Fundo (Perna direita/fundo - abaixo da cabeça)
+      ctx.beginPath();
+      ctx.moveTo(13, -11);
+      ctx.lineTo(19, -11);
+      ctx.lineTo(21, -6);
+      ctx.lineTo(15, -6);
+      ctx.closePath();
+      ctx.fillStyle = cIceDark; ctx.fill(); outline(ctx);
+
+      // Pata / punho apoiado no chão (ao fundo)
+      ctx.beginPath();
+      rr(ctx, 14, -5.5, 8.5, 5.5, 2);
+      ctx.fillStyle = cIceMid; ctx.fill(); outline(ctx);
+      // Sola escura
+      rr(ctx, 14.5, -1.5, 7.5, 1.5, 0.5);
+      ctx.fillStyle = '#1c242c'; ctx.fill();
+
+      // 2. Chassi inferior e grelha de refrigeração (barriga entre esteira e perna)
+      ctx.beginPath();
+      ctx.moveTo(-6, -7);
+      ctx.quadraticCurveTo(2, -4, 10, -7);
+      ctx.lineTo(10, -11);
+      ctx.lineTo(-6, -11);
+      ctx.closePath();
+      ctx.fillStyle = '#222b35'; ctx.fill(); outline(ctx);
+      // Aletas de ventilação verticais
+      ctx.strokeStyle = '#151c24'; ctx.lineWidth = 1.2;
+      for (let vx = -3; vx <= 7; vx += 2.2) {
+        ctx.beginPath(); ctx.moveTo(vx, -9.5); ctx.lineTo(vx, -5.5); ctx.stroke();
+      }
+
+      // 3. Esteira Traseira (Lagarta / Treads)
+      rr(ctx, -20.5, -6.5, 16.5, 6.5, 3.2);
+      ctx.fillStyle = '#1c222a'; ctx.fill(); outline(ctx);
+      // Dentes inferiores da esteira tocando o chão
+      ctx.fillStyle = '#12171d';
+      for (let tx = -19; tx <= -6; tx += 2.5) {
+        ctx.fillRect(tx, -1.2, 1.4, 1.2);
+      }
+
+      // Rodas de rolamento internas (2 rodas cinzas)
+      [-16, -9.5].forEach(wx => {
+        ctx.beginPath();
+        ctx.arc(wx, -3.2, 2.6, 0, Math.PI * 2);
+        ctx.fillStyle = '#455364'; ctx.fill();
+        ctx.beginPath();
+        ctx.arc(wx, -3.2, 1.3, 0, Math.PI * 2);
+        ctx.fillStyle = '#1c222a'; ctx.fill();
+      });
+
+      // Blindagem / Para-lama da esteira (trapezoidal angular com chanfros)
+      ctx.beginPath();
+      ctx.moveTo(-21, -6);
+      ctx.lineTo(-19.5, -14);
+      ctx.lineTo(-6.5, -14);
+      ctx.lineTo(-4.5, -6);
+      ctx.closePath();
+      const gFender = ctx.createLinearGradient(0, -14, 0, -6);
+      gFender.addColorStop(0, cIceLight);
+      gFender.addColorStop(0.3, cIceBase);
+      gFender.addColorStop(1, cIceDark);
+      ctx.fillStyle = gFender; ctx.fill(); outline(ctx);
+
+      // Linha de divisão central do para-lama
+      ctx.beginPath();
+      ctx.moveTo(-13, -14); ctx.lineTo(-13, -6);
+      ctx.strokeStyle = cLine; ctx.lineWidth = 1.4; ctx.stroke();
+
+      // Painel chanfrado dianteiro do para-lama
+      ctx.beginPath();
+      ctx.moveTo(-13, -13);
+      ctx.lineTo(-7.5, -13);
+      ctx.lineTo(-6, -7);
+      ctx.lineTo(-13, -7);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.18)'; ctx.fill();
+
+      // Rebites do para-lama
+      [[-17.5, -11.5], [-17.5, -8], [-8.5, -11.5], [-8.5, -8]].forEach(([rx, ry]) => {
+        ctx.beginPath(); ctx.arc(rx, ry, 0.85, 0, Math.PI * 2);
+        ctx.fillStyle = cLine; ctx.fill();
+        ctx.beginPath(); ctx.arc(rx - 0.2, ry - 0.2, 0.35, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff'; ctx.fill();
+      });
+
+      // Cabo corrugado saindo da esteira para o corpo
+      ctx.beginPath();
+      ctx.moveTo(-7, -10);
+      ctx.quadraticCurveTo(-4, -8, -2, -10);
+      ctx.strokeStyle = '#12161c'; ctx.lineWidth = 2.2; ctx.stroke();
+
+      // 4. Cockpit / Assento do Piloto na traseira
+      rr(ctx, -19, -15, 12, 5, 1.5);
+      ctx.fillStyle = cIceMid; ctx.fill(); outline(ctx);
+      ctx.fillStyle = cLine;
+      ctx.beginPath(); ctx.arc(-17, -12.5, 0.75, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(-9, -12.5, 0.75, 0, Math.PI * 2); ctx.fill();
+
+      // Encosto e assento almofadado azul escuro
+      ctx.beginPath();
+      ctx.moveTo(-17, -24.5);
+      ctx.lineTo(-11, -24.5);
+      ctx.lineTo(-10.5, -15.5);
+      ctx.lineTo(-17, -15.5);
+      ctx.closePath();
+      const gSeat = ctx.createLinearGradient(0, -25, 0, -15);
+      gSeat.addColorStop(0, cSeatLight);
+      gSeat.addColorStop(1, cSeatBlue);
+      ctx.fillStyle = gSeat; ctx.fill(); outline(ctx);
+      // Gomos verticais do estofamento
+      ctx.strokeStyle = '#0e2b47'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(-14, -24); ctx.lineTo(-14, -16); ctx.stroke();
+
+      // Moldura externa cinza escura / Santo-antônio e apoio de braço
+      ctx.beginPath();
+      ctx.moveTo(-19, -15);
+      ctx.lineTo(-19, -24);
+      ctx.arcTo(-19, -27, -15, -27, 3.5);
+      ctx.lineTo(-11, -27);
+      ctx.arcTo(-8, -27, -8, -23, 3.5);
+      ctx.lineTo(-8, -19);
+      ctx.quadraticCurveTo(-7, -15, -2, -15);
+      ctx.lineTo(-2, -12);
+      ctx.quadraticCurveTo(-7, -12, -9, -15);
+      ctx.lineTo(-9, -23);
+      ctx.lineTo(-16.5, -23);
+      ctx.lineTo(-16.5, -15);
+      ctx.closePath();
+      ctx.fillStyle = cDarkMetal; ctx.fill(); outline(ctx);
+      // Parafuso na moldura
+      ctx.fillStyle = '#67788a';
+      ctx.beginPath(); ctx.arc(-17.5, -20, 0.8, 0, Math.PI * 2); ctx.fill();
+
+      // 5. Tronco / Corcova do Gorila (corpo central musculoso)
+      ctx.beginPath();
+      ctx.moveTo(-8, -15);
+      ctx.quadraticCurveTo(-6, -22, 2, -22.5);
+      ctx.lineTo(6, -22.5);
+      ctx.quadraticCurveTo(11, -22.5, 12.5, -16);
+      ctx.lineTo(12.5, -9);
+      ctx.lineTo(-8, -9);
+      ctx.closePath();
+      const gBody = ctx.createRadialGradient(2, -19, 2, 2, -17, 15);
+      gBody.addColorStop(0, cIceLight);
+      gBody.addColorStop(0.5, cIceBase);
+      gBody.addColorStop(1, cIceDark);
+      ctx.fillStyle = gBody; ctx.fill(); outline(ctx);
+
+      // Linha de divisão e rebites nas costas do gorila
+      ctx.beginPath();
+      ctx.moveTo(1, -22.5); ctx.lineTo(1, -12);
+      ctx.strokeStyle = cLine; ctx.lineWidth = 1.2; ctx.stroke();
+      [[-4, -19], [-1, -21], [3, -21], [7, -19]].forEach(([rx, ry]) => {
+        ctx.beginPath(); ctx.arc(rx, ry, 0.8, 0, Math.PI * 2);
+        ctx.fillStyle = cLine; ctx.fill();
+      });
+
+      // 6. Cabeça Robótica Marcante do Gorila (frente)
+      ctx.beginPath();
+      ctx.moveTo(8.5, -17.5);
+      ctx.lineTo(16, -17.5);
+      ctx.quadraticCurveTo(20, -17.5, 20.5, -14);
+      ctx.lineTo(19.5, -8.5);
+      ctx.lineTo(9.5, -8.5);
+      ctx.closePath();
+      const gHead = ctx.createLinearGradient(0, -18, 0, -8);
+      gHead.addColorStop(0, cIceLight);
+      gHead.addColorStop(0.4, cIceBase);
+      gHead.addColorStop(1, cIceDark);
+      ctx.fillStyle = gHead; ctx.fill(); outline(ctx);
+
+      // Queixo / mandíbula inferior chanfrada
+      ctx.beginPath();
+      ctx.moveTo(10, -8.5);
+      ctx.lineTo(19, -8.5);
+      ctx.lineTo(17.5, -5.5);
+      ctx.lineTo(11, -5.5);
+      ctx.closePath();
+      ctx.fillStyle = cIceMid; ctx.fill(); outline(ctx);
+
+      // Chanfro e placa frontal iluminada da cabeça
+      ctx.beginPath();
+      ctx.moveTo(13, -16.5);
+      ctx.lineTo(18.5, -16.5);
+      ctx.lineTo(18, -10);
+      ctx.lineTo(13, -10);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.25)'; ctx.fill();
+      // Rebite frontal
+      ctx.fillStyle = cLine;
+      ctx.beginPath(); ctx.arc(15.5, -13, 0.8, 0, Math.PI * 2); ctx.fill();
+
+      // Conector lateral de metal escuro na cabeça
+      ctx.beginPath();
+      ctx.arc(10.5, -12, 1.8, 0, Math.PI * 2);
+      ctx.fillStyle = cDarkMetal; ctx.fill(); outline(ctx);
+
+      // Cabo preto corrugado característico conectando a cabeça ao peito!
+      ctx.beginPath();
+      ctx.moveTo(10, -12);
+      ctx.bezierCurveTo(7, -10, 6, -14, 3, -13);
+      ctx.strokeStyle = '#12161c'; ctx.lineWidth = 2.2; ctx.stroke();
+
+      // 7. Pata Dianteira de Primeiro Plano (Pata esquerda - O braço de gorila musculoso!)
+      // Ombro / Junta circular grande (deltoide)
+      ctx.beginPath();
+      ctx.arc(0, -13, 6.2, 0, Math.PI * 2);
+      const gShoulder = ctx.createRadialGradient(-1.5, -14.5, 1, 0, -13, 6.2);
+      gShoulder.addColorStop(0, cIceLight);
+      gShoulder.addColorStop(0.7, cIceBase);
+      gShoulder.addColorStop(1, cIceDark);
+      ctx.fillStyle = gShoulder; ctx.fill(); outline(ctx);
+
+      // Disco de articulação metálico central com fenda
+      ctx.beginPath(); ctx.arc(0, -13, 3.2, 0, Math.PI * 2);
+      ctx.fillStyle = '#404e5c'; ctx.fill(); outline(ctx);
+      ctx.beginPath(); ctx.arc(0, -13, 1.6, 0, Math.PI * 2);
+      ctx.fillStyle = '#1c242c'; ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-2, -13); ctx.lineTo(2, -13);
+      ctx.strokeStyle = '#6e8296'; ctx.lineWidth = 1; ctx.stroke();
+
+      // Cotovelo / Cabo preto saindo de trás do ombro
+      ctx.beginPath();
+      ctx.moveTo(-1, -8);
+      ctx.quadraticCurveTo(-2, -5, -4, -6);
+      ctx.strokeStyle = '#12161c'; ctx.lineWidth = 2.0; ctx.stroke();
+
+      // Braço / Antebraço robusto chanfrado (segmento médio)
+      ctx.beginPath();
+      ctx.moveTo(1.5, -10);
+      ctx.lineTo(7.5, -8);
+      ctx.lineTo(6.5, -3);
+      ctx.lineTo(1.5, -3.5);
+      ctx.closePath();
+      ctx.fillStyle = cIceBase; ctx.fill(); outline(ctx);
+      // Parafusos do antebraço
+      ctx.fillStyle = cLine;
+      ctx.beginPath(); ctx.arc(3, -6.5, 0.75, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(5.8, -5.5, 0.75, 0, Math.PI * 2); ctx.fill();
+
+      // Punho / Pata assentada no solo (nós dos dedos no chão!)
+      ctx.beginPath();
+      rr(ctx, 1.5, -3.5, 8.5, 3.5, 1.2);
+      const gHand = ctx.createLinearGradient(0, -3.5, 0, 0);
+      gHand.addColorStop(0, cIceLight);
+      gHand.addColorStop(1, cIceDark);
+      ctx.fillStyle = gHand; ctx.fill(); outline(ctx);
+      // Sola / apoio de borracha
+      rr(ctx, 2, -1.0, 7.5, 1.0, 0.4);
+      ctx.fillStyle = '#1c242c'; ctx.fill();
+
+      // 8. Berço / Suporte côncavo azul do canhão no dorso (em x = 6, y = -21)
+      ctx.beginPath();
+      ctx.arc(6, -21, 5.2, 0, Math.PI * 2);
+      ctx.fillStyle = cIceDark; ctx.fill(); outline(ctx);
+      // Faixa da cor do time
+      ctx.beginPath();
+      ctx.arc(6, -21, 2.4, 0, Math.PI * 2);
+      ctx.fillStyle = team || '#fff'; ctx.fill();
+
+      // 9. Canhão Lançador (Morteiro Compacto e Proporcional!)
+      ctx.save();
+      ctx.translate(6, -21);
+      ctx.rotate(-angle * (Math.PI / 180));
+
+      // Manga / Meia-concha azul de proteção na base do canhão
+      ctx.beginPath();
+      ctx.arc(0, 0, 4.8, Math.PI * 0.5, Math.PI * 1.5);
+      ctx.fillStyle = cIceBase; ctx.fill(); outline(ctx);
+
+      // Culatra traseira escura
+      rr(ctx, -4.5, -4.5, 4.5, 9, 2);
+      ctx.fillStyle = '#1c232a'; ctx.fill(); outline(ctx);
+
+      // Tubo cilíndrico do morteiro (comprimento 16, espessura 9.5)
+      const bLen = 16;
+      const bThick = 9.5;
+      rr(ctx, 0, -bThick / 2, bLen, bThick, 1.5);
+      const gMortar = ctx.createLinearGradient(0, -bThick / 2, 0, bThick / 2);
+      gMortar.addColorStop(0, '#596775');
+      gMortar.addColorStop(0.35, '#3d4752');
+      gMortar.addColorStop(1, '#252d35');
+      ctx.fillStyle = gMortar; ctx.fill(); outline(ctx);
+
+      // Colar reforçado da boca (Muzzle Ring - comprimento 4.5, espessura 12)
+      const ringL = 4.5;
+      const ringT = 12;
+      rr(ctx, bLen - 3.5, -ringT / 2, ringL, ringT, 1.5);
+      const gRing = ctx.createLinearGradient(0, -ringT / 2, 0, ringT / 2);
+      gRing.addColorStop(0, '#424d57');
+      gRing.addColorStop(0.4, '#2e3740');
+      gRing.addColorStop(1, '#1b2229');
+      ctx.fillStyle = gRing; ctx.fill(); outline(ctx);
+
+      // Boca elíptica interna do morteiro
+      ctx.beginPath();
+      ctx.ellipse(bLen + 0.8, 0, 1.5, ringT * 0.38, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#0f1317'; ctx.fill();
+
+      ctx.restore();
+    }
+
+    const c = document.getElementById('c');
+    const ctx = c.getContext('2d');
+
+    // Chão verde de apoio
+    ctx.strokeStyle = '#4caf50';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(20, 200);
+    ctx.lineTo(530, 200);
+    ctx.stroke();
+
+    // Render 1: Ângulo 20°
+    ctx.save();
+    ctx.translate(140, 200);
+    ctx.scale(3.2, 3.2);
+    drawFrigo(ctx, 20, '#00e5ff');
+    ctx.restore();
+
+    // Render 2: Ângulo 55°
+    ctx.save();
+    ctx.translate(380, 200);
+    ctx.scale(3.2, 3.2);
+    drawFrigo(ctx, 55, '#ff3d00');
+    ctx.restore();
+
+    ctx.font = '14px sans-serif';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('Ângulo: 20° (Escala 3.2x)', 60, 235);
+    ctx.fillText('Ângulo: 55° (Escala 3.2x)', 300, 235);
+  </script>
+</body>
+</html>

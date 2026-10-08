@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Preview Kuda e Thor</title>
+  <style>
+    body {
+      background: #181822;
+      color: #fff;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    .row {
+      display: flex;
+      gap: 30px;
+      align-items: center;
+      margin-top: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .box {
+      background: #252535;
+      border: 2px solid #3c3c52;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    canvas {
+      background: #333346;
+      border-radius: 8px;
+    }
+    img {
+      max-width: 280px;
+      max-height: 200px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: #111;
+    }
+    .controls {
+      margin-top: 15px;
+      background: #252535;
+      padding: 12px 24px;
+      border-radius: 10px;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    input[type=range] {
+      width: 220px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Comparação Visual: Kuda & Thor</h1>
+
+  <div class="row">
+    <div class="box">
+      <h3>Referência Kuda</h3>
+      <img src="img/kuda_ref.png" alt="Kuda Ref">
+    </div>
+    <div class="box">
+      <h3>Kuda In-Game (Canvas 2D)</h3>
+      <canvas id="cKuda" width="300" height="220"></canvas>
+    </div>
+  </div>
+
+  <div class="controls">
+    <label>Ângulo Mira Kuda: <span id="deg">15</span>°</label>
+    <input type="range" id="angle" min="-25" max="45" value="15">
+    <label><input type="checkbox" id="facing" checked> Olhando para Frente (facing = 1)</label>
+  </div>
+
+  <div class="row" style="margin-top: 30px;">
+    <div class="box">
+      <h3>Referência Thor</h3>
+      <img src="img/thor_ref.png" alt="Thor Ref">
+    </div>
+    <div class="box">
+      <h3>Thor In-Game (Canvas 2D)</h3>
+      <canvas id="cThor" width="300" height="220"></canvas>
+    </div>
+  </div>
+
+  <div class="controls">
+    <label>Nível do Thor: <span id="lvlSpan">1</span></label>
+    <input type="range" id="lvlRange" min="1" max="6" value="1">
+    <label><input type="checkbox" id="fireFlash"> Disparando (Flash)</label>
+  </div>
+
+  <script src="js/util.js"></script>
+  <script src="js/mobiles.js"></script>
+  <script>
+    const cvsKuda = document.getElementById('cKuda');
+    const ctxK = cvsKuda.getContext('2d');
+    const cvsThor = document.getElementById('cThor');
+    const ctxT = cvsThor.getContext('2d');
+
+    const angleInput = document.getElementById('angle');
+    const degSpan = document.getElementById('deg');
+    const facingCheck = document.getElementById('facing');
+    const lvlRange = document.getElementById('lvlRange');
+    const lvlSpan = document.getElementById('lvlSpan');
+    const fireFlash = document.getElementById('fireFlash');
+
+    let animTime = 0;
+
+    function render() {
+      animTime += 0.02;
+      const ang = parseFloat(angleInput.value);
+      degSpan.textContent = ang;
+      const facing = facingCheck.checked ? 1 : -1;
+
+      // 1. Render Kuda
+      ctxK.clearRect(0, 0, cvsKuda.width, cvsKuda.height);
+      ctxK.save();
+      // Chão
+      ctxK.fillStyle = '#444';
+      ctxK.fillRect(0, 160, cvsKuda.width, 4);
+
+      ctxK.translate(150, 160);
+      ctxK.scale(facing * 2.3, 2.3);
+
+      GB.drawMobile(ctxK, 'kuda', ang, '#3ca2fc');
+      ctxK.restore();
+
+      // 2. Render Thor
+      ctxT.clearRect(0, 0, cvsThor.width, cvsThor.height);
+      const lvl = parseInt(lvlRange.value);
+      lvlSpan.textContent = lvl;
+
+      ctxT.save();
+      ctxT.translate(150, 110 + Math.sin(animTime * 2.5) * 4);
+      ctxT.scale(1.8, 1.8);
+      if (GB.drawThor) {
+        GB.drawThor(ctxT, { level: lvl, flashTimer: fireFlash.checked ? 0.3 : 0 }, animTime);
+      }
+      ctxT.restore();
+
+      requestAnimationFrame(render);
+    }
+
+    angleInput.oninput = () => degSpan.textContent = angleInput.value;
+    lvlRange.oninput = () => lvlSpan.textContent = lvlRange.value;
+
+    render();
+  </script>
+</body>
+</html>
