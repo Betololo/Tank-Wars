@@ -164,6 +164,33 @@
         this.updateRoomLobbyUI();
       });
 
+      // Efeitos de Mapa (Force, Tornado, Black, Thunder)
+      [
+        { id: 'gb-w-force', key: 'force', name: 'Force' },
+        { id: 'gb-w-tornado', key: 'tornado', name: 'Tornado' },
+        { id: 'gb-w-black', key: 'black', name: 'Black' },
+        { id: 'gb-w-thunder', key: 'thunder', name: 'Thunder' }
+      ].forEach(eff => {
+        const el = $(eff.id);
+        if (el) {
+          el.addEventListener('click', () => {
+            if (!GB.Net.isHost && this.setup.mode === 'online') {
+              this.toast('Apenas o host da sala pode alterar os efeitos climáticos.');
+              return;
+            }
+            if (!this.room.weather) {
+              this.room.weather = { force: true, tornado: true, black: true, thunder: true };
+            }
+            this.room.weather[eff.key] = !this.room.weather[eff.key];
+            GB.Sfx.click();
+            this.updateRoomLobbyUI();
+            if (this.setup.mode === 'online' && GB.Net.isHost) {
+              GB.Net.broadcast({ t: 'room_state', room: this.room });
+            }
+          });
+        }
+      });
+
       // Paleta de Itens
       document.querySelectorAll('.item-btn').forEach(b => {
         b.innerHTML = GB.itemLabelHTML(b.dataset.item);
@@ -356,6 +383,7 @@
         format: '1v1',
         map: 'large',
         mode: 'single_life',
+        weather: { force: true, tornado: true, black: true, thunder: true },
         slots: Array(8).fill(null)
       };
 
@@ -405,6 +433,7 @@
         format: '4v4',
         map: 'large',
         mode: 'single_life',
+        weather: { force: true, tornado: true, black: true, thunder: true },
         slots: Array(8).fill(null)
       };
 
@@ -844,6 +873,23 @@
         // Sorteio Cara ou Coroa: 0 = Time A (Vermelho), 1 = Time B (Azul)
         const startingTeam = Math.random() < 0.5 ? 0 : 1;
 
+        // Gera a sequência de 24 efeitos climáticos de mapa sorteados
+        const enabledWeather = [];
+        const w = this.room.weather || { force: true, tornado: true, black: true, thunder: true };
+        if (w.force) enabledWeather.push('force');
+        if (w.tornado) enabledWeather.push('tornado');
+        if (w.black) enabledWeather.push('black');
+        if (w.thunder) enabledWeather.push('thunder');
+
+        const weatherSequence = [];
+        if (enabledWeather.length > 0) {
+          for (let i = 0; i < 24; i++) {
+            const type = enabledWeather[Math.floor(Math.random() * enabledWeather.length)];
+            const x = Math.round(250 + Math.random() * (mapW - 500));
+            weatherSequence.push({ type, x });
+          }
+        }
+
         const playersPayload = activePlayers.map(p => ({
           slotIdx: p.slotIdx,
           id: p.id,
@@ -858,7 +904,8 @@
           t: 'start_match',
           seed, wind, map, thorX, startingTeam,
           modeType: this.room.mode || 'single_life',
-          players: playersPayload
+          players: playersPayload,
+          weatherSequence
         };
 
         GB.Net.send(matchConfig);
@@ -872,6 +919,23 @@
         const mapW = (GB.MAPS[map] || GB.MAPS.large).w;
         const thorX = Math.round(100 + Math.random() * (mapW - 200));
         const startingTeam = Math.random() < 0.5 ? 0 : 1;
+
+        // Gera a sequência de 24 efeitos climáticos de mapa sorteados
+        const enabledWeather = [];
+        const w = this.room.weather || { force: true, tornado: true, black: true, thunder: true };
+        if (w.force) enabledWeather.push('force');
+        if (w.tornado) enabledWeather.push('tornado');
+        if (w.black) enabledWeather.push('black');
+        if (w.thunder) enabledWeather.push('thunder');
+
+        const weatherSequence = [];
+        if (enabledWeather.length > 0) {
+          for (let i = 0; i < 24; i++) {
+            const type = enabledWeather[Math.floor(Math.random() * enabledWeather.length)];
+            const x = Math.round(250 + Math.random() * (mapW - 500));
+            weatherSequence.push({ type, x });
+          }
+        }
 
         const playersPayload = activePlayers.map(p => ({
           slotIdx: p.slotIdx,
@@ -887,6 +951,7 @@
           seed, wind, map, thorX, startingTeam,
           modeType: this.room.mode || 'single_life',
           players: playersPayload,
+          weatherSequence,
           isHost: true
         });
       }
@@ -927,7 +992,8 @@
         map: cfg.map,
         thorX: cfg.thorX,
         startingTeam: cfg.startingTeam,
-        players: gamePlayers
+        players: gamePlayers,
+        weatherSequence: cfg.weatherSequence || []
       });
     },
 
@@ -1006,6 +1072,12 @@
 
       const hasKuda = this.room.slots.some(s => s && s.mobile === 'kuda');
       $('gb-weather-thor').classList.toggle('active', hasKuda);
+
+      const w = this.room.weather || { force: true, tornado: true, black: true, thunder: true };
+      $('gb-w-force')?.classList.toggle('active', !!w.force);
+      $('gb-w-tornado')?.classList.toggle('active', !!w.tornado);
+      $('gb-w-black')?.classList.toggle('active', !!w.black);
+      $('gb-w-thunder')?.classList.toggle('active', !!w.thunder);
 
       // Botão START / READY Central
       const startBtn = $('lobby-start');

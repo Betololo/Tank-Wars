@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20261008i">
+  <link rel="stylesheet" href="style.css?v=20261008j">
 </head>
 <body>
   <main id="app">
@@ -40,6 +40,17 @@
             <div class="wind-history hidden" id="wind-history" title="Último vento">
               <span class="wind-arrow" id="wind-prev-arrow">➤</span>
               <span class="wind-val" id="wind-prev-val">0</span>
+            </div>
+          <div class="weather-hud" id="weather-hud" title="Ciclo de Efeitos Climáticos">
+            <div class="wh-active wh-force" id="wh-active" title="Efeito Ativo">
+              <span class="wh-badge">ATIVO</span>
+              <span class="wh-icon" id="wh-active-icon">☀️</span>
+              <span class="wh-name" id="wh-active-name">FORCE</span>
+              <span class="wh-turns" id="wh-active-turns" title="Turnos restantes até mudar o efeito">4T</span>
+            </div>
+            <div class="wh-next-box" title="Próximos 4 efeitos da partida">
+              <span class="wh-arrow">➔</span>
+              <div class="wh-next-list" id="wh-next-list"></div>
             </div>
           </div>
           <div class="turn-info">
@@ -171,12 +182,12 @@
       <div class="gb-room-window">
         <!-- Topo da Sala: Clima, Título, Código, Formato e Mapa -->
         <header class="gb-room-topbar">
-          <div class="gb-room-weather">
-            <span class="gb-w-icon" title="Sol">☀️</span>
-            <span class="gb-w-icon" title="Vento">🌀</span>
-            <span class="gb-w-icon" title="Lua">🌙</span>
-            <span class="gb-w-icon" title="Raio Thor">⚡</span>
-            <span class="gb-w-icon active" title="Thor Satélite" id="gb-weather-thor">🛰️</span>
+          <div class="gb-room-weather" id="gb-room-weather">
+            <span class="gb-w-icon active" id="gb-w-force" title="Force (Sol): +50% de dano nos tiros">☀️</span>
+            <span class="gb-w-icon active" id="gb-w-tornado" title="Tornado (Vento): Desvia e impulsiona projéteis">🌀</span>
+            <span class="gb-w-icon active" id="gb-w-black" title="Black (Lua): -50% de dano nos tiros">🌙</span>
+            <span class="gb-w-icon active" id="gb-w-thunder" title="Thunder (Raio): Dispara raios do céu no alvo">⚡</span>
+            <span class="gb-w-icon active" title="Thor Satélite (Ativado quando há Kuda na partida)" id="gb-weather-thor">🛰️</span>
           </div>
 
           <div class="gb-room-meta">
@@ -453,17 +464,17 @@
     </div>
   </main>
 
-  <script src="js/peerjs.min.js?v=20261008i" defer></script>
-  <script src="js/util.js?v=20261008i" defer></script>
-  <script src="js/items.js?v=20261008i" defer></script>
-  <script src="js/terrain.js?v=20261008i" defer></script>
-  <script src="js/mobiles.js?v=20261008i" defer></script>
-  <script src="js/tank.js?v=20261008i" defer></script>
-  <script src="js/projectile.js?v=20261008i" defer></script>
-  <script src="js/ai.js?v=20261008i" defer></script>
-  <script src="js/net.js?v=20261008i" defer></script>
-  <script src="js/input.js?v=20261008i" defer></script>
-  <script src="js/game.js?v=20261008i" defer></script>
-  <script src="js/main.js?v=20261008i" defer></script>
+  <script src="js/peerjs.min.js?v=20261008j" defer></script>
+  <script src="js/util.js?v=20261008j" defer></script>
+  <script src="js/items.js?v=20261008j" defer></script>
+  <script src="js/terrain.js?v=20261008j" defer></script>
+  <script src="js/mobiles.js?v=20261008j" defer></script>
+  <script src="js/tank.js?v=20261008j" defer></script>
+  <script src="js/projectile.js?v=20261008j" defer></script>
+  <script src="js/ai.js?v=20261008j" defer></script>
+  <script src="js/net.js?v=20261008j" defer></script>
+  <script src="js/input.js?v=20261008j" defer></script>
+  <script src="js/game.js?v=20261008j" defer></script>
+  <script src="js/main.js?v=20261008j" defer></script>
 </body>
 </html>

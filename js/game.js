@@ -211,6 +211,15 @@
       this.pendingShocks = [];
       this.ssPushes = [];
 
+      // Sistema de Efeitos Climáticos de Mapa (Force, Tornado, Black, Thunder)
+      this.weatherSequence = (this.cfg && this.cfg.weatherSequence) ? [...this.cfg.weatherSequence] : [];
+      this.weatherIndex = 0;
+      this.weatherTurnsLeft = 4;
+      this.activeWeather = this.weatherSequence.length > 0 ? this.weatherSequence[0] : null;
+      this.turnNumber = 0;
+      this.thunderStrikes = [];
+      this.updateWeatherHUD();
+
       this.thor = null;
       const hasKuda = (this.cfg && this.cfg.mobiles && this.cfg.mobiles.includes('kuda')) ||
                       this.tanks.some(t => t.mobileId === 'kuda' || (t.mobile && t.mobile.id === 'kuda'));
@@ -475,6 +484,27 @@
         t.targetAngle = t.angle;
       }
       GB.Input.releaseAll();
+
+      // Atualiza Ciclo de Efeitos Climáticos do Mapa (a cada 4 turnos muda o efeito)
+      if (this.weatherSequence && this.weatherSequence.length > 0) {
+        this.turnNumber = (this.turnNumber || 0) + 1;
+        if (this.turnNumber > 1) {
+          this.weatherTurnsLeft--;
+          if (this.weatherTurnsLeft <= 0) {
+            this.weatherIndex++;
+            this.weatherTurnsLeft = 4;
+            if (this.weatherIndex >= this.weatherSequence.length) {
+              this.weatherIndex = 0;
+            }
+            this.activeWeather = this.weatherSequence[this.weatherIndex];
+            const wNames = { force: 'FORCE ☀️ (+50% DANO)', tornado: 'TORNADO 🌀 (DESVIO)', black: 'BLACK 🌙 (-50% DANO)', thunder: 'THUNDER ⚡ (RAIOS)' };
+            this.toast(`CLIMA: ${wNames[this.activeWeather.type] || this.activeWeather.type.toUpperCase()}!`);
+            GB.Sfx.power && GB.Sfx.power();
+          }
+        }
+        this.updateWeatherHUD();
+      }
+
       if (this.mode === 'local') {
         this.phase = 'pass';
         this.ui.showPass(t.name, t.color, () => { this.phase = 'aim'; this.toast('Sua vez!'); GB.Sfx.turn(); });
@@ -868,6 +898,12 @@
          this.lastImpact = { x, y };
          GB.Sfx.boom(r / 40);
 
+         // Efeito Thunder: cai raios do céu imediatamente no local do impacto!
+         if (p.hasThunder && !p.thunderTriggered) {
+            p.thunderTriggered = true;
+            this.triggerThunderStrike(x, y);
+         }
+
          if (shot.isDJ_T1) {
             if (!this.pendingShocks) this.pendingShocks = [];
             this.pendingShocks.push({ x, y, r: r * 2, time: 0.5, owner: p.owner, dmg: shot.dmg });
@@ -930,6 +966,7 @@
         
         let finalDmg = baseDmg * dmgMultiplier;
         if (p.shot.isDJ_T1) finalDmg *= 0.3; // Dano simples no impacto, o resto é no choque
+        if (p.damageMult) finalDmg *= p.damageMult; // Bônus Force (+50%) ou Redução Black (-50%)
         
         // Aplica debuff de ataque de quem atirou
         if (p.owner && p.owner.atkDebuff) {
@@ -1149,7 +1186,9 @@
             x: d.x, y: d.y, radius: d.radius, turnsLeft: d.turnsLeft,
             ownerIdx: (d.owner && d.owner.playerIdx != null) ? d.owner.playerIdx : 0
           })),
-          thor: this.thor || null
+          thor: this.thor || null,
+          weatherIndex: this.weatherIndex,
+          weatherTurnsLeft: this.weatherTurnsLeft
         });
       }
       if (over) return this.finish(winner);
@@ -1220,6 +1259,12 @@
         owner: (md.ownerIdx != null && this.tanks[md.ownerIdx]) ? this.tanks[md.ownerIdx] : null
       }));
       if (m.thor) this.thor = m.thor;
+      if (m.weatherIndex !== undefined) {
+        this.weatherIndex = m.weatherIndex;
+        this.weatherTurnsLeft = m.weatherTurnsLeft;
+        this.activeWeather = (this.weatherSequence && this.weatherSequence[this.weatherIndex]) || null;
+        this.updateWeatherHUD();
+      }
       
       if (m.over) return this.finish(m.winner);
       this.wind = m.wind;
@@ -1501,6 +1546,10 @@
           this.thor.flashTimer = Math.max(0, this.thor.flashTimer - dt);
         }
       }
+      if (this.thunderStrikes && this.thunderStrikes.length) {
+        for (const st of this.thunderStrikes) st.time -= dt;
+        this.thunderStrikes = this.thunderStrikes.filter(st => st.time > 0);
+      }
       if (this.mode === 'online') {
         this.processNet();
         if (this.phase === 'waitSync') {
@@ -1572,7 +1621,9 @@
            spawnRobots: (p) => this.spawnRobots(p),
            checkLivingEntity: (x, y) => this.checkLivingEntity(x, y),
            hitKudaSS: (p, target) => this.hitKudaSS(p, target),
-           checkKudaLivingTarget: (p) => this.checkKudaLivingTarget(p)
+           checkKudaLivingTarget: (p) => this.checkKudaLivingTarget(p),
+           getWeather: () => this.activeWeather,
+           spawnWeatherFX: (type, x, y) => this.spawnWeatherFX(type, x, y)
         };
         for (const p of this.projectiles) p.step(dt, this.wind, this.terrain, this.tanks, cb);
         this.projectiles = this.projectiles.filter((p) => !p.dead);
@@ -1963,6 +2014,283 @@
          }));
       });
       GB.Sfx.boom(0.9);
+    }
+
+    // ================= EFEITOS CLIMÁTICOS DE MAPA =================
+    triggerThunderStrike(hitX, hitY) {
+      // O raio cai do céu (y = 0) em linha reta para baixo em X = hitX
+      // Interage com o cenário: se houver teto ou cobertura, bate no teto e não atinge quem está embaixo!
+      let strikeY = hitY;
+      for (let y = 0; y <= Math.min(GB.WORLD_H, hitY + 20); y += 3) {
+        if (this.terrain.isSolid(hitX, y)) {
+          strikeY = y;
+          break;
+        }
+        let tankCover = null;
+        for (const t of this.tanks) {
+          if (!t.alive) continue;
+          const c = t.center();
+          if (Math.abs(hitX - c.x) <= t.mobile.hitR && y >= c.y - t.mobile.hitR && y <= c.y + t.mobile.hitR) {
+            tankCover = t;
+            break;
+          }
+        }
+        if (tankCover) {
+          strikeY = y;
+          break;
+        }
+      }
+
+      // Adiciona raio elétrico vertical animado do céu até o ponto de impacto
+      if (!this.thunderStrikes) this.thunderStrikes = [];
+      this.thunderStrikes.push({
+        x: Math.round(hitX),
+        topY: 0,
+        hitY: Math.round(strikeY),
+        time: 0.38,
+        maxTime: 0.38
+      });
+
+      // Efeitos no impacto
+      this.effects.emp(hitX, strikeY, 32);
+      this.effects.text(hitX, strikeY - 26, 'THUNDER! ⚡', '#38bdf8', true);
+      GB.Sfx.boom(0.55);
+
+      // Cava moderadamente o terreno
+      this.terrain.carve(hitX, strikeY, 18);
+
+      // Causa 10 de dano a tanques dentro do raio de impacto
+      for (const t of this.tanks) {
+        if (!t.alive) continue;
+        const c = t.center();
+        if (GB.dist(c.x, c.y, hitX, strikeY) <= t.mobile.hitR + 18) {
+          const dealt = t.damage(10);
+          if (dealt > 0) {
+            this.effects.text(c.x, c.y - 30, `-${dealt} ⚡`, '#38bdf8', false);
+          }
+        }
+      }
+    }
+
+    spawnWeatherFX(type, x, y) {
+      if (type === 'force') {
+        this.effects.text(x, y - 25, 'FORCE! +50%', '#ffd700', true);
+        GB.Sfx.click();
+      } else if (type === 'black') {
+        this.effects.text(x, y - 25, 'BLACK! -50%', '#c084fc', true);
+        GB.Sfx.click();
+      } else if (type === 'thunder') {
+        this.effects.text(x, y - 25, 'THUNDER! ⚡', '#38bdf8', true);
+        this.effects.emp(x, y, 20);
+      } else if (type === 'tornado') {
+        this.effects.text(x, y - 25, 'TORNADO! 🌀', '#7dd3fc', true);
+        GB.Sfx.boom(0.3);
+      }
+    }
+
+    updateWeatherHUD() {
+      const hudEl = $('weather-hud');
+      if (!hudEl) return;
+      if (!this.activeWeather) {
+        hudEl.classList.add('hidden');
+        return;
+      }
+      hudEl.classList.remove('hidden');
+
+      const icons = { force: '☀️', tornado: '🌀', black: '🌙', thunder: '⚡' };
+      const names = { force: 'FORCE', tornado: 'TORNADO', black: 'BLACK', thunder: 'THUNDER' };
+      const curType = this.activeWeather.type;
+
+      const actEl = $('wh-active');
+      if (actEl) {
+        actEl.className = `wh-active wh-${curType}`;
+      }
+      const iconEl = $('wh-active-icon');
+      if (iconEl) iconEl.textContent = icons[curType] || '☀️';
+      const nameEl = $('wh-active-name');
+      if (nameEl) nameEl.textContent = names[curType] || curType.toUpperCase();
+      const turnsEl = $('wh-active-turns');
+      if (turnsEl) turnsEl.textContent = `${this.weatherTurnsLeft}T`;
+
+      // Renderiza os próximos 4 efeitos
+      const nextListEl = $('wh-next-list');
+      if (nextListEl && this.weatherSequence) {
+        const next4 = this.weatherSequence.slice(this.weatherIndex + 1, this.weatherIndex + 5);
+        nextListEl.innerHTML = next4.map(w => {
+          const ico = icons[w.type] || '❓';
+          const nm = names[w.type] || w.type;
+          return `<div class="wh-next-item" title="Próximo: ${nm}">${ico}</div>`;
+        }).join('');
+      }
+    }
+
+    drawWeatherPillar(ctx) {
+      if (!this.activeWeather || !this.activeWeather.type) return;
+      const wType = this.activeWeather.type;
+      const wx = this.activeWeather.x;
+      const halfW = 12.5; // ~25 pixels de largura total
+      const mapH = (this.terrain && this.terrain.H) || GB.WORLD_H;
+      const t = this.time;
+
+      ctx.save();
+
+      if (wType === 'force') {
+        // FORCE (Sol): Pilar vertical dourado radiante cobrindo o mapa inteiro na vertical
+        const g = ctx.createLinearGradient(wx - halfW - 4, 0, wx + halfW + 4, 0);
+        g.addColorStop(0, 'rgba(255, 215, 0, 0)');
+        g.addColorStop(0.2, 'rgba(255, 215, 0, 0.3)');
+        g.addColorStop(0.5, 'rgba(255, 255, 255, 0.75)');
+        g.addColorStop(0.8, 'rgba(255, 215, 0, 0.3)');
+        g.addColorStop(1, 'rgba(255, 215, 0, 0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(wx - halfW - 4, 0, (halfW + 4) * 2, mapH);
+
+        // Feixes de luz verticais pulsantes
+        ctx.strokeStyle = 'rgba(255, 235, 120, 0.45)';
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 4; i++) {
+          const offX = Math.sin(t * 3.5 + i * 1.6) * 9;
+          ctx.beginPath();
+          ctx.moveTo(wx + offX, 0);
+          ctx.lineTo(wx + offX, mapH);
+          ctx.stroke();
+        }
+
+        ctx.font = '22px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('☀️', wx, Math.max(30, this.cam.y + 40));
+      } else if (wType === 'tornado') {
+        // TORNADO (Vento): Turbilhão vertical de 25px com faixas em espiral rotativas
+        const g = ctx.createLinearGradient(wx - halfW, 0, wx + halfW, 0);
+        g.addColorStop(0, 'rgba(56, 189, 248, 0)');
+        g.addColorStop(0.2, 'rgba(224, 242, 254, 0.28)');
+        g.addColorStop(0.5, 'rgba(186, 230, 253, 0.55)');
+        g.addColorStop(0.8, 'rgba(224, 242, 254, 0.28)');
+        g.addColorStop(1, 'rgba(56, 189, 248, 0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(wx - halfW, 0, halfW * 2, mapH);
+
+        // Faixas espirais de vento
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let y = 0; y < mapH; y += 12) {
+          const sx = wx + Math.sin(t * 9 + y * 0.04) * 11;
+          if (y === 0) ctx.moveTo(sx, y);
+          else ctx.lineTo(sx, y);
+        }
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        for (let y = 0; y < mapH; y += 12) {
+          const sx = wx - Math.sin(t * 9 + y * 0.04) * 11;
+          if (y === 0) ctx.moveTo(sx, y);
+          else ctx.lineTo(sx, y);
+        }
+        ctx.stroke();
+
+        ctx.font = '20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🌀', wx, Math.max(30, this.cam.y + 40));
+      } else if (wType === 'black') {
+        // BLACK (Lua): Pilar de eclipse negro com névoa roxa escura
+        const g = ctx.createLinearGradient(wx - halfW - 2, 0, wx + halfW + 2, 0);
+        g.addColorStop(0, 'rgba(147, 51, 234, 0)');
+        g.addColorStop(0.2, 'rgba(88, 28, 135, 0.5)');
+        g.addColorStop(0.5, 'rgba(10, 5, 20, 0.88)');
+        g.addColorStop(0.8, 'rgba(88, 28, 135, 0.5)');
+        g.addColorStop(1, 'rgba(147, 51, 234, 0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(wx - halfW - 2, 0, (halfW + 2) * 2, mapH);
+
+        const pulse = Math.sin(t * 4) * 0.2 + 0.5;
+        ctx.strokeStyle = `rgba(168, 85, 247, ${pulse})`;
+        ctx.lineWidth = 1.4;
+        ctx.strokeRect(wx - halfW, 0, halfW * 2, mapH);
+
+        ctx.font = '20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🌙', wx, Math.max(30, this.cam.y + 40));
+      } else if (wType === 'thunder') {
+        // THUNDER (Raio): Coluna elétrica azul com arcos voltaicos verticais
+        const g = ctx.createLinearGradient(wx - halfW - 2, 0, wx + halfW + 2, 0);
+        g.addColorStop(0, 'rgba(0, 229, 255, 0)');
+        g.addColorStop(0.2, 'rgba(0, 229, 255, 0.35)');
+        g.addColorStop(0.5, 'rgba(255, 255, 255, 0.75)');
+        g.addColorStop(0.8, 'rgba(0, 229, 255, 0.35)');
+        g.addColorStop(1, 'rgba(0, 229, 255, 0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(wx - halfW - 2, 0, (halfW + 2) * 2, mapH);
+
+        ctx.strokeStyle = '#ffffff';
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 6;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        for (let y = 0; y < mapH; y += 30) {
+          const off = (Math.sin(t * 30 + y) * 9);
+          if (y === 0) ctx.moveTo(wx + off, y);
+          else ctx.lineTo(wx + off, y);
+        }
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        ctx.font = '20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('⚡', wx, Math.max(30, this.cam.y + 40));
+      }
+
+      ctx.restore();
+    }
+
+    drawThunderStrikes(ctx) {
+      if (!this.thunderStrikes || !this.thunderStrikes.length) return;
+      for (const st of this.thunderStrikes) {
+        const alpha = Math.min(1, st.time / (st.maxTime * 0.4));
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        
+        // Raio elétrico principal
+        ctx.strokeStyle = '#ffffff';
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 14;
+        ctx.lineWidth = 3.5;
+        
+        ctx.beginPath();
+        ctx.moveTo(st.x, st.topY);
+        const segments = Math.max(6, Math.floor((st.hitY - st.topY) / 25));
+        const dy = (st.hitY - st.topY) / segments;
+        for (let i = 1; i < segments; i++) {
+          const curY = st.topY + i * dy;
+          const randOff = (Math.random() - 0.5) * 16;
+          ctx.lineTo(st.x + randOff, curY);
+        }
+        ctx.lineTo(st.x, st.hitY);
+        ctx.stroke();
+
+        // Feixe externo ciano brilhante
+        ctx.strokeStyle = 'rgba(0, 229, 255, 0.5)';
+        ctx.lineWidth = 9;
+        ctx.stroke();
+
+        // Flash no ponto de impacto
+        const gFlash = ctx.createRadialGradient(st.x, st.hitY, 2, st.x, st.hitY, 36);
+        gFlash.addColorStop(0, '#ffffff');
+        gFlash.addColorStop(0.3, 'rgba(0, 229, 255, 0.8)');
+        gFlash.addColorStop(1, 'rgba(0, 229, 255, 0)');
+        ctx.fillStyle = gFlash;
+        ctx.beginPath();
+        ctx.arc(st.x, st.hitY, 36, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
     }
 
     triggerThorStrike(owner, targetX, targetY) {
@@ -2546,6 +2874,8 @@
       if (this.thor && this.thor.active) {
         GB.drawThor(ctx, this.thor, this.time);
       }
+      this.drawWeatherPillar(ctx);
+      this.drawThunderStrikes(ctx);
       for (const p of this.projectiles || []) p.draw(ctx);
       this.effects.draw(ctx);
 
@@ -2586,6 +2916,16 @@
         c.fill();
         c.strokeStyle = '#fff';
         c.lineWidth = 1;
+        c.stroke();
+      }
+      if (this.activeWeather && this.activeWeather.x) {
+        const mx = this.activeWeather.x * sx;
+        const colors = { force: '#ffd700', tornado: '#38bdf8', black: '#c084fc', thunder: '#00e5ff' };
+        c.strokeStyle = colors[this.activeWeather.type] || '#fff';
+        c.lineWidth = 2.5;
+        c.beginPath();
+        c.moveTo(mx, 0);
+        c.lineTo(mx, H);
         c.stroke();
       }
       for (const p of this.projectiles) {

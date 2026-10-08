@@ -82,6 +82,66 @@
         this.x += this.vx * h;
         this.y += this.vy * h;
 
+        // Interação com Pilar de Efeito Climático (Force, Black, Thunder, Tornado)
+        const weather = cb.getWeather ? cb.getWeather() : null;
+        if (weather && weather.type && !this.dead) {
+          const wx = weather.x;
+          const halfW = 12.5; // pilar com 25px de largura total
+          if (Math.abs(this.x - wx) <= halfW) {
+            if (weather.type === 'force' && !this.hasForce) {
+              this.hasForce = true;
+              this.damageMult = (this.damageMult || 1) * 1.5;
+              if (cb.spawnWeatherFX) cb.spawnWeatherFX('force', this.x, this.y);
+            } else if (weather.type === 'black' && !this.hasBlack) {
+              this.hasBlack = true;
+              this.damageMult = (this.damageMult || 1) * 0.5;
+              if (cb.spawnWeatherFX) cb.spawnWeatherFX('black', this.x, this.y);
+            } else if (weather.type === 'thunder' && !this.hasThunder) {
+              this.hasThunder = true;
+              if (cb.spawnWeatherFX) cb.spawnWeatherFX('thunder', this.x, this.y);
+            } else if (weather.type === 'tornado' && (!this.tornadoCooldown || this.tornadoCooldown <= 0)) {
+              this.tornadoCooldown = 0.6;
+              this.inTornadoSwirl = 0.24;
+
+              let isRising = false, isFalling = false;
+              if (this.underground) {
+                // Khan T2 subterrâneo: lógica vertical invertida
+                isRising = this.vy > 5;
+                isFalling = this.vy < -5;
+              } else {
+                isRising = this.vy < -5; // vy negativo = subindo
+                isFalling = this.vy > 5;  // vy positivo = descendo
+              }
+
+              const deltaY = 32;
+              if (isRising) {
+                // Sai mais alto
+                this.y += this.underground ? deltaY : -deltaY;
+                const spd = Math.max(140, Math.abs(this.vy) * 1.15);
+                this.vy = (this.underground ? 1 : -1) * spd;
+              } else if (isFalling) {
+                // Sai mais baixo
+                this.y += this.underground ? -deltaY : deltaY;
+                const spd = Math.max(140, Math.abs(this.vy) * 1.15);
+                this.vy = (this.underground ? -1 : 1) * spd;
+              }
+              // Se for zero (horizontal), sai no mesmo rumo na mesma altura
+
+              if (!this.underground && terrain.isSolid(this.x, this.y)) {
+                let safeY = this.y;
+                while (safeY > 0 && terrain.isSolid(this.x, safeY)) safeY--;
+                this.y = safeY;
+              }
+
+              // Sai do outro lado do tornado de acordo com vx
+              const dir = this.vx >= 0 ? 1 : -1;
+              this.x = wx + dir * 14;
+
+              if (cb.spawnWeatherFX) cb.spawnWeatherFX('tornado', wx, this.y);
+            }
+          }
+        }
+
         if (this.isFrigoT1) {
           const rotDir = (this.owner && this.owner.facing < 0) ? -1 : 1;
           this.orbitAngle += rotDir * 8.5 * h;
@@ -360,6 +420,8 @@
         this.b2Trail.push(this.curOrb2.x, this.curOrb2.y);
         if (this.b2Trail.length > 28) this.b2Trail.splice(0, 2);
       }
+      if (this.tornadoCooldown > 0) this.tornadoCooldown -= dt;
+      if (this.inTornadoSwirl > 0) this.inTornadoSwirl -= dt;
     }
 
     draw(ctx) {
@@ -751,6 +813,80 @@
         ctx.beginPath(); ctx.arc(0, 0, s.size, 0, 7); ctx.fill();
         ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(30,10,30,.8)'; ctx.stroke();
       }
+
+      // ================= EFEITOS CLIMÁTICOS NO PROJÉTIL =================
+      const pSz = Math.max(6, (s && s.size) || 6);
+
+      // 1. Force: Aura branca dourada radiante com raios solares
+      if (this.hasForce) {
+        const auraR = pSz * 2.8;
+        const gAura = ctx.createRadialGradient(0, 0, 1, 0, 0, auraR);
+        gAura.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+        gAura.addColorStop(0.35, 'rgba(255, 215, 0, 0.7)');
+        gAura.addColorStop(0.75, 'rgba(255, 170, 0, 0.35)');
+        gAura.addColorStop(1, 'rgba(255, 140, 0, 0)');
+        ctx.fillStyle = gAura;
+        ctx.beginPath(); ctx.arc(0, 0, auraR, 0, Math.PI * 2); ctx.fill();
+
+        ctx.strokeStyle = '#ffe57f';
+        ctx.lineWidth = 1.6;
+        for (let a = 0; a < 6; a++) {
+          const ang = this.age * 9 + (a * Math.PI / 3);
+          const r1 = auraR * 0.55, r2 = auraR * 1.25;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(ang) * r1, Math.sin(ang) * r1);
+          ctx.lineTo(Math.cos(ang) * r2, Math.sin(ang) * r2);
+          ctx.stroke();
+        }
+      }
+
+      // 2. Black: Projétil todo preto com aura de névoa escura/roxa
+      if (this.hasBlack) {
+        const auraR = pSz * 2.6;
+        // Núcleo completamente preto cobrindo o projétil
+        ctx.fillStyle = '#050505';
+        ctx.beginPath(); ctx.arc(0, 0, pSz * 1.2, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#581c87';
+        ctx.lineWidth = 2.2;
+        ctx.stroke();
+
+        // Névoa roxa sombria
+        const gDark = ctx.createRadialGradient(0, 0, 2, 0, 0, auraR);
+        gDark.addColorStop(0, 'rgba(10, 5, 20, 0.9)');
+        gDark.addColorStop(0.45, 'rgba(88, 28, 135, 0.5)');
+        gDark.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = gDark;
+        ctx.beginPath(); ctx.arc(0, 0, auraR, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // 3. Thunder: Projétil eletrocutado com faíscas e arcos voltaicos
+      if (this.hasThunder) {
+        ctx.strokeStyle = '#ffffff';
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 9;
+        ctx.lineWidth = 1.8;
+        for (let k = 0; k < 3; k++) {
+          const baseAng = this.age * 26 + k * 2.09;
+          const r1 = pSz * 0.6, r2 = pSz * 2.4;
+          const midAng = baseAng + 0.35 * (k % 2 === 0 ? 1 : -1);
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(baseAng) * r1, Math.sin(baseAng) * r1);
+          ctx.lineTo(Math.cos(midAng) * (r1 + r2) * 0.5, Math.sin(midAng) * (r1 + r2) * 0.5);
+          ctx.lineTo(Math.cos(baseAng + 0.15) * r2, Math.sin(baseAng + 0.15) * r2);
+          ctx.stroke();
+        }
+        ctx.shadowBlur = 0;
+      }
+
+      // 4. Tornado: Efeito de rotação e redemoinho ao passar pelo ciclone
+      if (this.inTornadoSwirl > 0) {
+        ctx.strokeStyle = 'rgba(224, 242, 254, 0.75)';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 18, 9, this.age * 20, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
       ctx.restore();
     }
   }
