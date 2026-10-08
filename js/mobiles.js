@@ -167,6 +167,7 @@
     },
   };
   GB.MOBILES = MOBILES;
+  GB.MOBILES.nak = MOBILES.khan;
   GB.MOBILE_IDS = ['armor', 'bigfoot', 'grub', 'dj', 'launcher', 'khan', 'doc', 'frigo', 'driller', 'kuda'];
 
   GB.THOR = {
@@ -2701,7 +2702,11 @@
     ctx.restore();
   }
 
-  GB.drawMobile = function (ctx, id, angle, team) { draw[id](ctx, angle, team || '#fff'); };
+  draw.nak = draw.khan;
+  GB.drawMobile = function (ctx, id, angle, team) {
+    const fn = draw[id] || (id === 'nak' ? draw.khan : null) || draw.armor;
+    if (fn) fn(ctx, angle, team || '#fff');
+  };
 
   // Prévia para os cartões de seleção
   GB.drawMobilePreview = function (canvas, id) {

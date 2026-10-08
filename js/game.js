@@ -2,6 +2,7 @@
 (function (GB) {
   'use strict';
 
+  const $ = (id) => document.getElementById(id);
   const TEAM_COLORS = ['#ff4444', '#3b82f6'];
   const VIEW_H = 600; // altura do mundo visível (antes do zoom)
 

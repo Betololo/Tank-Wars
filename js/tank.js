@@ -6,8 +6,8 @@
 
   class Tank {
     constructor(opts) {
-      this.mobile = GB.MOBILES[opts.mobileId];
-      this.mobileId = opts.mobileId;
+      this.mobile = (opts && GB.MOBILES[opts.mobileId]) || GB.MOBILES.armor;
+      this.mobileId = opts.mobileId || 'armor';
       this.team = opts.team;
       this.name = opts.name;
       this.color = opts.color;
