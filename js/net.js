@@ -9,12 +9,14 @@
   const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
   const PEER_CONFIG = {
-    debug: 0,
+    debug: 1,
     config: {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
         { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
         { urls: 'stun:stun.cloudflare.com:3478' }
       ]
     }
@@ -48,6 +50,11 @@
 
     getWsUrl() {
       if (typeof window === 'undefined' || !window.location) return null;
+      const host = window.location.hostname;
+      // GitHub Pages ou static CDNs não possuem backend WebSocket
+      if (!host || host.endsWith('github.io') || host.endsWith('gitlab.io') || window.location.protocol === 'file:') {
+        return null;
+      }
       if (window.location.protocol !== 'http:' && window.location.protocol !== 'https:') return null;
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       return `${proto}//${window.location.host}/ws`;
@@ -66,6 +73,24 @@
       if (wsUrl) {
         this.mode = 'ws';
         let socket;
+        let handled = false;
+
+        const switchToPeerJS = () => {
+          if (handled) return;
+          handled = true;
+          clearTimeout(connTimer);
+          if (socket) {
+            socket.onopen = null;
+            socket.onmessage = null;
+            socket.onerror = null;
+            socket.onclose = null;
+            try { socket.close(); } catch (e) {}
+            socket = null;
+          }
+          this.ws = null;
+          this.hostPeerJS(code, cb);
+        };
+
         try {
           socket = new WebSocket(wsUrl);
           this.ws = socket;
@@ -74,11 +99,10 @@
           return this.hostPeerJS(code, cb);
         }
 
-        let handled = false;
         const connTimer = setTimeout(() => {
           if (!handled && (!socket || socket.readyState !== WebSocket.OPEN)) {
             console.warn('[Net] Timeout WS Host, tentando fallback PeerJS...');
-            this.hostPeerJS(code, cb);
+            switchToPeerJS();
           }
         }, 3000);
 
@@ -142,7 +166,9 @@
         };
 
         socket.onclose = () => {
-          if (this.isHost) {
+          if (!handled) {
+            switchToPeerJS();
+          } else if (this.isHost) {
             this.close();
             if (this.onClose) this.onClose();
           }
@@ -150,9 +176,8 @@
 
         socket.onerror = (err) => {
           if (!handled) {
-            clearTimeout(connTimer);
             console.warn('[Net] WS Error, tentando fallback PeerJS...', err);
-            this.hostPeerJS(code, cb);
+            switchToPeerJS();
           }
         };
       } else {
@@ -173,6 +198,24 @@
       if (wsUrl) {
         this.mode = 'ws';
         let socket;
+        let connected = false;
+
+        const switchToJoinPeerJS = () => {
+          if (connected) return;
+          connected = true;
+          clearTimeout(joinTimeout);
+          if (socket) {
+            socket.onopen = null;
+            socket.onmessage = null;
+            socket.onerror = null;
+            socket.onclose = null;
+            try { socket.close(); } catch (e) {}
+            socket = null;
+          }
+          this.ws = null;
+          this.joinPeerJS(code, cb);
+        };
+
         try {
           socket = new WebSocket(wsUrl);
           this.ws = socket;
@@ -181,13 +224,12 @@
           return this.joinPeerJS(code, cb);
         }
 
-        let connected = false;
         const joinTimeout = setTimeout(() => {
           if (!connected) {
-            cb.onError && cb.onError('Tempo de conexão esgotado. Verifique se o Host está online com a sala aberta e código correto.');
-            this.close();
+            console.warn('[Net] Timeout WS Convidado, tentando fallback PeerJS...');
+            switchToJoinPeerJS();
           }
-        }, 8000);
+        }, 3000);
 
         socket.onopen = () => {
           socket.send(JSON.stringify({ t: 'guest_join', code }));
@@ -233,16 +275,19 @@
         };
 
         socket.onclose = () => {
-          clearTimeout(joinTimeout);
-          if (this.onClose) this.onClose();
-          this.close();
+          if (!connected) {
+            switchToJoinPeerJS();
+          } else {
+            clearTimeout(joinTimeout);
+            if (this.onClose) this.onClose();
+            this.close();
+          }
         };
 
         socket.onerror = () => {
           if (!connected) {
-            clearTimeout(joinTimeout);
             console.warn('[Net] Erro no WebSocket do Convidado, tentando fallback PeerJS...');
-            this.joinPeerJS(code, cb);
+            switchToJoinPeerJS();
           }
         };
       } else {
@@ -344,8 +389,17 @@
 
     close() {
       this.stopPingLoop();
+      if (this._hostTimeout) { clearTimeout(this._hostTimeout); this._hostTimeout = null; }
+      if (this._peerOpenTimeout) { clearTimeout(this._peerOpenTimeout); this._peerOpenTimeout = null; }
+      if (this._connTimeout) { clearTimeout(this._connTimeout); this._connTimeout = null; }
       if (this.ws) {
-        try { this.ws.close(); } catch (e) {}
+        try {
+          this.ws.onopen = null;
+          this.ws.onmessage = null;
+          this.ws.onerror = null;
+          this.ws.onclose = null;
+          this.ws.close();
+        } catch (e) {}
         this.ws = null;
       }
       for (const c of this.conns) {
@@ -353,7 +407,7 @@
       }
       this.conns = [];
       if (this.clientConn) {
-        try { this.clientConn.close(); } catch (e) {}
+        try { if (this.clientConn.close) this.clientConn.close(); } catch (e) {}
         this.clientConn = null;
       }
       if (this.peer) {
@@ -369,14 +423,22 @@
     // ==========================================
     hostPeerJS(code, cb) {
       if (typeof window.Peer !== 'function') {
-        cb.onError && cb.onError('PeerJS indisponível.');
+        cb.onError && cb.onError('PeerJS indisponível no navegador.');
         return;
       }
       this.mode = 'peerjs';
       const peer = new Peer(PREFIX + code, PEER_CONFIG);
       this.peer = peer;
 
+      this._hostTimeout = setTimeout(() => {
+        if (!this.code) {
+          cb.onError && cb.onError('Tempo esgotado ao registrar a sala no servidor WebRTC (12s). Tente novamente.');
+          this.close();
+        }
+      }, 12000);
+
       peer.on('open', (id) => {
+        if (this._hostTimeout) { clearTimeout(this._hostTimeout); this._hostTimeout = null; }
         this.code = code;
         this.myId = id;
         cb.onCode && cb.onCode(code);
@@ -430,6 +492,7 @@
       });
 
       peer.on('error', (err) => {
+        if (this._hostTimeout) { clearTimeout(this._hostTimeout); this._hostTimeout = null; }
         if (err.type === 'unavailable-id') { this.hostPeerJS(this.randomCode(), cb); return; }
         cb.onError && cb.onError(this.describe(err));
       });
@@ -437,21 +500,29 @@
 
     joinPeerJS(code, cb) {
       if (typeof window.Peer !== 'function') {
-        cb.onError && cb.onError('PeerJS indisponível.');
+        cb.onError && cb.onError('PeerJS indisponível no navegador.');
         return;
       }
       this.mode = 'peerjs';
       const peer = new Peer(PEER_CONFIG);
       this.peer = peer;
 
+      this._peerOpenTimeout = setTimeout(() => {
+        if (!this.myId) {
+          cb.onError && cb.onError('Tempo esgotado ao conectar ao serviço WebRTC (12s). Tente novamente.');
+          this.close();
+        }
+      }, 12000);
+
       peer.on('open', (id) => {
+        if (this._peerOpenTimeout) { clearTimeout(this._peerOpenTimeout); this._peerOpenTimeout = null; }
         this.myId = id;
         this.code = code;
         const conn = peer.connect(PREFIX + code, { reliable: true, serialization: 'json' });
         this.clientConn = conn;
 
         let opened = false;
-        const connectTimeout = setTimeout(() => {
+        this._connTimeout = setTimeout(() => {
           if (!opened) {
             cb.onError && cb.onError('Tempo de conexão esgotado (10s). Verifique se o Host está online com a sala aberta.');
             this.close();
@@ -460,7 +531,7 @@
 
         conn.on('open', () => {
           opened = true;
-          clearTimeout(connectTimeout);
+          if (this._connTimeout) { clearTimeout(this._connTimeout); this._connTimeout = null; }
           cb.onConnect && cb.onConnect();
         });
 
@@ -473,18 +544,21 @@
         });
 
         conn.on('close', () => {
-          clearTimeout(connectTimeout);
+          if (this._connTimeout) { clearTimeout(this._connTimeout); this._connTimeout = null; }
           this.clientConn = null;
           if (this.onClose) this.onClose();
         });
 
         conn.on('error', (err) => {
-          clearTimeout(connectTimeout);
+          if (this._connTimeout) { clearTimeout(this._connTimeout); this._connTimeout = null; }
           cb.onError && cb.onError(this.describe(err));
         });
       });
 
-      peer.on('error', (err) => cb.onError && cb.onError(this.describe(err)));
+      peer.on('error', (err) => {
+        if (this._peerOpenTimeout) { clearTimeout(this._peerOpenTimeout); this._peerOpenTimeout = null; }
+        cb.onError && cb.onError(this.describe(err));
+      });
     },
 
     describe(err) {

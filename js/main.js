@@ -393,6 +393,8 @@
       $('on-choose').classList.add('hidden');
       $('on-wait').classList.remove('hidden');
       $('on-room').textContent = '...';
+      const waitTitle = $('on-wait-title');
+      if (waitTitle) waitTitle.textContent = 'Criando sala...';
       $('on-status').textContent = 'Conectando ao servidor WebRTC...';
 
       this.setup.mode = 'online';
@@ -448,6 +450,8 @@
       $('on-choose').classList.add('hidden');
       $('on-wait').classList.remove('hidden');
       $('on-room').textContent = code;
+      const waitTitle = $('on-wait-title');
+      if (waitTitle) waitTitle.textContent = 'Entrando na sala...';
       $('on-status').textContent = 'Conectando à sala...';
 
       this.setup.mode = 'online';
