@@ -35,6 +35,9 @@
       this.dispHp = this.hp;
       const sy = this.terrain.surfaceBelow(this.x, 0);
       this.y = sy < 0 ? 0 : sy;
+      this.targetX = this.x;
+      this.targetY = this.y;
+      this.targetAngle = this.angle;
       this.updateTilt(true);
     }
 
@@ -92,6 +95,42 @@
       }
       this.updateTilt(false);
       return this.falling;
+    }
+
+    // Interpolação suave a 60 FPS para movimentos e rotação de mira de jogadores remotos
+    updateRemote(dt) {
+      if (!this.alive) return;
+      if (this.targetX !== undefined) {
+        const dx = this.targetX - this.x;
+        if (Math.abs(dx) > 140) {
+          this.x = this.targetX;
+        } else if (Math.abs(dx) > 0.05) {
+          this.x += dx * Math.min(1, dt * 20);
+        } else {
+          this.x = this.targetX;
+        }
+      }
+      if (this.targetY !== undefined) {
+        const dy = this.targetY - this.y;
+        if (Math.abs(dy) > 140) {
+          this.y = this.targetY;
+        } else if (Math.abs(dy) > 0.05) {
+          this.y += dy * Math.min(1, dt * 20);
+        } else {
+          this.y = this.targetY;
+        }
+      }
+      if (this.targetAngle !== undefined) {
+        const da = this.targetAngle - this.angle;
+        if (Math.abs(da) > 90) {
+          this.angle = this.targetAngle;
+        } else if (Math.abs(da) > 0.05) {
+          this.angle += da * Math.min(1, dt * 22);
+        } else {
+          this.angle = this.targetAngle;
+        }
+      }
+      this.updateTilt(false);
     }
 
     // Movimento horizontal seguindo o relevo; retorna px andados.

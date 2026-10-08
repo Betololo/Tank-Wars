@@ -460,6 +460,7 @@
       t.fuel = GB.MAX_FUEL;
       this.timer = GB.TURN_TIME;
       this.power = 0;
+      this.targetPower = 0;
       this.charging = false;
       this.aiState = null;
       this.cam.manual = false;
@@ -468,6 +469,11 @@
       this.itemActive = null;
       this.itemActive2 = null;
       t.hasUsedItem1ThisTurn = false;
+      if (t) {
+        t.targetX = t.x;
+        t.targetY = t.y;
+        t.targetAngle = t.angle;
+      }
       GB.Input.releaseAll();
       if (this.mode === 'local') {
         this.phase = 'pass';
@@ -1183,6 +1189,7 @@
         const t = this.tanks[i];
         if (!t) return;
         t.x = s.x; t.y = s.y; t.hp = s.hp; t.ssCooldown = s.ss; t.facing = s.f; t.angle = s.a; t.lastPower = s.lp;
+        t.targetX = s.x; t.targetY = s.y; t.targetAngle = s.a;
         t.dmgDealt = s.dd || 0;
         t.item2Unlocked = !!s.u2;
         t.item2Used = !!s.i2u;
@@ -1250,6 +1257,7 @@
             const t = this.tanks[m.pIdx] || this.active;
             if (t) {
               t.x = m.x; t.y = m.y; t.facing = m.f; t.angle = m.a;
+              t.targetX = m.x; t.targetY = m.y; t.targetAngle = m.a;
               t.updateTilt(true);
               this.itemActive = m.i;
               this.itemActive2 = m.i2;
@@ -1279,6 +1287,7 @@
             const t = this.tanks[m.pIdx] || this.active;
             if (t) {
               t.x = m.x; t.y = m.y; t.facing = m.f; t.angle = m.a;
+              t.targetX = m.x; t.targetY = m.y; t.targetAngle = m.a;
               t.updateTilt(true);
               this.itemActive = m.i;
               this.itemActive2 = m.i2;
@@ -1286,13 +1295,27 @@
             }
           }
         } else if (m.t === 'aim') {
-          // Pacote de mira / movimento: aplica ao tanque correspondente
+          // Pacote de mira / movimento: aplica ao tanque correspondente com suavização fluida
           const t = (m.pIdx !== undefined ? this.tanks[m.pIdx] : null) || this.active;
           if (t && t.kind === 'remote') {
-            t.x = m.x; t.y = m.y; t.facing = m.f; t.angle = m.a;
-            t.updateTilt(true);
+            t.facing = m.f;
+            t.targetX = m.x;
+            t.targetY = m.y;
+            t.targetAngle = m.a;
+            if (m.u !== undefined) t.fuel = m.u;
+            if (m.s !== undefined) t.shotSel = m.s;
+            if (m.i !== undefined) this.itemActive = m.i;
+            if (m.i2 !== undefined) this.itemActive2 = m.i2;
+
+            // Se for inicialização ou salto brusco (> 140px), sincroniza imediatamente:
+            if (t.x === undefined || Math.abs(t.x - m.x) > 140 || Math.abs(t.y - m.y) > 140) {
+              t.x = m.x;
+              t.y = m.y;
+              t.angle = m.a;
+              t.updateTilt(true);
+            }
             if (t === this.active) {
-              this.power = m.p || 0;
+              this.targetPower = m.p || 0;
               this.charging = !!m.c;
             }
             if (this.cfg && this.cfg.isHost) {
@@ -1386,6 +1409,7 @@
            return;
         }
         t.shotSel = i;
+        this.aimSendT = 0;
         GB.Sfx.click();
       };
       I.handlers.pan = (dx, dy) => {
@@ -1412,6 +1436,7 @@
           GB.Sfx.click();
           t.itemsUsed[i] = true;
           t.hasUsedItem1ThisTurn = true;
+          this.aimSendT = 0;
           
           if (item === 'dual' || item === 'dualplus') {
             this.itemActive = item;
@@ -1449,6 +1474,7 @@
          GB.Sfx.click();
          t.item2Used = true;
          this.itemActive2 = t.items2;
+         this.aimSendT = 0;
          const delays = { 'nuclear': 1500, 'napalm': 1000, 'superdual': 1200, 'onda': 1000 };
          this.toast(`Ativou ${t.items2.toUpperCase()}! (+${delays[t.items2] || 1000} Delay)`);
          if (t.items2 === 'superdual' && t.shotSel === 2 && (this.itemActive === 'dual' || this.itemActive === 'dualplus')) {
@@ -1509,6 +1535,9 @@
                if (GB.dist(tk.x, tk.y, n.x, n.y) < n.radius + tk.mobile.hitR) { tk.speedMult = 0.2; break; }
             }
          }
+         if (tk.kind === 'remote') {
+            tk.updateRemote(dt);
+         }
          tk.updatePhysics(dt);
       }
       
@@ -1520,6 +1549,16 @@
           this.timer -= dt;
           if (t.kind === 'human') this.updateHuman(t, dt);
           else if (t.kind === 'cpu') this.updateAI(t, dt);
+          else if (t.kind === 'remote') {
+            if (this.charging) {
+              this.power = Math.min(100, this.power + 52 * dt);
+              if (this.targetPower !== undefined) {
+                this.power = GB.lerp(this.power, this.targetPower, Math.min(1, dt * 12));
+              }
+            } else if (this.targetPower !== undefined) {
+              this.power = GB.lerp(this.power, this.targetPower, Math.min(1, dt * 18));
+            }
+          }
           if (this.timer <= 0 && t.kind !== 'remote') {
             if (this.charging) this.fire(t.shotSel, Math.max(1, this.power));
             else this.skipTurn();
@@ -2199,11 +2238,24 @@
       if (this.mode === 'online') {
         this.aimSendT -= dt;
         if (this.aimSendT <= 0) {
-          this.aimSendT = 0.07;
-          const sig = `${t.x}|${t.y}|${t.facing}|${t.angle}|${Math.round(this.power)}|${this.charging}`;
+          this.aimSendT = 0.033;
+          const sig = `${Math.round(t.x * 2) / 2}|${Math.round(t.y * 2) / 2}|${t.facing}|${Math.round(t.angle * 2) / 2}|${Math.round(this.power)}|${this.charging}|${t.shotSel}|${this.itemActive}|${this.itemActive2}`;
           if (sig !== this._aimSig) {
             this._aimSig = sig;
-            this.send({ t: 'aim', pIdx: t.playerIdx, x: t.x, y: t.y, f: t.facing, a: t.angle, p: this.power, c: this.charging });
+            this.send({
+              t: 'aim',
+              pIdx: t.playerIdx,
+              x: Math.round(t.x * 10) / 10,
+              y: Math.round(t.y * 10) / 10,
+              f: t.facing,
+              a: Math.round(t.angle * 10) / 10,
+              p: Math.round(this.power * 10) / 10,
+              c: this.charging,
+              u: Math.round(t.fuel),
+              s: t.shotSel,
+              i: this.itemActive,
+              i2: this.itemActive2
+            });
           }
         }
       }
