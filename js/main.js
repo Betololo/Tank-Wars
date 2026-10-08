@@ -9,7 +9,7 @@
     screens: {
       menu: $('scr-menu'), select: $('scr-select'), online: $('scr-online'), lobby: $('scr-lobby'),
       mobileModal: $('scr-mobile-modal'), help: $('scr-help'), pass: $('scr-pass'),
-      pause: $('scr-pause'), result: $('scr-result')
+      pause: $('scr-pause'), result: $('scr-result'), coinFlip: $('scr-coin-flip')
     },
     setup: { mode: null, diff: 1 },
     room: {

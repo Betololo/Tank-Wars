@@ -260,12 +260,6 @@
       this.hudCache = {};
       this.wind = cfg.wind || 0;
 
-      // Anúncio do Sorteio Cara ou Coroa
-      const coinWinnerName = startingTeam === 0 ? 'Time A (Vermelho)' : 'Time B (Azul)';
-      const coinWinnerColor = startingTeam === 0 ? '#ff4444' : '#3b82f6';
-      this.toast(`🪙 CARA OU COROA: ${coinWinnerName} começa jogando!`, 3500);
-      this.effects.text(GB.WORLD_W / 2, 140, `🪙 ${coinWinnerName.toUpperCase()} COMEÇA!`, coinWinnerColor, true);
-
       // Câmera começa no primeiro jogador a jogar
       const firstTank = initialTurnOrder[0] || this.tanks[0];
       if (firstTank) {
@@ -276,13 +270,117 @@
         this.cam.y = 100;
       }
       this.cam.manual = false;
-      setTimeout(() => { if (this.cfg === cfg) this.beginTurn(); }, 1200);
+
+      // Executa animação marcante de Cara ou Coroa no início antes de começar o turno 1
+      this.showCoinFlipIntro(startingTeam, firstTank, () => {
+        if (this.cfg === cfg && this.running) {
+          this.beginTurn();
+        }
+      });
+    }
+
+    showCoinFlipIntro(startingTeam, firstTank, onDone) {
+      const modal = document.getElementById('scr-coin-flip');
+      const coin = document.getElementById('coin-element');
+      const banner = document.getElementById('coin-result-banner');
+      const teamEl = document.getElementById('coin-winner-team');
+      const descEl = document.getElementById('coin-winner-desc');
+      const subEl = document.getElementById('coin-sub');
+
+      const coinWinnerName = startingTeam === 0 ? 'Time A (Vermelho)' : 'Time B (Azul)';
+      const coinWinnerColor = startingTeam === 0 ? '#ff4444' : '#3b82f6';
+
+      if (!modal || !coin || !banner) {
+        this.toast(`🪙 CARA OU COROA: ${coinWinnerName} começa jogando!`, 3500);
+        this.effects.text(GB.WORLD_W / 2, 140, `🪙 ${coinWinnerName.toUpperCase()} COMEÇA!`, coinWinnerColor, true);
+        setTimeout(() => onDone(), 1500);
+        return;
+      }
+
+      // Prepara o estado inicial
+      modal.classList.add('active');
+      modal.style.opacity = '1';
+      banner.classList.remove('visible');
+      coin.style.transition = 'none';
+      coin.style.transform = 'rotateY(0deg) scale(0.7)';
+      coin.classList.remove('landed-a', 'landed-b');
+      if (subEl) subEl.textContent = 'Girando moeda... quem jogará primeiro?';
+
+      // Força reflow no navegador
+      void coin.offsetHeight;
+
+      // Inicia giro 3D majestoso
+      // Time A: 1800deg (termina em face A = 0deg mod 360)
+      // Time B: 1980deg (termina em face B = 180deg mod 360)
+      const targetDeg = startingTeam === 0 ? 1800 : 1980;
+      coin.style.transition = 'transform 2.2s cubic-bezier(0.15, 0.85, 0.35, 1.05)';
+      coin.style.transform = `rotateY(${targetDeg}deg) scale(1.15)`;
+
+      // Sons de giro rítmicos durante a moeda no ar
+      let tickCount = 0;
+      const spinInterval = setInterval(() => {
+        if (!this.running) { clearInterval(spinInterval); return; }
+        tickCount++;
+        GB.Sfx.click();
+        if (tickCount >= 10) clearInterval(spinInterval);
+      }, 180);
+
+      // Moeda pousa no resultado após ~2.2s
+      setTimeout(() => {
+        clearInterval(spinInterval);
+        if (!this.running) return;
+
+        // Efeito sonoro triunfante e impacto visual
+        GB.Sfx.boom(0.35);
+        if (GB.Sfx.win) GB.Sfx.win();
+
+        if (startingTeam === 0) {
+          coin.classList.add('landed-a');
+          if (teamEl) {
+            teamEl.textContent = 'TIME A (VERMELHO) VENCEU!';
+            teamEl.className = 'coin-winner-team team-a';
+          }
+        } else {
+          coin.classList.add('landed-b');
+          if (teamEl) {
+            teamEl.textContent = 'TIME B (AZUL) VENCEU!';
+            teamEl.className = 'coin-winner-team team-b';
+          }
+        }
+
+        const firstName = firstTank ? `${firstTank.name} (${firstTank.mobile.name})` : (startingTeam === 0 ? 'Time A' : 'Time B');
+        if (descEl) descEl.textContent = `Primeiro turno: ${firstName}`;
+        if (subEl) subEl.textContent = 'Sorteio concluído!';
+
+        banner.classList.add('visible');
+
+        this.toast(`🪙 CARA OU COROA: ${coinWinnerName} começa jogando!`, 4000);
+        this.effects.text(GB.WORLD_W / 2, 140, `🪙 ${coinWinnerName.toUpperCase()} COMEÇA!`, coinWinnerColor, true);
+
+        // Deixa o banner bem visível e claro por 1.8 segundos antes de fechar suavemente
+        setTimeout(() => {
+          if (!this.running) return;
+          modal.style.transition = 'opacity 0.4s ease';
+          modal.style.opacity = '0';
+
+          setTimeout(() => {
+            modal.classList.remove('active');
+            modal.style.opacity = '1';
+            onDone();
+          }, 400);
+        }, 1800);
+      }, 2200);
     }
 
     stop() {
       this.running = false;
       this.cfg = null;
       this.dom.hud.classList.add('hidden');
+      const coinModal = document.getElementById('scr-coin-flip');
+      if (coinModal) {
+        coinModal.classList.remove('active');
+        coinModal.style.opacity = '1';
+      }
       GB.Input.releaseAll();
     }
 
@@ -640,6 +738,28 @@
         this.ondas.push({ x: x, y: y, dir: -1, speed: 280, life: 2.2 });
         this.effects.text(x, Math.max(0, y - 30), 'TSUNAMI!', '#44aaff', true);
         GB.Sfx.boom(1.2);
+        return;
+      } else if (p.shot && p.shot.isSSRobot) {
+        // Contato direto do SS do Raon Launcher! Conta diretamente como a explosão do robô do SS!
+        this.explodeRobot({
+          x: x,
+          y: y,
+          dir: p.vx > 0 ? 1 : -1,
+          type: 'ss',
+          owner: p.owner,
+          dmg: 500
+        });
+        return;
+      } else if (p.shot && p.shot.spawnRobots && !p.shot.isSSRobot) {
+        // Contato direto do Tiro 2 do Raon Launcher! Conta como explosão de mini-robô!
+        this.explodeRobot({
+          x: x,
+          y: y,
+          dir: p.vx > 0 ? 1 : -1,
+          type: 'mini',
+          owner: p.owner,
+          dmg: p.shot.dmg || 140
+        });
         return;
       } else {
          const shot = p.shot;
@@ -1675,6 +1795,7 @@
        this.effects.explosion(rb.x, rb.y, r, rb.type === 'ss' ? '#ff4040' : '#7ad4ff', this.terrainCss);
        this.shake = Math.min(16, this.shake + r * 0.22);
        GB.Sfx.boom(r / 40);
+       this.lastImpact = { x: rb.x, y: rb.y };
        
        for (const t of this.tanks) {
            if (!t.alive) continue;
@@ -1695,7 +1816,9 @@
            if (t.defDebuff) rbDmg *= (1 + t.defDebuff);
            const dealt = t.damage(rbDmg);
            if (dealt > 0) {
-             this.effects.text(c.x, c.y - 30, '-' + dealt, t.team === rb.owner.team ? '#ffb0b0' : '#fff35c', dealt > 100);
+             const isFriendly = rb.owner ? (t.team === rb.owner.team) : false;
+             this.effects.text(c.x, c.y - 30, '-' + dealt, isFriendly ? '#ffb0b0' : '#fff35c', dealt > 100);
+             if (rb.owner) this.registerEnemyDamage(rb.owner, t, dealt);
            }
        }
     }

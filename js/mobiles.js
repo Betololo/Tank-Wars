@@ -77,15 +77,15 @@
     },
     launcher: {
       id: 'launcher',
-      name: 'Launcher',
+      name: 'Raon Launcher',
       desc: 'Mestre em invocações: correntes e mini-robôs rastreadores.',
       hp: 1000, speed: 45, maxClimb: 5, fuelPerPx: 0.3, windInfl: 1.0,
       stats: { HP: 0.65, Dano: 0.7, Destruição: 0.4, Mobilidade: 0.6 },
       pivot: [2, -26], barrel: 20, hitR: 18,
       shots: [
         { name: 'Tiro 1', delay: 800, bullets: [{}], r: 30, dmg: 280, size: 6, color: '#a6a6a6', chains: true },
-        { name: 'Tiro 2', delay: 850, bullets: [{ off: -1.5, pm: 0.98 }, { off: 1.5, pm: 1.02 }], r: 0, dmg: 150, size: 5, color: '#7ad4ff', spawnRobots: 1 },
-        { name: 'SS', delay: 1300, bullets: [{}], r: 0, dmg: 0, size: 8, color: '#ff4040', trail: '#ff9999', spawnRobots: 1, isSSRobot: true },
+        { name: 'Tiro 2', delay: 850, bullets: [{ off: -1.5, pm: 0.98 }, { off: 1.5, pm: 1.02 }], r: 25, dmg: 140, size: 5, color: '#7ad4ff', spawnRobots: 1 },
+        { name: 'SS', delay: 1300, bullets: [{}], r: 45, dmg: 500, size: 8, color: '#ff4040', trail: '#ff9999', spawnRobots: 1, isSSRobot: true },
       ],
     },
     khan: {
