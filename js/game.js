@@ -1406,6 +1406,12 @@
         if (epicKind === 'team_wipe') {
           shooter.hasCrown = true;
         }
+        if (epicKind === 'double_kill') {
+          shooter.doubleKillAura = true;
+        }
+        if (epicKind === 'triple_kill') {
+          shooter.tripleKillAura = true;
+        }
         if (epicKind === 'super_shot' || turnDmg >= 1000) {
           shooter.flameAura = true;
         }
@@ -1468,6 +1474,7 @@
           this.shake = Math.max(this.shake, 32);
           this.showScreenFlashRed();
           this.showScreenSlash();
+          if (shooter) shooter.doubleKillAura = true;
           if (shooter && damage >= 1000) shooter.flameAura = true;
           GB.Sfx.epicDoubleKill && GB.Sfx.epicDoubleKill();
           break;
@@ -1482,6 +1489,7 @@
           this.showScreenFlashLightning();
           this.spawnLightningArcs();
           if (shooter) {
+            shooter.tripleKillAura = true;
             if (damage >= 1000) shooter.flameAura = true;
             this.effects && this.effects.cosmicLightning && this.effects.cosmicLightning(shooter.x, shooter.y - 12);
           }
@@ -1563,11 +1571,6 @@
         }
         effect.appendChild(fireCont);
       } else if (kind === 'double_kill') {
-        const skulls = document.createElement('div');
-        skulls.className = 'epic-double-skulls';
-        skulls.innerText = '💀💥💀';
-        effect.appendChild(skulls);
-
         const sparkCont = document.createElement('div');
         sparkCont.className = 'epic-spark-container';
         for (let i = 0; i < 35; i++) {
@@ -1587,11 +1590,6 @@
         }
         effect.appendChild(sparkCont);
       } else if (kind === 'triple_kill') {
-        const thunderCrest = document.createElement('div');
-        thunderCrest.className = 'epic-triple-thunder-crest';
-        thunderCrest.innerText = '⚡⚡⚡';
-        effect.appendChild(thunderCrest);
-
         const plasmaCont = document.createElement('div');
         plasmaCont.className = 'epic-plasma-container';
         for (let i = 0; i < 32; i++) {
@@ -1812,6 +1810,8 @@
             oc: t.overcharged ? 1 : 0,
             asu: t.avatarSkillUsed ? 1 : 0,
             fa: t.flameAura ? 1 : 0,
+            dka: t.doubleKillAura ? 1 : 0,
+            tka: t.tripleKillAura ? 1 : 0,
             cr: t.hasCrown ? 1 : 0,
             shd: t.hasShades ? 1 : 0
           })),
@@ -1919,6 +1919,8 @@
           t.overcharged = !!s.oc;
           t.avatarSkillUsed = !!s.asu;
           t.flameAura = !!s.fa;
+          t.doubleKillAura = !!s.dka;
+          t.tripleKillAura = !!s.tka;
           t.hasCrown = !!s.cr;
           t.hasShades = !!s.shd;
           t.updateTilt(true);

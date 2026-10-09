@@ -31,6 +31,8 @@
       this.overcharged = false;
       this.avatarSkillUsed = false;
       this.flameAura = false;
+      this.doubleKillAura = false;
+      this.tripleKillAura = false;
       this.hasCrown = false;
       this.wheelRot = 0;
       this.niceShotBubbleTimer = 0;
@@ -310,6 +312,89 @@
           ctx.beginPath();
           ctx.arc(this.x + offX, this.y + offY, 5, 0, Math.PI * 2);
           ctx.fillStyle = (i % 2 === 0) ? 'rgba(255, 220, 50, 0.55)' : 'rgba(255, 110, 20, 0.45)';
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // Aura de Double Kill: Fúria Carmesim e Sangue
+      if (this.doubleKillAura) {
+        ctx.save();
+        const tSec = Date.now() * 0.0055;
+        const auraR = 34 + Math.sin(tSec * 6.0) * 5;
+        const g = ctx.createRadialGradient(this.x, this.y - 14, 8, this.x, this.y - 14, auraR);
+        g.addColorStop(0, 'rgba(255, 40, 80, 0.75)');
+        g.addColorStop(0.4, 'rgba(220, 10, 40, 0.45)');
+        g.addColorStop(0.8, 'rgba(120, 0, 20, 0.2)');
+        g.addColorStop(1, 'rgba(60, 0, 10, 0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y - 14, auraR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 5 Fagulhas carmesim de fúria subindo
+        for (let i = 0; i < 5; i++) {
+          const offX = Math.sin(tSec * 5 + i * 1.6) * 22;
+          const offY = -14 - ((tSec * 42 + i * 13) % 34);
+          ctx.beginPath();
+          ctx.arc(this.x + offX, this.y + offY, 4.5, 0, Math.PI * 2);
+          ctx.fillStyle = (i % 2 === 0) ? 'rgba(255, 60, 100, 0.7)' : 'rgba(200, 0, 40, 0.55)';
+          ctx.fill();
+        }
+
+        // Anel sutil de pulso carmesim
+        ctx.strokeStyle = 'rgba(255, 30, 70, 0.35)';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y - 14, auraR * 0.85, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Aura de Triple Kill: Tempestade de Plasma Elétrico Neon
+      if (this.tripleKillAura) {
+        ctx.save();
+        const tSec = Date.now() * 0.0065;
+        const auraR = 36 + Math.sin(tSec * 7.5) * 5;
+        const g = ctx.createRadialGradient(this.x, this.y - 14, 8, this.x, this.y - 14, auraR);
+        g.addColorStop(0, 'rgba(220, 240, 255, 0.85)');
+        g.addColorStop(0.35, 'rgba(192, 132, 252, 0.55)');
+        g.addColorStop(0.75, 'rgba(124, 58, 237, 0.3)');
+        g.addColorStop(1, 'rgba(59, 7, 100, 0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y - 14, auraR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 4 Micro-arcos de choque elétrico ziguezagueantes ao redor do chassi
+        ctx.strokeStyle = 'rgba(235, 245, 255, 0.85)';
+        ctx.lineWidth = 1.4;
+        for (let k = 0; k < 4; k++) {
+          const a = (k * Math.PI / 2) + Math.sin(tSec * 8 + k) * 0.6;
+          const r1 = 16 + Math.sin(tSec * 12 + k) * 6;
+          const r2 = r1 + 10 + Math.cos(tSec * 10 + k) * 4;
+          const x1 = this.x + Math.cos(a) * r1;
+          const y1 = this.y - 14 + Math.sin(a) * r1;
+          const mx = this.x + Math.cos(a + 0.25) * ((r1 + r2) / 2);
+          const my = this.y - 14 + Math.sin(a + 0.25) * ((r1 + r2) / 2);
+          const x2 = this.x + Math.cos(a) * r2;
+          const y2 = this.y - 14 + Math.sin(a) * r2;
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(mx, my);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+        }
+
+        // Esferas de plasma em órbita
+        for (let i = 0; i < 4; i++) {
+          const orbA = tSec * 4 + i * (Math.PI / 2);
+          const orbR = 24 + Math.sin(tSec * 3 + i) * 6;
+          ctx.beginPath();
+          ctx.arc(this.x + Math.cos(orbA) * orbR, this.y - 14 + Math.sin(orbA) * (orbR * 0.65), 3.5, 0, Math.PI * 2);
+          ctx.fillStyle = (i % 2 === 0) ? '#ffffff' : '#c084fc';
+          ctx.shadowColor = '#c084fc';
+          ctx.shadowBlur = 8;
           ctx.fill();
         }
         ctx.restore();

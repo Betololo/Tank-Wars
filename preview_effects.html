@@ -277,15 +277,15 @@
       </button>
 
       <button class="effect-btn btn-double" id="btn-double">
-        <span class="icon">💀💥💀</span>
+        <span class="icon" style="font-size:26px; font-weight:900; color:#ff3366; letter-spacing:1px;">2X</span>
         <span class="title">DOUBLE KILL!</span>
-        <span class="desc">2 Abates em 1 Turno<br>Flash Vermelho + Corte de Lâmina + Faíscas</span>
+        <span class="desc">2 Abates em 1 Turno<br>Flash Vermelho + Corte + Aura Carmesim</span>
       </button>
 
       <button class="effect-btn btn-triple" id="btn-triple">
-        <span class="icon">⚡⚡⚡</span>
+        <span class="icon" style="font-size:26px; font-weight:900; color:#c084fc; letter-spacing:1px;">3X</span>
         <span class="title">TRIPLE KILL!</span>
-        <span class="desc">3 Abates em 1 Turno<br>Flash de Raios + Arcos Elétricos + Plasma</span>
+        <span class="desc">3 Abates em 1 Turno<br>Tempestade de Raios + Aura de Plasma</span>
       </button>
 
       <button class="effect-btn btn-wipe" id="btn-wipe">
@@ -333,6 +333,8 @@
           </label>
           <span class="toggle-chip" id="chip-crown">👑 Coroa Imperial</span>
           <span class="toggle-chip" id="chip-flame">🔥 Aura de Fogo</span>
+          <span class="toggle-chip" id="chip-double">🩸 Aura Carmesim</span>
+          <span class="toggle-chip" id="chip-triple">⚡ Aura de Plasma</span>
           <span class="toggle-chip" id="chip-bubble">👍 Balão Nice</span>
         </div>
       </div>
@@ -368,6 +370,8 @@
         avatarId: 'a',
         hasCrown: false,
         flameAura: false,
+        doubleKillAura: false,
+        tripleKillAura: false,
         niceBubble: false,
         bubbleTimer: 0,
         wheelRot: 0
@@ -422,11 +426,6 @@
           }
           effect.appendChild(fireCont);
         } else if (kind === 'double_kill') {
-          const skulls = document.createElement('div');
-          skulls.className = 'epic-double-skulls';
-          skulls.innerText = '💀💥💀';
-          effect.appendChild(skulls);
-
           const sparkCont = document.createElement('div');
           sparkCont.className = 'epic-spark-container';
           for (let i = 0; i < 35; i++) {
@@ -446,11 +445,6 @@
           }
           effect.appendChild(sparkCont);
         } else if (kind === 'triple_kill') {
-          const thunderCrest = document.createElement('div');
-          thunderCrest.className = 'epic-triple-thunder-crest';
-          thunderCrest.innerText = '⚡⚡⚡';
-          effect.appendChild(thunderCrest);
-
           const plasmaCont = document.createElement('div');
           plasmaCont.className = 'epic-plasma-container';
           for (let i = 0; i < 32; i++) {
@@ -581,11 +575,15 @@
       document.getElementById('btn-double').addEventListener('click', () => {
         playEpicEffect('double_kill', 'DOUBLE KILL!', 'Você eliminou 2 inimigos no mesmo turno!');
         GB.Sfx && GB.Sfx.epicDoubleKill && GB.Sfx.epicDoubleKill();
+        previewState.doubleKillAura = true;
+        updateChips();
       });
 
       document.getElementById('btn-triple').addEventListener('click', () => {
         playEpicEffect('triple_kill', 'TRIPLE KILL!', 'Você eliminou 3 inimigos no mesmo turno!');
         GB.Sfx && GB.Sfx.epicTripleKill && GB.Sfx.epicTripleKill();
+        previewState.tripleKillAura = true;
+        updateChips();
       });
 
       document.getElementById('btn-wipe').addEventListener('click', () => {
@@ -635,16 +633,22 @@
       // Chips de cosméticos manuais
       const chipCrown = document.getElementById('chip-crown');
       const chipFlame = document.getElementById('chip-flame');
+      const chipDouble = document.getElementById('chip-double');
+      const chipTriple = document.getElementById('chip-triple');
       const chipBubble = document.getElementById('chip-bubble');
 
       function updateChips() {
         chipCrown.classList.toggle('active', previewState.hasCrown);
         chipFlame.classList.toggle('active', previewState.flameAura);
+        chipDouble.classList.toggle('active', previewState.doubleKillAura);
+        chipTriple.classList.toggle('active', previewState.tripleKillAura);
         chipBubble.classList.toggle('active', previewState.niceBubble || previewState.bubbleTimer > 0);
       }
 
       chipCrown.addEventListener('click', () => { previewState.hasCrown = !previewState.hasCrown; updateChips(); });
       chipFlame.addEventListener('click', () => { previewState.flameAura = !previewState.flameAura; updateChips(); });
+      chipDouble.addEventListener('click', () => { previewState.doubleKillAura = !previewState.doubleKillAura; updateChips(); });
+      chipTriple.addEventListener('click', () => { previewState.tripleKillAura = !previewState.tripleKillAura; updateChips(); });
       chipBubble.addEventListener('click', () => {
         previewState.niceBubble = !previewState.niceBubble;
         previewState.bubbleTimer = previewState.niceBubble ? 9999 : 0;
@@ -719,6 +723,89 @@
             ctx.beginPath();
             ctx.arc(tankX + offX, tankY + offY, 6, 0, Math.PI * 2);
             ctx.fillStyle = (i % 2 === 0) ? 'rgba(255, 220, 50, 0.6)' : 'rgba(255, 110, 20, 0.5)';
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+
+        // Aura de Double Kill: Fúria Carmesim e Sangue
+        if (previewState.doubleKillAura) {
+          ctx.save();
+          const tSec = Date.now() * 0.0055;
+          const auraR = 34 + Math.sin(tSec * 6.0) * 5;
+          const g = ctx.createRadialGradient(tankX, tankY - 14, 8, tankX, tankY - 14, auraR);
+          g.addColorStop(0, 'rgba(255, 40, 80, 0.75)');
+          g.addColorStop(0.4, 'rgba(220, 10, 40, 0.45)');
+          g.addColorStop(0.8, 'rgba(120, 0, 20, 0.2)');
+          g.addColorStop(1, 'rgba(60, 0, 10, 0)');
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(tankX, tankY - 14, auraR, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 5 Fagulhas carmesim de fúria subindo
+          for (let i = 0; i < 5; i++) {
+            const offX = Math.sin(tSec * 5 + i * 1.6) * 22;
+            const offY = -14 - ((tSec * 42 + i * 13) % 34);
+            ctx.beginPath();
+            ctx.arc(tankX + offX, tankY + offY, 4.5, 0, Math.PI * 2);
+            ctx.fillStyle = (i % 2 === 0) ? 'rgba(255, 60, 100, 0.7)' : 'rgba(200, 0, 40, 0.55)';
+            ctx.fill();
+          }
+
+          // Anel sutil de pulso carmesim
+          ctx.strokeStyle = 'rgba(255, 30, 70, 0.35)';
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.arc(tankX, tankY - 14, auraR * 0.85, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Aura de Triple Kill: Tempestade de Plasma Elétrico Neon
+        if (previewState.tripleKillAura) {
+          ctx.save();
+          const tSec = Date.now() * 0.0065;
+          const auraR = 36 + Math.sin(tSec * 7.5) * 5;
+          const g = ctx.createRadialGradient(tankX, tankY - 14, 8, tankX, tankY - 14, auraR);
+          g.addColorStop(0, 'rgba(220, 240, 255, 0.85)');
+          g.addColorStop(0.35, 'rgba(192, 132, 252, 0.55)');
+          g.addColorStop(0.75, 'rgba(124, 58, 237, 0.3)');
+          g.addColorStop(1, 'rgba(59, 7, 100, 0)');
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(tankX, tankY - 14, auraR, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 4 Micro-arcos de choque elétrico ziguezagueantes ao redor do chassi
+          ctx.strokeStyle = 'rgba(235, 245, 255, 0.85)';
+          ctx.lineWidth = 1.4;
+          for (let k = 0; k < 4; k++) {
+            const a = (k * Math.PI / 2) + Math.sin(tSec * 8 + k) * 0.6;
+            const r1 = 16 + Math.sin(tSec * 12 + k) * 6;
+            const r2 = r1 + 10 + Math.cos(tSec * 10 + k) * 4;
+            const x1 = tankX + Math.cos(a) * r1;
+            const y1 = tankY - 14 + Math.sin(a) * r1;
+            const mx = tankX + Math.cos(a + 0.25) * ((r1 + r2) / 2);
+            const my = tankY - 14 + Math.sin(a + 0.25) * ((r1 + r2) / 2);
+            const x2 = tankX + Math.cos(a) * r2;
+            const y2 = tankY - 14 + Math.sin(a) * r2;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(mx, my);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+          }
+
+          // Esferas de plasma em órbita
+          for (let i = 0; i < 4; i++) {
+            const orbA = tSec * 4 + i * (Math.PI / 2);
+            const orbR = 24 + Math.sin(tSec * 3 + i) * 6;
+            ctx.beginPath();
+            ctx.arc(tankX + Math.cos(orbA) * orbR, tankY - 14 + Math.sin(orbA) * (orbR * 0.65), 3.5, 0, Math.PI * 2);
+            ctx.fillStyle = (i % 2 === 0) ? '#ffffff' : '#c084fc';
+            ctx.shadowColor = '#c084fc';
+            ctx.shadowBlur = 8;
             ctx.fill();
           }
           ctx.restore();
