@@ -9,7 +9,7 @@
       this.x = o.x; this.y = o.y;
       this.vx = o.vx; this.vy = o.vy;
       this.delay = o.delay || 0;
-      this.windInfl = o.windInfl;
+      this.windInfl = o.windInfl != null ? o.windInfl : (o.tank && o.tank.mobile && o.tank.mobile.windInfl != null ? o.tank.mobile.windInfl : 1);
       this.age = 0;
       this.dead = false;
       this.trail = [];
@@ -63,6 +63,61 @@
         if (cb.launch) cb.launch(this);
       }
       this.age += dt;
+
+      // Se o tiro estiver no turbilhão do tornado, processa a animação de rotação visível ao redor do tornado
+      if (this.tornadoSwirling) {
+        this.tornadoProgress += dt / this.tornadoDuration;
+        const p = Math.min(1, this.tornadoProgress);
+
+        // 1.5 voltas completas ao redor do eixo do tornado (3 * Math.PI)
+        const totalRot = Math.PI * 3;
+        const startAngle = this.tornadoDir >= 0 ? Math.PI : 0;
+        const curAngle = startAngle + (this.tornadoDir >= 0 ? 1 : -1) * p * totalRot;
+
+        const radX = 13.5;
+        this.x = this.tornadoCenter + Math.cos(curAngle) * radX;
+
+        // Progressão vertical suave entre entryY e targetY com ondulação espiral do vórtice
+        const spiralWave = Math.sin(p * Math.PI * 3) * 4;
+        this.y = this.tornadoEntryY + (this.tornadoTargetY - this.tornadoEntryY) * p + spiralWave;
+
+        // Rastro em espiral ao redor do tornado
+        this.trail.push(this.x, this.y);
+        if (this.trail.length > 44) this.trail.splice(0, 2);
+
+        if (this.b1Alive && this.curOrb1) {
+          this.curOrb1.x = this.x - 8; this.curOrb1.y = this.y;
+          this.b1Trail.push(this.curOrb1.x, this.curOrb1.y);
+          if (this.b1Trail.length > 28) this.b1Trail.splice(0, 2);
+        }
+        if (this.b2Alive && this.curOrb2) {
+          this.curOrb2.x = this.x + 8; this.curOrb2.y = this.y;
+          this.b2Trail.push(this.curOrb2.x, this.curOrb2.y);
+          if (this.b2Trail.length > 28) this.b2Trail.splice(0, 2);
+        }
+
+        // Concluiu o giro no tornado: expelir do outro lado suavemente!
+        if (p >= 1) {
+          this.tornadoSwirling = false;
+          this.tornadoCooldown = 1.0;
+          this.inTornadoSwirl = 0.3;
+          this.x = this.tornadoCenter + this.tornadoDir * 14.5;
+          this.y = this.tornadoTargetY;
+          this.vx = this.tornadoExitVx;
+          this.vy = this.tornadoExitVy;
+
+          if (!this.underground && terrain.isSolid(this.x, this.y)) {
+            let safeY = this.y;
+            while (safeY > 0 && terrain.isSolid(this.x, safeY)) safeY--;
+            this.y = safeY;
+          }
+
+          if (cb.spawnWeatherFX) cb.spawnWeatherFX('tornado', this.x, this.y);
+          GB.Sfx.boom(0.25);
+        }
+        return;
+      }
+
       const ax = wind * GB.WIND_ACCEL * this.windInfl;
       const speed = Math.hypot(this.vx, this.vy);
       const n = Math.max(1, Math.ceil((speed * dt) / 2));
@@ -99,45 +154,48 @@
             } else if (weather.type === 'thunder' && !this.hasThunder) {
               this.hasThunder = true;
               if (cb.spawnWeatherFX) cb.spawnWeatherFX('thunder', this.x, this.y);
-            } else if (weather.type === 'tornado' && (!this.tornadoCooldown || this.tornadoCooldown <= 0)) {
-              this.tornadoCooldown = 0.6;
-              this.inTornadoSwirl = 0.24;
+            } else if (weather.type === 'tornado' && (!this.tornadoCooldown || this.tornadoCooldown <= 0) && !this.tornadoSwirling) {
+              const movingUp = this.vy < -8;   // subindo em direção ao céu
+              const movingDown = this.vy > 8;  // descendo em direção ao chão
+              const invert = !!this.underground; // Khan T2 subterrâneo: lógica invertida
 
-              let isRising = false, isFalling = false;
-              if (this.underground) {
-                // Khan T2 subterrâneo: lógica vertical invertida
-                isRising = this.vy > 5;
-                isFalling = this.vy < -5;
-              } else {
-                isRising = this.vy < -5; // vy negativo = subindo
-                isFalling = this.vy > 5;  // vy positivo = descendo
-              }
+              const shouldGoHigher = invert ? movingDown : movingUp;
+              const shouldGoLower = invert ? movingUp : movingDown;
 
-              const deltaY = 32;
-              if (isRising) {
+              const deltaY = 46; // deslocamento vertical do tornado
+              let targetY = this.y;
+              let exitVy = this.vy;
+              if (shouldGoHigher) {
                 // Sai mais alto
-                this.y += this.underground ? deltaY : -deltaY;
-                const spd = Math.max(140, Math.abs(this.vy) * 1.15);
-                this.vy = (this.underground ? 1 : -1) * spd;
-              } else if (isFalling) {
+                targetY = this.y - deltaY;
+                const spd = Math.max(130, Math.abs(this.vy) * 1.15);
+                exitVy = (invert ? 1 : -1) * spd;
+              } else if (shouldGoLower) {
                 // Sai mais baixo
-                this.y += this.underground ? -deltaY : deltaY;
-                const spd = Math.max(140, Math.abs(this.vy) * 1.15);
-                this.vy = (this.underground ? -1 : 1) * spd;
-              }
-              // Se for zero (horizontal), sai no mesmo rumo na mesma altura
-
-              if (!this.underground && terrain.isSolid(this.x, this.y)) {
-                let safeY = this.y;
-                while (safeY > 0 && terrain.isSolid(this.x, safeY)) safeY--;
-                this.y = safeY;
+                targetY = this.y + deltaY;
+                const spd = Math.max(130, Math.abs(this.vy) * 1.15);
+                exitVy = (invert ? -1 : 1) * spd;
+              } else {
+                // Zero: sai no mesmo rumo e mesma altura
+                targetY = this.y;
+                exitVy = this.vy;
               }
 
-              // Sai do outro lado do tornado de acordo com vx
               const dir = this.vx >= 0 ? 1 : -1;
-              this.x = wx + dir * 14;
+              const exitVx = dir * Math.max(160, Math.abs(this.vx));
+
+              this.tornadoSwirling = true;
+              this.tornadoProgress = 0;
+              this.tornadoDuration = 0.42; // ~420ms de giro visível no tornado
+              this.tornadoCenter = wx;
+              this.tornadoDir = dir;
+              this.tornadoEntryY = this.y;
+              this.tornadoTargetY = targetY;
+              this.tornadoExitVx = exitVx;
+              this.tornadoExitVy = exitVy;
 
               if (cb.spawnWeatherFX) cb.spawnWeatherFX('tornado', wx, this.y);
+              break;
             }
           }
         }
@@ -879,12 +937,15 @@
       }
 
       // 4. Tornado: Efeito de rotação e redemoinho ao passar pelo ciclone
-      if (this.inTornadoSwirl > 0) {
-        ctx.strokeStyle = 'rgba(224, 242, 254, 0.75)';
-        ctx.lineWidth = 2.2;
+      if (this.inTornadoSwirl > 0 || this.tornadoSwirling) {
+        ctx.strokeStyle = 'rgba(224, 242, 254, 0.9)';
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 10;
+        ctx.lineWidth = 2.4;
         ctx.beginPath();
-        ctx.ellipse(0, 0, 18, 9, this.age * 20, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, 22, 11, this.age * 24, 0, Math.PI * 2);
         ctx.stroke();
+        ctx.shadowBlur = 0;
       }
 
       ctx.restore();

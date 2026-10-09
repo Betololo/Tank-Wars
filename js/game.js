@@ -2129,122 +2129,147 @@
       if (!this.activeWeather || !this.activeWeather.type) return;
       const wType = this.activeWeather.type;
       const wx = this.activeWeather.x;
-      const halfW = 12.5; // ~25 pixels de largura total
+      const halfW = 12.5; // exatamente 25 pixels de largura total
       const mapH = (this.terrain && this.terrain.H) || GB.WORLD_H;
       const t = this.time;
+
+      // Cobre 100% de ponta a ponta do eixo vertical Y do jogo (-3500px até o abismo)
+      const startY = -3500;
+      const endY = mapH + 2000;
+      const totalH = endY - startY;
 
       ctx.save();
 
       if (wType === 'force') {
-        // FORCE (Sol): Pilar vertical dourado radiante cobrindo o mapa inteiro na vertical
-        const g = ctx.createLinearGradient(wx - halfW - 4, 0, wx + halfW + 4, 0);
-        g.addColorStop(0, 'rgba(255, 215, 0, 0)');
-        g.addColorStop(0.2, 'rgba(255, 215, 0, 0.3)');
-        g.addColorStop(0.5, 'rgba(255, 255, 255, 0.75)');
-        g.addColorStop(0.8, 'rgba(255, 215, 0, 0.3)');
-        g.addColorStop(1, 'rgba(255, 215, 0, 0)');
+        // FORCE (Sol): Pilar vertical dourado radiante cobrindo o mapa inteiro na vertical (25px)
+        const g = ctx.createLinearGradient(wx - halfW, 0, wx + halfW, 0);
+        g.addColorStop(0, 'rgba(255, 215, 0, 0.15)');
+        g.addColorStop(0.2, 'rgba(255, 215, 0, 0.45)');
+        g.addColorStop(0.5, 'rgba(255, 255, 255, 0.85)');
+        g.addColorStop(0.8, 'rgba(255, 215, 0, 0.45)');
+        g.addColorStop(1, 'rgba(255, 215, 0, 0.15)');
         ctx.fillStyle = g;
-        ctx.fillRect(wx - halfW - 4, 0, (halfW + 4) * 2, mapH);
+        ctx.fillRect(wx - halfW, startY, halfW * 2, totalH);
 
-        // Feixes de luz verticais pulsantes
-        ctx.strokeStyle = 'rgba(255, 235, 120, 0.45)';
-        ctx.lineWidth = 1.5;
+        // Feixes de luz verticais pulsantes contínuos por todo o eixo Y
+        ctx.strokeStyle = 'rgba(255, 235, 120, 0.55)';
+        ctx.lineWidth = 1.6;
         for (let i = 0; i < 4; i++) {
           const offX = Math.sin(t * 3.5 + i * 1.6) * 9;
           ctx.beginPath();
-          ctx.moveTo(wx + offX, 0);
-          ctx.lineTo(wx + offX, mapH);
+          ctx.moveTo(wx + offX, startY);
+          ctx.lineTo(wx + offX, endY);
           ctx.stroke();
         }
 
-        ctx.font = '22px sans-serif';
+        const iconY = (this.cam ? this.cam.y : 0) + 65 + Math.sin(t * 3.5) * 4;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.beginPath();
+        ctx.arc(wx, iconY, 15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = '20px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('☀️', wx, Math.max(30, this.cam.y + 40));
+        ctx.fillText('☀️', wx, iconY + 1);
       } else if (wType === 'tornado') {
-        // TORNADO (Vento): Turbilhão vertical de 25px com faixas em espiral rotativas
+        // TORNADO (Vento): Turbilhão vertical de 25px com faixas em espiral contínuas em 100% do Y
         const g = ctx.createLinearGradient(wx - halfW, 0, wx + halfW, 0);
-        g.addColorStop(0, 'rgba(56, 189, 248, 0)');
-        g.addColorStop(0.2, 'rgba(224, 242, 254, 0.28)');
-        g.addColorStop(0.5, 'rgba(186, 230, 253, 0.55)');
-        g.addColorStop(0.8, 'rgba(224, 242, 254, 0.28)');
-        g.addColorStop(1, 'rgba(56, 189, 248, 0)');
+        g.addColorStop(0, 'rgba(56, 189, 248, 0.12)');
+        g.addColorStop(0.25, 'rgba(224, 242, 254, 0.38)');
+        g.addColorStop(0.5, 'rgba(186, 230, 253, 0.7)');
+        g.addColorStop(0.75, 'rgba(224, 242, 254, 0.38)');
+        g.addColorStop(1, 'rgba(56, 189, 248, 0.12)');
         ctx.fillStyle = g;
-        ctx.fillRect(wx - halfW, 0, halfW * 2, mapH);
+        ctx.fillRect(wx - halfW, startY, halfW * 2, totalH);
 
-        // Faixas espirais de vento
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        // Faixas espirais contínuas de vento atravessando todo o eixo Y
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        for (let y = startY; y < endY; y += 14) {
+          const sx = wx + Math.sin(t * 9 + y * 0.04) * 11;
+          if (y === startY) ctx.moveTo(sx, y);
+          else ctx.lineTo(sx, y);
+        }
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        for (let y = 0; y < mapH; y += 12) {
-          const sx = wx + Math.sin(t * 9 + y * 0.04) * 11;
-          if (y === 0) ctx.moveTo(sx, y);
-          else ctx.lineTo(sx, y);
-        }
-        ctx.stroke();
-
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
-        ctx.lineWidth = 1.8;
-        ctx.beginPath();
-        for (let y = 0; y < mapH; y += 12) {
+        for (let y = startY; y < endY; y += 14) {
           const sx = wx - Math.sin(t * 9 + y * 0.04) * 11;
-          if (y === 0) ctx.moveTo(sx, y);
+          if (y === startY) ctx.moveTo(sx, y);
           else ctx.lineTo(sx, y);
         }
         ctx.stroke();
 
+        const iconY = (this.cam ? this.cam.y : 0) + 65 + Math.sin(t * 3.5) * 4;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.beginPath();
+        ctx.arc(wx, iconY, 15, 0, Math.PI * 2);
+        ctx.fill();
         ctx.font = '20px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('🌀', wx, Math.max(30, this.cam.y + 40));
+        ctx.fillText('🌀', wx, iconY + 1);
       } else if (wType === 'black') {
-        // BLACK (Lua): Pilar de eclipse negro com névoa roxa escura
-        const g = ctx.createLinearGradient(wx - halfW - 2, 0, wx + halfW + 2, 0);
-        g.addColorStop(0, 'rgba(147, 51, 234, 0)');
-        g.addColorStop(0.2, 'rgba(88, 28, 135, 0.5)');
-        g.addColorStop(0.5, 'rgba(10, 5, 20, 0.88)');
-        g.addColorStop(0.8, 'rgba(88, 28, 135, 0.5)');
-        g.addColorStop(1, 'rgba(147, 51, 234, 0)');
+        // BLACK (Lua): Pilar de eclipse negro de 25px com névoa roxa escura em 100% do Y
+        const g = ctx.createLinearGradient(wx - halfW, 0, wx + halfW, 0);
+        g.addColorStop(0, 'rgba(147, 51, 234, 0.18)');
+        g.addColorStop(0.2, 'rgba(88, 28, 135, 0.65)');
+        g.addColorStop(0.5, 'rgba(10, 5, 20, 0.95)');
+        g.addColorStop(0.8, 'rgba(88, 28, 135, 0.65)');
+        g.addColorStop(1, 'rgba(147, 51, 234, 0.18)');
         ctx.fillStyle = g;
-        ctx.fillRect(wx - halfW - 2, 0, (halfW + 2) * 2, mapH);
+        ctx.fillRect(wx - halfW, startY, halfW * 2, totalH);
 
-        const pulse = Math.sin(t * 4) * 0.2 + 0.5;
+        const pulse = Math.sin(t * 4) * 0.2 + 0.6;
         ctx.strokeStyle = `rgba(168, 85, 247, ${pulse})`;
-        ctx.lineWidth = 1.4;
-        ctx.strokeRect(wx - halfW, 0, halfW * 2, mapH);
+        ctx.lineWidth = 1.8;
+        ctx.strokeRect(wx - halfW, startY, halfW * 2, totalH);
 
+        const iconY = (this.cam ? this.cam.y : 0) + 65 + Math.sin(t * 3.5) * 4;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.beginPath();
+        ctx.arc(wx, iconY, 15, 0, Math.PI * 2);
+        ctx.fill();
         ctx.font = '20px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('🌙', wx, Math.max(30, this.cam.y + 40));
+        ctx.fillText('🌙', wx, iconY + 1);
       } else if (wType === 'thunder') {
-        // THUNDER (Raio): Coluna elétrica azul com arcos voltaicos verticais
-        const g = ctx.createLinearGradient(wx - halfW - 2, 0, wx + halfW + 2, 0);
-        g.addColorStop(0, 'rgba(0, 229, 255, 0)');
-        g.addColorStop(0.2, 'rgba(0, 229, 255, 0.35)');
-        g.addColorStop(0.5, 'rgba(255, 255, 255, 0.75)');
-        g.addColorStop(0.8, 'rgba(0, 229, 255, 0.35)');
-        g.addColorStop(1, 'rgba(0, 229, 255, 0)');
+        // THUNDER (Raio): Coluna elétrica azul de 25px com arcos voltaicos verticais em 100% do Y
+        const g = ctx.createLinearGradient(wx - halfW, 0, wx + halfW, 0);
+        g.addColorStop(0, 'rgba(0, 229, 255, 0.15)');
+        g.addColorStop(0.2, 'rgba(0, 229, 255, 0.45)');
+        g.addColorStop(0.5, 'rgba(255, 255, 255, 0.85)');
+        g.addColorStop(0.8, 'rgba(0, 229, 255, 0.45)');
+        g.addColorStop(1, 'rgba(0, 229, 255, 0.15)');
         ctx.fillStyle = g;
-        ctx.fillRect(wx - halfW - 2, 0, (halfW + 2) * 2, mapH);
+        ctx.fillRect(wx - halfW, startY, halfW * 2, totalH);
 
         ctx.strokeStyle = '#ffffff';
         ctx.shadowColor = '#00e5ff';
-        ctx.shadowBlur = 6;
-        ctx.lineWidth = 1.4;
+        ctx.shadowBlur = 8;
+        ctx.lineWidth = 1.6;
         ctx.beginPath();
-        for (let y = 0; y < mapH; y += 30) {
+        for (let y = startY; y < endY; y += 32) {
           const off = (Math.sin(t * 30 + y) * 9);
-          if (y === 0) ctx.moveTo(wx + off, y);
+          if (y === startY) ctx.moveTo(wx + off, y);
           else ctx.lineTo(wx + off, y);
         }
         ctx.stroke();
         ctx.shadowBlur = 0;
 
+        const iconY = (this.cam ? this.cam.y : 0) + 65 + Math.sin(t * 3.5) * 4;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.beginPath();
+        ctx.arc(wx, iconY, 15, 0, Math.PI * 2);
+        ctx.fill();
         ctx.font = '20px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('⚡', wx, Math.max(30, this.cam.y + 40));
+        ctx.fillText('⚡', wx, iconY + 1);
       }
 
       ctx.restore();
