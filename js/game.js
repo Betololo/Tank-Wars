@@ -1913,6 +1913,9 @@
         m.tanks.forEach((s, i) => {
           const t = this.tanks[i];
           if (!t) return;
+          if (t.hp > s.hp && (t.hp - s.hp >= 10) && typeof t.triggerHurt === 'function') {
+            t.triggerHurt(t.hp - s.hp);
+          }
           t.x = s.x; t.y = s.y; t.hp = s.hp; t.ssCooldown = s.ss; t.facing = s.f; t.angle = s.a; t.lastPower = s.lp;
           t.targetX = s.x; t.targetY = s.y; t.targetAngle = s.a;
           t.dmgDealt = s.dd || 0;

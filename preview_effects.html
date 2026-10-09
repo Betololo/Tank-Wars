@@ -294,6 +294,12 @@
         <span class="desc">4 Abates em 1 Turno<br>Coroa Imperial, Vinheta Ouro & Confetes</span>
       </button>
 
+      <button class="effect-btn btn-hurt" id="btn-hurt" style="border-color: rgba(239, 68, 68, 0.45); background: linear-gradient(135deg, rgba(60, 15, 20, 0.9), rgba(25, 10, 20, 0.9));">
+        <span class="icon">💥</span>
+        <span class="title" style="color: #f87171;">REVISAR DANO!</span>
+        <span class="desc">Impacto nos Mobiles<br>Tremor, Encolhimento, Olhos Fechando & Peças/Slime</span>
+      </button>
+
       <button class="effect-btn btn-showcase" id="btn-showcase">
         <span class="title">🎬 EXECUTAR TODOS EM SEQUÊNCIA (SHOWCASE COMPLETO)</span>
         <span class="desc" style="color: #fff; opacity: 0.85;">Apresenta Nice Shot, Super Shot, Double Kill, Triple Kill e Full Team Wipe com áudio e vozes</span>
@@ -337,6 +343,7 @@
           <span class="toggle-chip" id="chip-double">🩸 Aura Carmesim</span>
           <span class="toggle-chip" id="chip-triple">⚡ Aura de Plasma</span>
           <span class="toggle-chip" id="chip-bubble">👍 Balão Nice</span>
+          <button id="btn-test-hurt" style="background:#dc2626; border-color:#ef4444; color:#fff;">💥 Testar Dano</button>
         </div>
       </div>
       <canvas id="stage-canvas"></canvas>
@@ -357,6 +364,13 @@
         </li>
         <li><b>Double Kill Turbinado:</b> Flash Vermelho de Impacto, Linha de Corte diagonal cortando a tela (estilo anime/luta), Crânios duplos colidindo no topo, Aura Carmesim de Fúria e partículas de faíscas incandescentes!</li>
         <li><b>Triple Kill com Tempestade Elétrica:</b> Flash estroboscópico de raios na tela, arcos de relâmpagos descendo pelo céu, Aura de Plasma Neon e título elétrico de alta voltagem!</li>
+        <li><b>Reação ao Dano nos Veículos:</b>
+          <ul>
+            <li><b>Expressão facial / Olho de dor:</b> Ao ser atingido, os olhos do veículo fecham em careta de dor (&gt; &lt;) ou piscam em vermelho de alerta.</li>
+            <li><b>Tremor & Squash:</b> O mobile treme intensamente e se encolhe no impacto com física de absorção cartoon.</li>
+            <li><b>Peças & Debris voando:</b> Máquinas expelem engrenagens dentadas, porcas sextavadas, parafusos e faíscas elétricas. O Worm (100% biônico) expele gotas viscosas de bio-slime fluorescente e esporos translúcidos!</li>
+          </ul>
+        </li>
       </ul>
     </div>
   </main>
@@ -383,7 +397,9 @@
         tripleKillAura: false,
         niceBubble: false,
         bubbleTimer: 0,
-        wheelRot: 0
+        wheelRot: 0,
+        hurt: 0,
+        debris: []
       };
 
       // Carrega imagens dos avatares se ainda não carregaram
@@ -602,6 +618,96 @@
         updateChips();
       });
 
+      // Função de disparo de Dano no Mobile do Palco
+      function triggerDamagePreview() {
+        previewState.hurt = 0.55;
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        const w = canvas.width / dpr;
+        const h = canvas.height / dpr;
+        const tankX = w * 0.5;
+        const tankY = h * 0.76;
+
+        const isWorm = previewState.mobileId === 'worm' || previewState.mobileId === 'grub';
+        const count = 12;
+        for (let i = 0; i < count; i++) {
+          const offX = (Math.random() - 0.5) * 26;
+          const offY = -12 + (Math.random() - 0.5) * 18;
+          const speed = 75 + Math.random() * 145;
+          const angle = -Math.PI * 0.5 + (Math.random() - 0.5) * 1.5;
+          const vx = Math.cos(angle) * speed;
+          const vy = Math.sin(angle) * speed;
+
+          if (isWorm) {
+            const type = Math.random() < 0.65 ? 'slime' : 'spore';
+            const colors = ['#68d391', '#48bb78', '#38ef7d', '#00f5d4', '#a7f3d0'];
+            previewState.debris.push({
+              type: type,
+              x: tankX + offX,
+              y: tankY + offY,
+              vx: vx * 0.9,
+              vy: vy * 0.85,
+              gravity: 280,
+              size: 2.5 + Math.random() * 3.0,
+              color: colors[Math.floor(Math.random() * colors.length)],
+              life: 0.55 + Math.random() * 0.35,
+              maxLife: 0.85,
+              rot: Math.random() * Math.PI * 2,
+              vRot: (Math.random() - 0.5) * 6
+            });
+          } else {
+            const r = Math.random();
+            let type = 'gear';
+            if (r < 0.35) type = 'gear';
+            else if (r < 0.65) type = 'nut';
+            else if (r < 0.85) type = 'bolt';
+            else type = 'spark';
+
+            let color = '#9aa5b1';
+            if (type === 'gear') {
+              const gearCols = ['#94a3b8', '#cbd5e1', '#64748b', '#475569'];
+              color = gearCols[Math.floor(Math.random() * gearCols.length)];
+            } else if (type === 'nut') {
+              const nutCols = ['#cbd5e1', '#e2e8f0', '#94a3b8'];
+              color = nutCols[Math.floor(Math.random() * nutCols.length)];
+            } else if (type === 'bolt') {
+              const boltCols = ['#94a3b8', '#64748b', '#cbd5e1'];
+              color = boltCols[Math.floor(Math.random() * boltCols.length)];
+            } else {
+              const sparkCols = ['#ffeb3b', '#ff9800', '#00e5ff', '#ffffff'];
+              color = sparkCols[Math.floor(Math.random() * sparkCols.length)];
+            }
+
+            previewState.debris.push({
+              type: type,
+              x: tankX + offX,
+              y: tankY + offY,
+              vx: vx,
+              vy: vy,
+              gravity: 360,
+              size: type === 'spark' ? (2 + Math.random() * 2) : (3 + Math.random() * 2.5),
+              color: color,
+              life: 0.5 + Math.random() * 0.35,
+              maxLife: 0.8,
+              rot: Math.random() * Math.PI * 2,
+              vRot: (Math.random() - 0.5) * 16
+            });
+          }
+        }
+      }
+
+      document.getElementById('btn-hurt').addEventListener('click', () => {
+        triggerDamagePreview();
+        GB.Sfx && GB.Sfx.playExplosion && GB.Sfx.playExplosion();
+      });
+
+      const btnTestHurt = document.getElementById('btn-test-hurt');
+      if (btnTestHurt) {
+        btnTestHurt.addEventListener('click', () => {
+          triggerDamagePreview();
+          GB.Sfx && GB.Sfx.playExplosion && GB.Sfx.playExplosion();
+        });
+      }
+
       // Showcase Sequencial
       let showcaseRunning = false;
       document.getElementById('btn-showcase').addEventListener('click', () => {
@@ -680,6 +786,24 @@
 
         // Rotação suave contínua das rodas para demonstrar a animação viva
         previewState.wheelRot += 0.035;
+
+        if (previewState.hurt > 0) {
+          previewState.hurt = Math.max(0, previewState.hurt - dt);
+        }
+        if (previewState.debris && previewState.debris.length) {
+          for (let i = previewState.debris.length - 1; i >= 0; i--) {
+            const p = previewState.debris[i];
+            p.life -= dt;
+            if (p.life <= 0) {
+              previewState.debris.splice(i, 1);
+              continue;
+            }
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.vy += (p.gravity || 340) * dt;
+            if (p.vRot) p.rot = (p.rot || 0) + p.vRot * dt;
+          }
+        }
 
         if (previewState.bubbleTimer > 0 && !previewState.niceBubble) {
           previewState.bubbleTimer = Math.max(0, previewState.bubbleTimer - dt);
@@ -820,9 +944,17 @@
           ctx.restore();
         }
 
-        // Renderiza o Tanque e o Avatar
+        // Renderiza o Tanque e o Avatar com Squash & Tremor de dano
+        const shakeFactor = previewState.hurt > 0 ? (previewState.hurt / 0.55) : 0;
+        const shakeX = previewState.hurt > 0 ? Math.sin(previewState.hurt * 90) * 3.5 * shakeFactor : 0;
+        const shakeY = previewState.hurt > 0 ? Math.cos(previewState.hurt * 75) * 2.0 * shakeFactor : 0;
+        const squashT = previewState.hurt > 0 ? Math.sin((previewState.hurt / 0.55) * Math.PI) : 0;
+        const squashX = 1 + squashT * 0.12;
+        const squashY = 1 - squashT * 0.18;
+
         ctx.save();
-        ctx.translate(tankX, tankY);
+        ctx.translate(tankX + shakeX, tankY + shakeY);
+        ctx.scale(squashX, squashY);
         // Sombra suave sob as esteiras
         ctx.fillStyle = 'rgba(0,0,0,0.4)';
         ctx.beginPath(); ctx.ellipse(0, 4, 32, 6, 0, 0, Math.PI * 2); ctx.fill();
@@ -834,12 +966,17 @@
           });
         }
 
-        // Sprite do Mobile com animação viva de rodas
+        // Sprite do Mobile com animação viva de rodas e estado hurt (olho fechando de dor)
         if (window.GB && GB.drawMobile) {
           const previewAngle = (previewState.mobileId === 'khan' || previewState.mobileId === 'kuda') ? 0 : 35;
-          GB.drawMobile(ctx, previewState.mobileId, previewAngle, '#ffd27a', previewState.wheelRot);
+          GB.drawMobile(ctx, previewState.mobileId, previewAngle, '#ffd27a', previewState.wheelRot, previewState.hurt);
         }
         ctx.restore();
+
+        // Desenhar debris de dano no preview (peças mecânicas ou bio-slime)
+        if (previewState.debris && previewState.debris.length && GB.drawDamageDebris) {
+          GB.drawDamageDebris(ctx, previewState.debris);
+        }
 
         // Balão 👍 NICE!
         if (previewState.bubbleTimer > 0 || previewState.niceBubble) {

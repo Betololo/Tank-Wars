@@ -41,6 +41,7 @@
       this.tilt = 0;
       this.lastPower = -1;
       this.hurt = 0;
+      this.debris = [];
       this.moving = false;
       this.falling = false;
       this.dispHp = this.hp;
@@ -84,6 +85,7 @@
 
     // Retorna true enquanto estiver caindo.
     updatePhysics(dt) {
+      this.updateDebris(dt);
       if (!this.alive) return false;
       this.hurt = Math.max(0, this.hurt - dt);
       if (this.niceShotBubbleTimer > 0) this.niceShotBubbleTimer = Math.max(0, this.niceShotBubbleTimer - dt);
@@ -251,7 +253,8 @@
       const realAmount = amount * (1 - def);
       const d = Math.min(this.hp, Math.round(realAmount));
       this.hp -= d;
-      this.hurt = 0.35;
+      this.hurt = 0.55;
+      this.spawnDamageDebris(d > 0 ? d : 25);
       if (this.hp <= 0) { this.hp = 0; this.alive = false; }
       return d;
     }
@@ -264,8 +267,18 @@
     }
 
     draw(ctx, opts) {
-      if (!this.alive && !this.drawDead) return;
-      const shake = this.hurt > 0 ? Math.sin(this.hurt * 80) * 2 : 0;
+      if (!this.alive && !this.drawDead) {
+        if (this.debris && this.debris.length && GB.drawDamageDebris) {
+          GB.drawDamageDebris(ctx, this.debris);
+        }
+        return;
+      }
+      const shakeFactor = this.hurt > 0 ? (this.hurt / 0.55) : 0;
+      const shakeX = this.hurt > 0 ? Math.sin(this.hurt * 90) * 3.5 * shakeFactor : 0;
+      const shakeY = this.hurt > 0 ? Math.cos(this.hurt * 75) * 2.0 * shakeFactor : 0;
+      const squashT = this.hurt > 0 ? Math.sin((this.hurt / 0.55) * Math.PI) : 0;
+      const squashX = 1 + squashT * 0.12;
+      const squashY = 1 - squashT * 0.18;
 
       // Aura de Overcharge (Avatar C): névoa e fogo carmesim
       if (this.overcharged) {
@@ -401,17 +414,22 @@
       }
 
       ctx.save();
-      ctx.translate(this.x + shake, this.y + 1);
+      ctx.translate(this.x + shakeX, this.y + 1 + shakeY);
       ctx.rotate(this.tilt);
       // sombra/brilho do time
       ctx.fillStyle = this.color + '55';
       ctx.beginPath(); ctx.ellipse(0, 0, 24, 4, 0, 0, 7); ctx.fill();
-      ctx.scale(this.facing, 1);
+      ctx.scale(this.facing * squashX, squashY);
       if (this.avatarId && GB.drawAvatar) {
         GB.drawAvatar(ctx, this.avatarId, this.mobileId, null, { hasCrown: this.hasCrown });
       }
-      GB.drawMobile(ctx, this.mobileId, this.relativeAngle, this.color, this.wheelRot);
+      GB.drawMobile(ctx, this.mobileId, this.relativeAngle, this.color, this.wheelRot, this.hurt);
       ctx.restore();
+
+      // Debris voando (peças de máquinas ou bio-slime)
+      if (this.debris && this.debris.length && GB.drawDamageDebris) {
+        GB.drawDamageDebris(ctx, this.debris);
+      }
 
       // Balãozinho "👍 NICE!" para Nice Shot
       if (this.niceShotBubbleTimer > 0) {
@@ -582,6 +600,99 @@
       }
       
       ctx.restore();
+    }
+
+    spawnDamageDebris(amount) {
+      if (!this.debris) this.debris = [];
+      const isWorm = this.mobileId === 'worm' || this.mobileId === 'grub';
+      const count = Math.max(6, Math.min(14, Math.floor((amount || 30) / 8)));
+      for (let i = 0; i < count; i++) {
+        const offX = (Math.random() - 0.5) * 24;
+        const offY = -8 + (Math.random() - 0.5) * 16;
+        const speed = 70 + Math.random() * 140;
+        const angle = -Math.PI * 0.5 + (Math.random() - 0.5) * 1.5;
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
+
+        if (isWorm) {
+          // Worm é 100% biônico: gotas de bio-slime fluorescente e esporos translúcidos
+          const type = Math.random() < 0.65 ? 'slime' : 'spore';
+          const colors = ['#68d391', '#48bb78', '#38ef7d', '#00f5d4', '#a7f3d0'];
+          this.debris.push({
+            type: type,
+            x: this.x + offX,
+            y: this.y + offY,
+            vx: vx * 0.9,
+            vy: vy * 0.85,
+            gravity: 280,
+            size: 2.5 + Math.random() * 3.0,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            life: 0.55 + Math.random() * 0.35,
+            maxLife: 0.85,
+            rot: Math.random() * Math.PI * 2,
+            vRot: (Math.random() - 0.5) * 6
+          });
+        } else {
+          // Máquinas: engrenagens giratórias, porcas sextavadas, parafusos e faíscas elétricas
+          const r = Math.random();
+          let type = 'gear';
+          if (r < 0.35) type = 'gear';
+          else if (r < 0.65) type = 'nut';
+          else if (r < 0.85) type = 'bolt';
+          else type = 'spark';
+
+          let color = '#9aa5b1';
+          if (type === 'gear') {
+            const gearCols = ['#94a3b8', '#cbd5e1', '#64748b', '#475569'];
+            color = gearCols[Math.floor(Math.random() * gearCols.length)];
+          } else if (type === 'nut') {
+            const nutCols = ['#cbd5e1', '#e2e8f0', '#94a3b8'];
+            color = nutCols[Math.floor(Math.random() * nutCols.length)];
+          } else if (type === 'bolt') {
+            const boltCols = ['#94a3b8', '#64748b', '#cbd5e1'];
+            color = boltCols[Math.floor(Math.random() * boltCols.length)];
+          } else {
+            const sparkCols = ['#ffeb3b', '#ff9800', '#00e5ff', '#ffffff'];
+            color = sparkCols[Math.floor(Math.random() * sparkCols.length)];
+          }
+
+          this.debris.push({
+            type: type,
+            x: this.x + offX,
+            y: this.y + offY,
+            vx: vx,
+            vy: vy,
+            gravity: 360,
+            size: type === 'spark' ? (2 + Math.random() * 2) : (3 + Math.random() * 2.5),
+            color: color,
+            life: 0.5 + Math.random() * 0.35,
+            maxLife: 0.8,
+            rot: Math.random() * Math.PI * 2,
+            vRot: (Math.random() - 0.5) * 16
+          });
+        }
+      }
+    }
+
+    updateDebris(dt) {
+      if (!this.debris || !this.debris.length) return;
+      for (let i = this.debris.length - 1; i >= 0; i--) {
+        const p = this.debris[i];
+        p.life -= dt;
+        if (p.life <= 0) {
+          this.debris.splice(i, 1);
+          continue;
+        }
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += (p.gravity || 340) * dt;
+        if (p.vRot) p.rot = (p.rot || 0) + p.vRot * dt;
+      }
+    }
+
+    triggerHurt(amount) {
+      this.hurt = 0.55;
+      this.spawnDamageDebris(amount || 40);
     }
   }
 

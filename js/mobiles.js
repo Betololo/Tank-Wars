@@ -158,7 +158,7 @@
       defense: 0.06,
       stats: { HP: 0.55, Dano: 0.8, Destruição: 0.4, Mobilidade: 0.7 },
       pivot: [-8, -14], barrel: 24, hitR: 18,
-      minAngle: -25, maxAngle: 45, shootsBackwards: true,
+      minAngle: -25, maxAngle: 90, shootsBackwards: true,
       shots: [
         { name: 'Tiro 1', delay: 780, bullets: [{}], r: 35, dmg: 150, size: 6, color: '#fcf238', isDJ_T1: true },
         { name: 'Tiro 2', delay: 880, bullets: [{ delay: 0 }, { delay: 0.1 }, { delay: 0.2 }], r: 0, dmg: 0, size: 5, color: '#ff2c70', isKudaT2: true },
@@ -184,7 +184,7 @@
   // angle = ângulo do canhão em graus acima da horizontal
   // ----------------------------------------------------------------
   const draw = {
-    armor(ctx, angle, team, wheelRot) {
+    armor(ctx, angle, team, wheelRot, hurt) {
       // 1. Barra de proteção / cano curvado traseiro (cinza escuro, x < 0)
       ctx.save();
       ctx.beginPath();
@@ -288,40 +288,55 @@
       ctx.save();
       ctx.translate(1, -31);
 
-      // Globo ocular esférico branco bem aberto
-      ctx.beginPath();
-      ctx.arc(0, 0, 7, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-      outline(ctx);
+      if (hurt > 0) {
+        // Olho fechado em careta de dor (wincing slit)
+        ctx.beginPath();
+        ctx.arc(0, 0, 7, 0, Math.PI * 2);
+        ctx.fillStyle = '#bf360c';
+        ctx.fill();
+        outline(ctx);
+        ctx.beginPath();
+        ctx.moveTo(-1, -3.0);
+        ctx.lineTo(4.0, 0.5);
+        ctx.lineTo(-1, 4.0);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2.0;
+        ctx.stroke();
+      } else {
+        // Globo ocular esférico branco bem aberto
+        ctx.beginPath();
+        ctx.arc(0, 0, 7, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        outline(ctx);
 
-      // Pálpebra / capacete superior vermelho pequeno (cobre apenas o topo, deixando o olho bem aberto)
-      ctx.beginPath();
-      ctx.arc(0, 0, 7, Math.PI * 1.1, Math.PI * 1.9);
-      ctx.closePath();
-      const helmGrad = ctx.createLinearGradient(0, -7, 0, -2);
-      helmGrad.addColorStop(0, '#f4511e');
-      helmGrad.addColorStop(1, '#d84315');
-      ctx.fillStyle = helmGrad;
-      ctx.fill();
-      outline(ctx);
+        // Pálpebra / capacete superior vermelho pequeno (cobre apenas o topo, deixando o olho bem aberto)
+        ctx.beginPath();
+        ctx.arc(0, 0, 7, Math.PI * 1.1, Math.PI * 1.9);
+        ctx.closePath();
+        const helmGrad = ctx.createLinearGradient(0, -7, 0, -2);
+        helmGrad.addColorStop(0, '#f4511e');
+        helmGrad.addColorStop(1, '#d84315');
+        ctx.fillStyle = helmGrad;
+        ctx.fill();
+        outline(ctx);
 
-      // Detalhe de traço/luz laranja no topo do capacete
-      ctx.fillStyle = '#ff8a65';
-      ctx.fillRect(-2, -5.5, 4, 1.2);
+        // Detalhe de traço/luz laranja no topo do capacete
+        ctx.fillStyle = '#ff8a65';
+        ctx.fillRect(-2, -5.5, 4, 1.2);
 
-      // Pupila preta grande e bem nítida olhando para a frente
-      ctx.beginPath();
-      ctx.arc(2.6, 0.8, 3, 0, Math.PI * 2);
-      ctx.fillStyle = '#111111';
-      ctx.fill();
+        // Pupila preta grande e bem nítida olhando para a frente
+        ctx.beginPath();
+        ctx.arc(2.6, 0.8, 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#111111';
+        ctx.fill();
 
-      // Brilho branco na pupila
-      ctx.beginPath();
-      ctx.arc(1.8, -0.2, 1.1, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-
+        // Brilho branco na pupila
+        ctx.beginPath();
+        ctx.arc(1.8, -0.2, 1.2, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+      }
       ctx.restore();
 
       // 6. Esteira triangular (caterpillar track em triângulo com 3 rodas de metal)
@@ -397,7 +412,7 @@
       }
     },
 
-    bigfoot(ctx, angle, team, wheelRot) {
+    bigfoot(ctx, angle, team, wheelRot, hurt) {
       // 1. Chassi inferior metálico cinza
       rr(ctx, -15, -14, 30, 5, 2);
       ctx.fillStyle = '#7a8896'; ctx.fill(); outline(ctx);
@@ -512,32 +527,48 @@
       ctx.save();
       ctx.translate(6, -25);
 
-      // Olho esférico branco
-      ctx.beginPath();
-      ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-      outline(ctx);
+      if (hurt > 0) {
+        // Olho fechado em careta de dor sob o capacete
+        ctx.beginPath();
+        ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#0a3cd4';
+        ctx.fill();
+        outline(ctx);
+        ctx.beginPath();
+        ctx.moveTo(0, -3.2);
+        ctx.lineTo(4.5, 0.5);
+        ctx.lineTo(0, 4.2);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2.0;
+        ctx.stroke();
+      } else {
+        // Olho esférico branco
+        ctx.beginPath();
+        ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        outline(ctx);
 
-      // Capacete / pálpebra azul royal no topo do olho
-      ctx.beginPath();
-      ctx.arc(0, 0, 7.5, Math.PI * 0.9, Math.PI * 2.1);
-      ctx.closePath();
-      ctx.fillStyle = '#0a3cd4';
-      ctx.fill();
-      outline(ctx);
+        // Capacete / pálpebra azul royal no topo do olho
+        ctx.beginPath();
+        ctx.arc(0, 0, 7.5, Math.PI * 0.9, Math.PI * 2.1);
+        ctx.closePath();
+        ctx.fillStyle = '#0a3cd4';
+        ctx.fill();
+        outline(ctx);
 
-      // Pupila preta grande olhando para a frente
-      ctx.beginPath();
-      ctx.arc(3.2, 1, 3.2, 0, Math.PI * 2);
-      ctx.fillStyle = '#111111';
-      ctx.fill();
+        // Pupila preta grande olhando para a frente
+        ctx.beginPath();
+        ctx.arc(3.2, 1, 3.2, 0, Math.PI * 2);
+        ctx.fillStyle = '#111111';
+        ctx.fill();
 
-      // Brilho na pupila
-      ctx.beginPath();
-      ctx.arc(2.5, 0, 1.2, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
+        // Brilho na pupila
+        ctx.beginPath();
+        ctx.arc(2.5, 0, 1.2, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+      }
       ctx.restore();
 
       // 6. Canhão lançador de mísseis (morteiro azul afunilado) BEM ACIMA DO OLHO em (2, -36)
@@ -588,13 +619,14 @@
       ctx.restore();
     },
 
-    grub(ctx, angle, team, wheelRot) {
+    grub(ctx, angle, team, wheelRot, hurt) {
       const rot = wheelRot || 0;
       // Animação de Fole / Sanfona da Lagarta (Worm) ao se movimentar
       // O corpo contrai e expande em X e Y simulando o movimento de fole de sanfona
       const accordionPhase = Math.sin(rot * 2.5);
-      const scaleX = 1 + accordionPhase * 0.10;
-      const scaleY = 1 - accordionPhase * 0.08;
+      const hurtSquash = (hurt > 0) ? Math.sin((hurt / 0.55) * Math.PI) * 0.15 : 0;
+      const scaleX = 1 + accordionPhase * 0.10 - hurtSquash;
+      const scaleY = 1 - accordionPhase * 0.08 - hurtSquash * 0.6;
       const bodyWave = Math.sin(rot * 2.5) * 0.035;
 
       ctx.save();
@@ -663,29 +695,45 @@
       // 4. Cabeça / Olho esférico na parte frontal inferior
       ctx.save();
       ctx.translate(14, -6);
-      // Esfera branca do olho
-      ctx.beginPath();
-      ctx.arc(0, 0, 6.5, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-      outline(ctx);
-      // Pálpebra / capacete superior avermelhado
-      ctx.beginPath();
-      ctx.arc(0, 0, 6.5, Math.PI * 0.95, Math.PI * 2.05);
-      ctx.closePath();
-      ctx.fillStyle = '#c7330d';
-      ctx.fill();
-      outline(ctx);
-      // Pupila preta olhando para a frente
-      ctx.beginPath();
-      ctx.arc(3.2, 1, 2.6, 0, Math.PI * 2);
-      ctx.fillStyle = '#111111';
-      ctx.fill();
-      // Brilho na pupila
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(2.5, 0.2, 1, 0, Math.PI * 2);
-      ctx.fill();
+      if (hurt > 0) {
+        // Careta biônica de dor: pálpebra fechada com fenda apertada ">"
+        ctx.beginPath();
+        ctx.arc(0, 0, 6.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#b72807';
+        ctx.fill();
+        outline(ctx);
+        ctx.beginPath();
+        ctx.moveTo(0.5, -2.5);
+        ctx.lineTo(4.0, 0.5);
+        ctx.lineTo(0.5, 3.5);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+      } else {
+        // Esfera branca do olho
+        ctx.beginPath();
+        ctx.arc(0, 0, 6.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        outline(ctx);
+        // Pálpebra / capacete superior avermelhado
+        ctx.beginPath();
+        ctx.arc(0, 0, 6.5, Math.PI * 0.95, Math.PI * 2.05);
+        ctx.closePath();
+        ctx.fillStyle = '#c7330d';
+        ctx.fill();
+        outline(ctx);
+        // Pupila preta olhando para a frente
+        ctx.beginPath();
+        ctx.arc(3.2, 1, 2.6, 0, Math.PI * 2);
+        ctx.fillStyle = '#111111';
+        ctx.fill();
+        // Brilho na pupila
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(2.5, 0.2, 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.restore();
 
       // 5. Disco / Medidor circular lateral (característico do Grub da arte)
@@ -764,7 +812,7 @@
       ctx.restore(); // Fecha sanfona / fole
     },
 
-    dj(ctx, angle, team, wheelRot) {
+    dj(ctx, angle, team, wheelRot, hurt) {
       const rot = wheelRot || 0;
       // Animação dos pés de mola saltitantes: "boing boing boing boing boing!"
       const hop1 = Math.abs(Math.sin(rot * 3.4));
@@ -1015,17 +1063,28 @@
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      // Pupila preta no canto frontal direito
-      ctx.beginPath();
-      ctx.ellipse(eyeX + 3.8, eyeY + 1.0, 2.4, 3.9, 0, 0, Math.PI * 2);
-      ctx.fillStyle = '#111111';
-      ctx.fill();
+      if (hurt > 0) {
+        // Viseira fecha completamente com fenda arqueada em dor
+        ctx.beginPath();
+        ctx.moveTo(eyeX + 1.2, eyeY - 2.8);
+        ctx.lineTo(eyeX + 5.2, eyeY + 1.0);
+        ctx.lineTo(eyeX + 1.2, eyeY + 4.8);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2.0;
+        ctx.stroke();
+      } else {
+        // Pupila preta no canto frontal direito
+        ctx.beginPath();
+        ctx.ellipse(eyeX + 3.8, eyeY + 1.0, 2.4, 3.9, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#111111';
+        ctx.fill();
 
-      // Brilho especular branco da pupila
-      ctx.beginPath();
-      ctx.arc(eyeX + 2.8, eyeY - 0.4, 1.0, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
+        // Brilho especular branco da pupila
+        ctx.beginPath();
+        ctx.arc(eyeX + 2.8, eyeY - 0.4, 1.0, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+      }
 
       ctx.restore();
 
@@ -1141,7 +1200,7 @@
       ctx.restore(); // Fecha chassi saltitante (boing boing)
     },
 
-    launcher(ctx, angle, team, wheelRot) {
+    launcher(ctx, angle, team, wheelRot, hurt) {
       // 1. 3 Rodas em linha na base (Inline skate wheels com rotação)
       const rot = wheelRot || 0;
       for (const wx of [-11, 0, 11]) {
@@ -1327,40 +1386,55 @@
       ctx.save();
       ctx.translate(0, -30.5);
 
-      // Globo ocular esférico branco
-      ctx.beginPath();
-      ctx.arc(0, 0, 6.8, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-      outline(ctx);
+      if (hurt > 0) {
+        // Olho fechado em careta de dor sob o capacete
+        ctx.beginPath();
+        ctx.arc(0, 0, 6.8, 0, Math.PI * 2);
+        ctx.fillStyle = '#c62828';
+        ctx.fill();
+        outline(ctx);
+        ctx.beginPath();
+        ctx.moveTo(-0.5, -2.8);
+        ctx.lineTo(4.0, 0.5);
+        ctx.lineTo(-0.5, 3.8);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2.0;
+        ctx.stroke();
+      } else {
+        // Globo ocular esférico branco
+        ctx.beginPath();
+        ctx.arc(0, 0, 6.8, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        outline(ctx);
 
-      // Pálpebra / capacete vermelho no topo do olho
-      ctx.beginPath();
-      ctx.arc(0, 0, 6.8, Math.PI * 1.05, Math.PI * 1.95);
-      ctx.closePath();
-      const capG = ctx.createLinearGradient(0, -6.8, 0, -1);
-      capG.addColorStop(0, '#ff3d00');
-      capG.addColorStop(1, '#c62828');
-      ctx.fillStyle = capG;
-      ctx.fill();
-      outline(ctx);
+        // Pálpebra / capacete vermelho no topo do olho
+        ctx.beginPath();
+        ctx.arc(0, 0, 6.8, Math.PI * 1.05, Math.PI * 1.95);
+        ctx.closePath();
+        const capG = ctx.createLinearGradient(0, -6.8, 0, -1);
+        capG.addColorStop(0, '#ff3d00');
+        capG.addColorStop(1, '#c62828');
+        ctx.fillStyle = capG;
+        ctx.fill();
+        outline(ctx);
 
-      // Pupila preta grande e nítida olhando para a frente
-      ctx.beginPath();
-      ctx.arc(2.8, 0.8, 3, 0, Math.PI * 2);
-      ctx.fillStyle = '#111111';
-      ctx.fill();
+        // Pupila preta grande e nítida olhando para a frente
+        ctx.beginPath();
+        ctx.arc(2.8, 0.8, 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#111111';
+        ctx.fill();
 
-      // Brilho na pupila
-      ctx.beginPath();
-      ctx.arc(2, -0.2, 1.1, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-
+        // Brilho na pupila
+        ctx.beginPath();
+        ctx.arc(2, -0.2, 1.1, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+      }
       ctx.restore();
     },
 
-    khan(ctx, angle, team, wheelRot) {
+    khan(ctx, angle, team, wheelRot, hurt) {
       const rot = wheelRot || 0;
 
       // Animação de patas do besouro em marcha tripé mecânica (6 patas ao todo!)
@@ -1534,38 +1608,53 @@
       ctx.fill();
       outline(ctx);
 
-      // Olho frontal (globo ocular branco + capacete vermelho em cima + pupila preta)
-      ctx.beginPath();
-      ctx.arc(2, 0.5, 5, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-      outline(ctx);
+      if (hurt > 0) {
+        // Pálpebra fecha cobrindo o olho do besouro em careta de dor
+        ctx.beginPath();
+        ctx.arc(2, 0.5, 5, 0, Math.PI * 2);
+        ctx.fillStyle = '#8e190c';
+        ctx.fill();
+        outline(ctx);
+        ctx.beginPath();
+        ctx.moveTo(1.8, -2.0);
+        ctx.lineTo(5.0, 0.5);
+        ctx.lineTo(1.8, 3.0);
+        ctx.strokeStyle = '#fce2b8';
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+      } else {
+        // Olho frontal (globo ocular branco + capacete vermelho em cima + pupila preta)
+        ctx.beginPath();
+        ctx.arc(2, 0.5, 5, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        outline(ctx);
 
-      // Pálpebra superior vermelha do olho
-      ctx.beginPath();
-      ctx.arc(2, 0.5, 5, Math.PI * 0.9, Math.PI * 2.1);
-      ctx.closePath();
-      ctx.fillStyle = '#a61e10';
-      ctx.fill();
-      outline(ctx);
+        // Pálpebra superior vermelha do olho
+        ctx.beginPath();
+        ctx.arc(2, 0.5, 5, Math.PI * 0.9, Math.PI * 2.1);
+        ctx.closePath();
+        ctx.fillStyle = '#a61e10';
+        ctx.fill();
+        outline(ctx);
 
-      // Pupila preta
-      ctx.beginPath();
-      ctx.arc(4.5, 1.5, 2.2, 0, Math.PI * 2);
-      ctx.fillStyle = '#111111';
-      ctx.fill();
-      // Brilho na pupila
-      ctx.beginPath();
-      ctx.arc(4, 0.8, 0.9, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-
+        // Pupila preta
+        ctx.beginPath();
+        ctx.arc(4.5, 1.5, 2.2, 0, Math.PI * 2);
+        ctx.fillStyle = '#111111';
+        ctx.fill();
+        // Brilho na pupila
+        ctx.beginPath();
+        ctx.arc(4, 0.8, 0.9, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+      }
       ctx.restore();
 
       ctx.restore();
     },
 
-    doc(ctx, angle, team, wheelRot) {
+    doc(ctx, angle, team, wheelRot, hurt) {
       // 1. Esteira e Rodas (Caterpillar tracks & wheels com rotação)
       const rot = wheelRot || 0;
       // Dentes inferiores da esteira tocando o chão em y = 0
@@ -1675,10 +1764,10 @@
       ctx.fill();
       outline(ctx);
 
-      // Farol dianteiro amarelo na ponta do para-lama
+      // Farol dianteiro amarelo na ponta do para-lama (pisca em alerta vermelho no dano)
       ctx.beginPath();
       ctx.ellipse(17.5, -12, 1.5, 3.0, 0, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffeb3b';
+      ctx.fillStyle = (hurt > 0) ? '#ff1744' : '#ffeb3b';
       ctx.fill();
       outline(ctx);
 
@@ -1689,7 +1778,7 @@
       ctx.lineTo(13.5, -18.5);
       ctx.quadraticCurveTo(16.5, -18.5, 16.5, -13);
       ctx.closePath();
-      ctx.fillStyle = '#f0f7f8';
+      ctx.fillStyle = (hurt > 0) ? '#ffebee' : '#f0f7f8';
       ctx.fill();
       outline(ctx);
 
@@ -1704,12 +1793,12 @@
       ctx.fillStyle = '#ffffff';
       ctx.fill();
       outline(ctx);
-      // Círculo verde-azulado
+      // Círculo verde-azulado (alerta vermelho quando ferido)
       ctx.beginPath();
       ctx.arc(-0.25, -13.5, 3.8, 0, Math.PI * 2);
-      ctx.fillStyle = '#2d848c';
+      ctx.fillStyle = (hurt > 0) ? '#c62828' : '#2d848c';
       ctx.fill();
-      // Cruz médica branca
+      // Cruz médica branca (ou vermelha em alerta)
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(-2.25, -14.5, 4.0, 2.0);
       ctx.fillRect(-1.25, -15.5, 2.0, 4.0);
@@ -1872,7 +1961,7 @@
       ctx.restore();
     },
 
-    frigo(ctx, angle, team, wheelRot) {
+    frigo(ctx, angle, team, wheelRot, hurt) {
       const rot = wheelRot || 0;
 
       // Cores principais fiéis à imagem de referência
@@ -2106,10 +2195,24 @@
       ctx.lineTo(18, -10);
       ctx.lineTo(13, -10);
       ctx.closePath();
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.25)'; ctx.fill();
-      // Rebite frontal
-      ctx.fillStyle = cLine;
-      ctx.beginPath(); ctx.arc(15.5, -13, 0.8, 0, Math.PI * 2); ctx.fill();
+      if (hurt > 0) {
+        // Alerta de impacto vermelho no visor do gorila com fenda de dor
+        ctx.fillStyle = '#ff1744';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(14.0, -15);
+        ctx.lineTo(17.8, -13);
+        ctx.lineTo(14.0, -11);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+        ctx.fill();
+        // Rebite frontal
+        ctx.fillStyle = cLine;
+        ctx.beginPath(); ctx.arc(15.5, -13, 0.8, 0, Math.PI * 2); ctx.fill();
+      }
 
       // Conector lateral de metal escuro na cabeça
       ctx.beginPath();
@@ -2236,7 +2339,7 @@
       ctx.restore();
     },
 
-    driller(ctx, angle, team, wheelRot) {
+    driller(ctx, angle, team, wheelRot, hurt) {
       // 1. Escapamento traseiro duplo com grade perfurada (x: -16 a -20, y: -12 a -34)
       ctx.save();
       // Tubo de trás
@@ -2502,32 +2605,45 @@
       ctx.fillRect(14.5, -9.5, 0.8, 1.3);
 
       // Olho esquerdo em destaque (Carismático cartoon)
-      ctx.beginPath();
-      ctx.ellipse(11, -17.5, 3.6, 4.2, 0.05, 0, 7);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-      outline(ctx);
+      if (hurt > 0) {
+        // Olho fechado de dor '>'
+        ctx.strokeStyle = '#111827';
+        ctx.lineWidth = 1.8;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(8.5, -20);
+        ctx.lineTo(13.5, -17.5);
+        ctx.lineTo(8.5, -15);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.ellipse(11, -17.5, 3.6, 4.2, 0.05, 0, 7);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        outline(ctx);
 
-      // Pupila preta e brilho
-      ctx.beginPath();
-      ctx.arc(11.8, -17.5, 2.0, 0, 7);
-      ctx.fillStyle = '#111827';
-      ctx.fill();
-      // Brilho branco na pupila
-      ctx.beginPath();
-      ctx.arc(12.5, -18.3, 0.7, 0, 7);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
+        // Pupila preta e brilho
+        ctx.beginPath();
+        ctx.arc(11.8, -17.5, 2.0, 0, 7);
+        ctx.fillStyle = '#111827';
+        ctx.fill();
+        // Brilho branco na pupila
+        ctx.beginPath();
+        ctx.arc(12.5, -18.3, 0.7, 0, 7);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
 
-      // Pálpebra superior verde (olhar focado/determinado)
-      ctx.beginPath();
-      ctx.arc(11, -17.5, 3.6, Math.PI, Math.PI * 1.85);
-      ctx.closePath();
-      ctx.fillStyle = '#4cb82c';
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(20,10,30,.85)';
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
+        // Pálpebra superior verde (olhar focado/determinado)
+        ctx.beginPath();
+        ctx.arc(11, -17.5, 3.6, Math.PI, Math.PI * 1.85);
+        ctx.closePath();
+        ctx.fillStyle = '#4cb82c';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(20,10,30,.85)';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      }
       ctx.restore();
 
       // 8. Suporte Fixo da Torre (Turret Stanchion)
@@ -2644,7 +2760,7 @@
       ctx.restore();
     },
 
-    kuda(ctx, angle, team, wheelRot) {
+    kuda(ctx, angle, team, wheelRot, hurt) {
       const rot = wheelRot || 0;
 
       // Animação ondulatória de centopeia mecânica (6 patas ao todo!)
@@ -2889,15 +3005,28 @@
       outline(ctx);
 
       // Olho preto expressivo
-      ctx.beginPath();
-      ctx.arc(-2, 0, 4.2, 0, Math.PI * 2);
-      ctx.fillStyle = '#111116';
-      ctx.fill();
-      // Brilho no olho
-      ctx.beginPath();
-      ctx.arc(-2.8, -1.2, 1.3, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
+      if (hurt > 0) {
+        // Olho piscando fechado de dor '>'
+        ctx.strokeStyle = '#111116';
+        ctx.lineWidth = 2.0;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-5, -2.5);
+        ctx.lineTo(-0.5, 0);
+        ctx.lineTo(-5, 2.5);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.arc(-2, 0, 4.2, 0, Math.PI * 2);
+        ctx.fillStyle = '#111116';
+        ctx.fill();
+        // Brilho no olho
+        ctx.beginPath();
+        ctx.arc(-2.8, -1.2, 1.3, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+      }
 
       // Antena / Mini periscópio vermelho no topo da cabeça
       ctx.beginPath();
@@ -2938,10 +3067,11 @@
   draw.yeti = draw.bigfoot;
   draw.worm = draw.grub;
   draw.mortar = draw.armor;
-  GB.drawMobile = function (ctx, id, angle, team, wheelRot) {
+  GB.drawMobile = function (ctx, id, angle, team, wheelRot, hurt) {
     const fn = draw[id] || (id === 'nak' ? draw.khan : null) || draw.armor;
     const rot = wheelRot != null ? wheelRot : (ctx._wheelRot != null ? ctx._wheelRot : 0);
-    if (fn) fn(ctx, angle, team || '#fff', rot);
+    const h = hurt != null ? hurt : (ctx._hurt != null ? ctx._hurt : 0);
+    if (fn) fn(ctx, angle, team || '#fff', rot, h);
   };
 
   // ----------------------------------------------------------------
@@ -3332,5 +3462,121 @@
 
     ctx.restore();
     ctx.restore();
+  };
+
+  // ----------------------------------------------------------------
+  // Sistema de Renderização de Debris / Peças e Slime de Dano
+  // ----------------------------------------------------------------
+  GB.drawDamageDebris = function (ctx, debrisList) {
+    if (!debrisList || !debrisList.length) return;
+    for (let i = 0; i < debrisList.length; i++) {
+      const p = debrisList[i];
+      if (!p || p.life <= 0) continue;
+      const maxL = p.maxLife || 0.6;
+      const alpha = Math.max(0, Math.min(1, p.life / maxL));
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot || 0);
+      ctx.globalAlpha = alpha;
+
+      if (p.type === 'gear') {
+        // Engrenagem metálica com dentes e centro vazado
+        const r = p.size || 4;
+        ctx.fillStyle = p.color || '#9aa5b1';
+        ctx.strokeStyle = '#2d3748';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = p.color || '#9aa5b1';
+        const teeth = 6;
+        for (let t = 0; t < teeth; t++) {
+          const a = (t * Math.PI * 2) / teeth;
+          const tx = Math.cos(a) * r;
+          const ty = Math.sin(a) * r;
+          ctx.fillRect(tx - 1.2, ty - 1.2, 2.4, 2.4);
+        }
+
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.4, 0, Math.PI * 2);
+        ctx.fillStyle = '#1a202c';
+        ctx.fill();
+      } else if (p.type === 'nut') {
+        // Porca sextavada de aço
+        const r = p.size || 3.5;
+        ctx.fillStyle = p.color || '#cbd5e0';
+        ctx.strokeStyle = '#1a202c';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let s = 0; s < 6; s++) {
+          const a = (s * Math.PI) / 3;
+          const px = Math.cos(a) * r;
+          const py = Math.sin(a) * r;
+          if (s === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.42, 0, Math.PI * 2);
+        ctx.fillStyle = '#171923';
+        ctx.fill();
+      } else if (p.type === 'bolt') {
+        // Parafuso / rebite
+        const w = (p.size || 3) * 1.5;
+        const h = p.size || 3;
+        ctx.fillStyle = p.color || '#a0aec0';
+        ctx.strokeStyle = '#1a202c';
+        ctx.lineWidth = 0.8;
+        ctx.fillRect(-w * 0.4, -h * 0.5, w * 0.35, h);
+        ctx.strokeRect(-w * 0.4, -h * 0.5, w * 0.35, h);
+        ctx.fillRect(-w * 0.05, -h * 0.28, w * 0.5, h * 0.56);
+        ctx.strokeRect(-w * 0.05, -h * 0.28, w * 0.5, h * 0.56);
+      } else if (p.type === 'spark') {
+        // Faísca elétrica brilhante
+        const s = p.size || 2.5;
+        ctx.fillStyle = p.color || '#ffeb3b';
+        ctx.shadowColor = '#ff9800';
+        ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.moveTo(0, -s * 1.8);
+        ctx.lineTo(s * 0.8, 0);
+        ctx.lineTo(0, s * 1.8);
+        ctx.lineTo(-s * 0.8, 0);
+        ctx.closePath();
+        ctx.fill();
+      } else if (p.type === 'slime') {
+        // Gota de bio-gosma esmeralda/limão fluorescente (Worm biônico)
+        const r = p.size || 3.8;
+        ctx.fillStyle = p.color || '#68d391';
+        ctx.shadowColor = '#38a169';
+        ctx.shadowBlur = 5;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, r * 1.3, r * 0.75, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.ellipse(-r * 0.3, -r * 0.2, r * 0.45, r * 0.25, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+        ctx.fill();
+      } else if (p.type === 'spore') {
+        // Esporo bioluminescente translúcido (Worm biônico)
+        const r = p.size || 4;
+        ctx.strokeStyle = p.color || '#48bb78';
+        ctx.fillStyle = 'rgba(104, 211, 145, 0.35)';
+        ctx.shadowColor = '#38a169';
+        ctx.shadowBlur = 7;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
   };
 })(window.GB);
