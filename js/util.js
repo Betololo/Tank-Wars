@@ -103,52 +103,69 @@ window.GB = window.GB || {};
     lose() { [392, 330, 262].forEach((f, i) => setTimeout(() => this.tone(f, 0.3, 0.12, 'triangle'), i * 160)); },
     charge(p) { this.tone(200 + p * 6, 0.05, 0.03, 'sine'); },
     epicNiceShot() {
-      [784, 1046, 1318].forEach((f, i) => setTimeout(() => this.tone(f, 0.22, 0.18, 'triangle'), i * 80));
-      GB.speakEpic('Nice shot!', 1.15, 1.2);
+      [880, 1174, 1568, 1760].forEach((f, i) => setTimeout(() => this.tone(f, 0.24, 0.2, 'triangle'), i * 70));
+      GB.speakEpic('Nice shot!!', 1.22, 1.28);
     },
     epicSuperShot() {
-      this.boom(1.8);
-      this.tone(130, 0.5, 0.35, 'sawtooth', 45);
-      [261, 329, 392, 523].forEach((f, i) => setTimeout(() => this.tone(f, 0.3, 0.16, 'sawtooth'), i * 90));
-      GB.speakEpic('Super shot!', 1.05, 0.95);
+      this.boom(2.2);
+      this.tone(110, 0.6, 0.45, 'sawtooth', 35);
+      [261, 392, 523, 659, 784].forEach((f, i) => setTimeout(() => this.tone(f, 0.28, 0.22, 'sawtooth'), i * 75));
+      GB.speakEpic('SUPER SHOT!!!', 1.25, 1.3);
     },
     epicDoubleKill() {
-      this.boom(1.2);
+      // Impacto duplo brutal com golpe de metal e onda de choque sísmica
+      this.boom(1.7);
+      this.tone(180, 0.3, 0.4, 'sawtooth', 60);
       setTimeout(() => {
-        this.boom(1.5);
-        this.tone(440, 0.35, 0.25, 'triangle', 880);
-      }, 140);
-      GB.speakEpic('Double kill!', 1.1, 1.0);
+        this.boom(2.2);
+        this.tone(680, 0.4, 0.35, 'square', 120);
+        this.tone(140, 0.5, 0.45, 'sawtooth', 40);
+      }, 120);
+      GB.speakEpic('DOUBLE KILL!!!', 1.25, 1.32);
     },
     epicTripleKill() {
-      this.tone(300, 0.35, 0.25, 'sawtooth', 800);
+      // Descarga de eletricidade e trovão massivo de 3 estágios
+      this.noise(0.25, 3000, 0.4);
+      this.tone(440, 0.3, 0.3, 'sawtooth', 880);
       setTimeout(() => {
-        this.boom(1.9);
-        [587, 740, 880, 1174].forEach((f, i) => setTimeout(() => this.tone(f, 0.3, 0.18, 'sawtooth'), i * 75));
-      }, 120);
-      GB.speakEpic('Triple kill!', 1.05, 0.85);
+        this.noise(0.35, 2400, 0.5);
+        this.tone(700, 0.35, 0.35, 'sawtooth', 1400);
+      }, 90);
+      setTimeout(() => {
+        this.boom(2.6);
+        [440, 660, 880, 1320].forEach((f, i) => setTimeout(() => this.tone(f, 0.28, 0.2, 'sawtooth'), i * 65));
+      }, 180);
+      GB.speakEpic('TRIPLE KILL!!!', 1.28, 1.35);
     },
     epicTeamWipe() {
-      this.boom(2.2);
-      [523, 659, 784, 1046, 1318].forEach((f, i) => setTimeout(() => this.tone(f, 0.45, 0.22, 'triangle'), i * 130));
-      GB.speakEpic('Full team wipe!', 0.95, 0.8);
+      this.boom(2.8);
+      this.tone(120, 0.7, 0.5, 'sawtooth', 40);
+      [523, 659, 784, 1046, 1318, 1568].forEach((f, i) => setTimeout(() => this.tone(f, 0.4, 0.25, 'triangle'), i * 110));
+      GB.speakEpic('FULL TEAM WIPE!!!', 1.22, 1.25);
     }
   };
   GB.Sfx = Sfx;
 
-  GB.speakEpic = function (phrase, rate = 1.1, pitch = 1.1) {
+  GB.speakEpic = function (phrase, rate = 1.24, pitch = 1.28) {
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
     try {
       window.speechSynthesis.cancel();
-      const utt = new SpeechSynthesisUtterance(phrase);
+      // Frase enfática em maiúsculas com pontuação de exclamação para entonação enérgica
+      const enthusiasticPhrase = phrase.trim();
+      const utt = new SpeechSynthesisUtterance(enthusiasticPhrase);
       utt.rate = rate;
       utt.pitch = pitch;
       utt.volume = 1.0;
       utt.lang = 'en-US';
+
       const voices = window.speechSynthesis.getVoices();
       if (voices && voices.length) {
-        const en = voices.find(v => v.lang && v.lang.startsWith('en')) || voices[0];
-        if (en) utt.voice = en;
+        // Prioriza vozes com timbre mais dinâmico/natural (ex: Natural, Online, Mark, David, Guy, Google)
+        const bestVoice = voices.find(v => {
+          const n = (v.name || '').toLowerCase();
+          return (n.includes('natural') || n.includes('online') || n.includes('neural') || n.includes('guy') || n.includes('mark') || n.includes('google')) && v.lang && v.lang.startsWith('en');
+        }) || voices.find(v => v.lang && v.lang.startsWith('en')) || voices[0];
+        if (bestVoice) utt.voice = bestVoice;
       }
       window.speechSynthesis.speak(utt);
     } catch (e) {}

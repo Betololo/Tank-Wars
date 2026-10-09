@@ -184,7 +184,7 @@
   // angle = ângulo do canhão em graus acima da horizontal
   // ----------------------------------------------------------------
   const draw = {
-    armor(ctx, angle, team) {
+    armor(ctx, angle, team, wheelRot) {
       // 1. Barra de proteção / cano curvado traseiro (cinza escuro, x < 0)
       ctx.save();
       ctx.beginPath();
@@ -358,10 +358,12 @@
       ctx.strokeStyle = '#261710';
       ctx.stroke();
 
-      // 3 Rodas prateadas com centro escuro dispostas em triângulo
+      // 3 Rodas prateadas com centro escuro dispostas em triângulo (animadas com rotação)
+      const rot = wheelRot || 0;
       for (const [wx, wy] of trackPts) {
         ctx.save();
         ctx.translate(wx, wy);
+        ctx.rotate(rot);
 
         // Disco externo prateado
         ctx.beginPath();
@@ -369,6 +371,15 @@
         ctx.fillStyle = '#eceff1';
         ctx.fill();
         outline(ctx);
+
+        // 3 Parafusos/raios de rolamento que giram visivelmente com o movimento
+        ctx.fillStyle = '#78909c';
+        for (let sp = 0; sp < 3; sp++) {
+          const sa = sp * (Math.PI * 2 / 3);
+          ctx.beginPath();
+          ctx.arc(Math.cos(sa) * 2.8, Math.sin(sa) * 2.8, 0.9, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
         // Círculo interno cinza escuro
         ctx.beginPath();
@@ -386,7 +397,7 @@
       }
     },
 
-    bigfoot(ctx, angle, team) {
+    bigfoot(ctx, angle, team, wheelRot) {
       // 1. Chassi inferior metálico cinza
       rr(ctx, -15, -14, 30, 5, 2);
       ctx.fillStyle = '#7a8896'; ctx.fill(); outline(ctx);
@@ -422,11 +433,13 @@
       ctx.fillStyle = team;
       ctx.fillRect(-13, -17.5, 14, 2.5);
 
-      // 3. Rodas gigantes off-road (Monster Truck Tires) - Desenhadas atrás do olho para nunca cobri-lo!
+      // 3. Rodas gigantes off-road (Monster Truck Tires) - Desenhadas com rotação viva!
+      const rot = wheelRot || 0;
       const wheels = [-13, 12];
       for (const wx of wheels) {
         ctx.save();
         ctx.translate(wx, -11);
+        ctx.rotate(rot);
 
         // 8 cravos/garras de borracha salientes ao redor do pneu
         for (let k = 0; k < 8; k++) {
@@ -456,6 +469,15 @@
         ctx.fillStyle = rimG;
         ctx.fill();
         outline(ctx);
+
+        // 5 furos estilizados na calota que giram visivelmente
+        ctx.fillStyle = '#8c590f';
+        for (let sp = 0; sp < 5; sp++) {
+          const sa = sp * (Math.PI * 2 / 5);
+          ctx.beginPath();
+          ctx.arc(Math.cos(sa) * 3.4, Math.sin(sa) * 3.4, 1.1, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
         // Porca central preta
         ctx.beginPath();
@@ -1079,11 +1101,13 @@
       ctx.restore();
     },
 
-    launcher(ctx, angle, team) {
-      // 1. 3 Rodas em linha na base (Inline skate wheels)
+    launcher(ctx, angle, team, wheelRot) {
+      // 1. 3 Rodas em linha na base (Inline skate wheels com rotação)
+      const rot = wheelRot || 0;
       for (const wx of [-11, 0, 11]) {
         ctx.save();
         ctx.translate(wx, -5);
+        ctx.rotate(rot);
         // Pneu escuro
         ctx.beginPath();
         ctx.arc(0, 0, 5.5, 0, Math.PI * 2);
@@ -1100,6 +1124,14 @@
         ctx.fillStyle = wheelG;
         ctx.fill();
         outline(ctx);
+        // 4 raios/furos na roda de patins que giram visivelmente
+        ctx.fillStyle = '#6b3e04';
+        for (let sp = 0; sp < 4; sp++) {
+          const sa = sp * (Math.PI / 2);
+          ctx.beginPath();
+          ctx.arc(Math.cos(sa) * 2.4, Math.sin(sa) * 2.4, 0.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
         // Eixo central preto
         ctx.beginPath();
         ctx.arc(0, 0, 1.4, 0, Math.PI * 2);
@@ -1451,8 +1483,9 @@
       ctx.restore();
     },
 
-    doc(ctx, angle, team) {
-      // 1. Esteira e Rodas (Caterpillar tracks & wheels)
+    doc(ctx, angle, team, wheelRot) {
+      // 1. Esteira e Rodas (Caterpillar tracks & wheels com rotação)
+      const rot = wheelRot || 0;
       // Dentes inferiores da esteira tocando o chão em y = 0
       ctx.fillStyle = '#1e272e';
       for (let tx = -13; tx <= 13; tx += 2.6) {
@@ -1477,6 +1510,13 @@
       ctx.arc(-10, -4.5, 1.8, 0, Math.PI * 2);
       ctx.fillStyle = '#37474f';
       ctx.fill();
+      ctx.fillStyle = '#eceff1';
+      for (let sp = 0; sp < 3; sp++) {
+        const sa = sp * (Math.PI * 2 / 3) + rot;
+        ctx.beginPath();
+        ctx.arc(-10 + Math.cos(sa) * 2.6, -4.5 + Math.sin(sa) * 2.6, 0.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       // Roletes centrais menores (x = -3.2 e x = 3.5)
       for (const rx of [-3.2, 3.5]) {
@@ -1489,6 +1529,10 @@
         ctx.arc(rx, -4.5, 1.2, 0, Math.PI * 2);
         ctx.fillStyle = '#263238';
         ctx.fill();
+        ctx.fillStyle = '#eceff1';
+        ctx.beginPath();
+        ctx.arc(rx + Math.cos(rot * 2) * 1.6, -4.5 + Math.sin(rot * 2) * 1.6, 0.5, 0, Math.PI * 2);
+        ctx.fill();
       }
 
       // Roda dianteira maior (x = 10)
@@ -1496,6 +1540,18 @@
       ctx.arc(10, -4.5, 3.8, 0, Math.PI * 2);
       ctx.fillStyle = '#90a4ae';
       ctx.fill();
+      outline(ctx);
+      ctx.beginPath();
+      ctx.arc(10, -4.5, 1.8, 0, Math.PI * 2);
+      ctx.fillStyle = '#37474f';
+      ctx.fill();
+      ctx.fillStyle = '#eceff1';
+      for (let sp = 0; sp < 3; sp++) {
+        const sa = sp * (Math.PI * 2 / 3) + rot;
+        ctx.beginPath();
+        ctx.arc(10 + Math.cos(sa) * 2.6, -4.5 + Math.sin(sa) * 2.6, 0.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
       outline(ctx);
       ctx.beginPath();
       ctx.arc(10, -4.5, 1.8, 0, Math.PI * 2);
@@ -2047,7 +2103,7 @@
       ctx.restore();
     },
 
-    driller(ctx, angle, team) {
+    driller(ctx, angle, team, wheelRot) {
       // 1. Escapamento traseiro duplo com grade perfurada (x: -16 a -20, y: -12 a -34)
       ctx.save();
       // Tubo de trás
@@ -2121,18 +2177,19 @@
       ctx.fillStyle = '#1a1b1d';
       ctx.fill();
 
+      const rot = wheelRot || 0;
       // Roda motriz traseira grande (Drive Sprocket) em x = -12, y = -6.2
       ctx.beginPath();
       ctx.arc(-12, -6.2, 5.2, 0, 7);
       ctx.fillStyle = '#5c584a';
       ctx.fill();
       outline(ctx);
-      // Cubo e parafusos da roda traseira
+      // Cubo e parafusos da roda traseira que giram visivelmente
       ctx.beginPath(); ctx.arc(-12, -6.2, 2.5, 0, 7); ctx.fillStyle = '#3a372e'; ctx.fill();
       ctx.fillStyle = '#dcd8c0';
       for (let a = 0; a < Math.PI * 2; a += Math.PI / 3) {
         ctx.beginPath();
-        ctx.arc(-12 + Math.cos(a) * 3.8, -6.2 + Math.sin(a) * 3.8, 0.7, 0, 7);
+        ctx.arc(-12 + Math.cos(a + rot) * 3.8, -6.2 + Math.sin(a + rot) * 3.8, 0.7, 0, 7);
         ctx.fill();
       }
 
@@ -2143,11 +2200,19 @@
       ctx.fill();
       outline(ctx);
       ctx.beginPath(); ctx.arc(9.5, -6.2, 1.8, 0, 7); ctx.fillStyle = '#3a372e'; ctx.fill();
+      ctx.fillStyle = '#dcd8c0';
+      for (let a = 0; a < Math.PI * 2; a += Math.PI / 2) {
+        ctx.beginPath();
+        ctx.arc(9.5 + Math.cos(a + rot) * 2.8, -6.2 + Math.sin(a + rot) * 2.8, 0.6, 0, 7);
+        ctx.fill();
+      }
 
-      // 3 roletes inferiores pequenos (Return Rollers)
+      // 3 roletes inferiores pequenos (Return Rollers) que giram
       [-4.5, 0, 4.5].forEach(rx => {
         ctx.beginPath(); ctx.arc(rx, -4.2, 2.2, 0, 7); ctx.fillStyle = '#4c483c'; ctx.fill(); outline(ctx);
         ctx.beginPath(); ctx.arc(rx, -4.2, 0.9, 0, 7); ctx.fillStyle = '#222'; ctx.fill();
+        ctx.fillStyle = '#c0b89a';
+        ctx.beginPath(); ctx.arc(rx + Math.cos(rot * 2) * 1.3, -4.2 + Math.sin(rot * 2) * 1.3, 0.45, 0, 7); ctx.fill();
       });
 
       // Braço de suspensão verde (Bogie Arm) unindo centro à roda dianteira
@@ -2709,9 +2774,10 @@
   draw.yeti = draw.bigfoot;
   draw.worm = draw.grub;
   draw.mortar = draw.armor;
-  GB.drawMobile = function (ctx, id, angle, team) {
+  GB.drawMobile = function (ctx, id, angle, team, wheelRot) {
     const fn = draw[id] || (id === 'nak' ? draw.khan : null) || draw.armor;
-    if (fn) fn(ctx, angle, team || '#fff');
+    const rot = wheelRot != null ? wheelRot : (ctx._wheelRot != null ? ctx._wheelRot : 0);
+    if (fn) fn(ctx, angle, team || '#fff', rot);
   };
 
   // ----------------------------------------------------------------
@@ -2782,22 +2848,6 @@
 
     ctx.drawImage(img, -ox, -oy, dw, dh);
 
-    // Óculos escuros pixel-art "Deal with it" do Full Team Wipe
-    if (opts && opts.hasShades) {
-      ctx.save();
-      const eyeX = (138 * s) - ox;
-      const eyeY = (168 * s) - oy;
-      const sw = 50 * s;
-      const sh = 14 * s;
-      ctx.fillStyle = '#050505';
-      ctx.fillRect(eyeX - sw * 0.45, eyeY, sw * 0.9, sh);
-      // Brilhos brancos pixelados
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(eyeX - sw * 0.38, eyeY + 2 * s, 4 * s, 4 * s);
-      ctx.fillRect(eyeX + sw * 0.08, eyeY + 2 * s, 4 * s, 4 * s);
-      ctx.restore();
-    }
-
     // Coroa Real Dourada do Full Team Wipe
     if (opts && opts.hasCrown) {
       ctx.save();
@@ -2852,7 +2902,8 @@
       GB.drawAvatar(ctx, avatarId, id);
     }
     const previewAngle = (id === 'khan' || id === 'kuda') ? 0 : 35;
-    GB.drawMobile(ctx, id, previewAngle, '#ffd27a');
+    const previewRot = ((Date.now() * 0.003) % (Math.PI * 2));
+    GB.drawMobile(ctx, id, previewAngle, '#ffd27a', previewRot);
   };
 
   // ----------------------------------------------------------------

@@ -131,12 +131,12 @@
     .btn-super:hover { box-shadow: 0 0 30px rgba(255, 68, 0, 0.55); }
     .btn-super .title { color: #ff5722; }
 
-    .btn-double { border-color: rgba(255, 34, 68, 0.35); }
-    .btn-double:hover { box-shadow: 0 0 25px rgba(255, 34, 68, 0.5); }
+    .btn-double { border-color: rgba(255, 34, 68, 0.45); background: linear-gradient(135deg, rgba(45, 10, 20, 0.9), rgba(20, 10, 28, 0.9)); }
+    .btn-double:hover { box-shadow: 0 0 35px rgba(255, 34, 68, 0.7); }
     .btn-double .title { color: #ff3366; }
 
-    .btn-triple { border-color: rgba(168, 85, 247, 0.35); }
-    .btn-triple:hover { box-shadow: 0 0 30px rgba(168, 85, 247, 0.55); }
+    .btn-triple { border-color: rgba(168, 85, 247, 0.45); background: linear-gradient(135deg, rgba(35, 10, 50, 0.9), rgba(18, 12, 36, 0.9)); }
+    .btn-triple:hover { box-shadow: 0 0 35px rgba(168, 85, 247, 0.7); }
     .btn-triple .title { color: #c084fc; }
 
     .btn-wipe { border-color: rgba(255, 215, 0, 0.45); background: linear-gradient(135deg, rgba(38, 28, 6, 0.9), rgba(24, 16, 40, 0.9)); }
@@ -257,8 +257,8 @@
   <div id="epic-banner-overlay" class="epic-banner-overlay"></div>
 
   <header class="preview-header">
-    <h1>VISUALIZADOR DE EFEITOS ÉPICOS</h1>
-    <p>Tank Wars • Letreiros Gigantes sem Caixa de Snackbar • Áudio & Animações Arcade</p>
+    <h1>VISUALIZADOR DE EFEITOS ÉPICOS & ANIMAÇÕES</h1>
+    <p>Tank Wars • Letreiros Arcade Gigantes • Animação Viva das Rodas • Áudio & Vozes Enérgicas</p>
   </header>
 
   <main class="main-container">
@@ -277,21 +277,21 @@
       </button>
 
       <button class="effect-btn btn-double" id="btn-double">
-        <span class="icon">💀💀</span>
+        <span class="icon">💀💥💀</span>
         <span class="title">DOUBLE KILL!</span>
-        <span class="desc">2 Abates em 1 Turno<br>Impacto Cromado Sanguíneo & Hit-stop</span>
+        <span class="desc">2 Abates em 1 Turno<br>Flash Vermelho + Corte de Lâmina + Faíscas</span>
       </button>
 
       <button class="effect-btn btn-triple" id="btn-triple">
-        <span class="icon">⚡💀⚡</span>
+        <span class="icon">⚡⚡⚡</span>
         <span class="title">TRIPLE KILL!</span>
-        <span class="desc">3 Abates em 1 Turno<br>Raios Cósmicos & Neon Violeta</span>
+        <span class="desc">3 Abates em 1 Turno<br>Flash de Raios + Arcos Elétricos + Plasma</span>
       </button>
 
       <button class="effect-btn btn-wipe" id="btn-wipe">
         <span class="icon">👑</span>
         <span class="title">FULL TEAM WIPE!</span>
-        <span class="desc">4 Abates em 1 Turno<br>Coroa Real, Óculos Deal-With-It & Chuva de Ouro</span>
+        <span class="desc">4 Abates em 1 Turno<br>Coroa Imperial, Vinheta Ouro & Confetes</span>
       </button>
 
       <button class="effect-btn btn-showcase" id="btn-showcase">
@@ -300,11 +300,11 @@
       </button>
     </div>
 
-    <!-- Prévia do Tanque, Avatar e Cosméticos -->
+    <!-- Prévia do Tanque, Avatar e Cosméticos com Rodas Animadas -->
     <div class="preview-stage">
       <div class="stage-header">
         <div class="stage-title">
-          <span>🎨 Prévia de Cosméticos do Tanque & Avatar</span>
+          <span>🎨 Prévia de Cosméticos & Rotação das Rodas</span>
         </div>
         <div class="stage-controls">
           <label>Veículo:
@@ -315,7 +315,8 @@
               <option value="yeti">Yeti</option>
               <option value="dj">DJ</option>
               <option value="driller">Driller</option>
-              <option value="nak">Nak</option>
+              <option value="nak">Nak / Khan</option>
+              <option value="doc">Doc</option>
               <option value="mage">Mage</option>
               <option value="lightning">Lightning</option>
               <option value="boomer">Boomer</option>
@@ -331,7 +332,6 @@
             </select>
           </label>
           <span class="toggle-chip" id="chip-crown">👑 Coroa Imperial</span>
-          <span class="toggle-chip" id="chip-shades">🕶️ Óculos Deal With It</span>
           <span class="toggle-chip" id="chip-flame">🔥 Aura de Fogo</span>
           <span class="toggle-chip" id="chip-bubble">👍 Balão Nice</span>
         </div>
@@ -340,12 +340,12 @@
     </div>
 
     <div class="info-card">
-      <b>Sobre a Nova Apresentação de Letreiros Arcade:</b>
+      <b>Sobre as Novas Melhorias dos Efeitos e Animações:</b>
       <ul>
-        <li><b>Sem caixas ou snackbars:</b> Os títulos aparecem diretamente sobre a tela como em jogos de luta arcade (<i>Street Fighter, Guilty Gear</i>) e <i>Gunbound</i> clássico.</li>
-        <li><b>Super Shot com Fogo Vivo:</b> Dispara flash de tela de luz branca puro (0.35s), seguido do letreiro flamejante com 36 partículas de labaredas em ascensão real e brilho dinâmico.</li>
-        <li><b>Áudio e Vozes Sintetizadas:</b> Cada evento conta com efeitos sonoros via Web Audio API e narração por síntese de voz (Nice shot!, Super shot!, Double kill!, Triple kill!, Full team wipe!).</li>
-        <li><b>Cosméticos Permamentes do Turno:</b> Jogadores que realizam Super Shot ganham a aura de fogo incandescente pelo resto da partida. Quem executa um Full Team Wipe recebe a Coroa Real e os óculos escuros Deal-with-it pixelados sobre seu avatar!</li>
+        <li><b>Animação Viva nas Rodas e Esteiras:</b> As rodas, roletes internos e esteiras giram dinamicamente ao se mover! No Yeti, as rodas Monster Truck e calotas amarelas giram em tempo real. No Mortar e Driller, as rodas de rolamento prateadas giram com parafusos rotativos. No Launcher, as rodas inline deslizam suavemente.</li>
+        <li><b>Double Kill Turbinado:</b> Agora com Flash Vermelho de Impacto, Linha de Corte diagonal cortando a tela (estilo anime/luta), Crânios duplos colidindo no topo e 35 partículas de faíscas incandescentes voando pelo cenário!</li>
+        <li><b>Triple Kill com Tempestade Elétrica:</b> Flash estroboscópico de raios na tela, arcos de relâmpagos descendo pelo céu, 32 partículas de plasma azul/violeta e título neon com tremor de alta voltagem!</li>
+        <li><b>Vozes Empolgantes:</b> Entonação enérgica, tom esportivo/arcade de alta frequência e entusiasmo, sem parecer um robô lendo texto neutro.</li>
       </ul>
     </div>
   </main>
@@ -367,10 +367,10 @@
         mobileId: 'mortar',
         avatarId: 'a',
         hasCrown: false,
-        hasShades: false,
         flameAura: false,
         niceBubble: false,
-        bubbleTimer: 0
+        bubbleTimer: 0,
+        wheelRot: 0
       };
 
       // Carrega imagens dos avatares se ainda não carregaram
@@ -381,12 +381,17 @@
       // Função de disparo dos letreiros arcade
       function playEpicEffect(kind, title, subtitle) {
         // Remove letreiros anteriores
-        const old = overlay.querySelectorAll('.epic-effect');
-        old.forEach(e => e.remove());
+        const old = overlay.querySelectorAll ? overlay.querySelectorAll('.epic-effect') : [];
+        old.forEach(e => e.remove && e.remove());
 
         if (kind === 'super_shot') {
           showScreenFlash();
+        } else if (kind === 'double_kill') {
+          showScreenFlashRed();
+          showScreenSlash();
         } else if (kind === 'triple_kill') {
+          showScreenFlashLightning();
+          spawnLightningArcs();
           showScreenVignette('triple');
         } else if (kind === 'team_wipe') {
           showScreenVignette('wipe');
@@ -416,6 +421,54 @@
             fireCont.appendChild(flame);
           }
           effect.appendChild(fireCont);
+        } else if (kind === 'double_kill') {
+          const skulls = document.createElement('div');
+          skulls.className = 'epic-double-skulls';
+          skulls.innerText = '💀💥💀';
+          effect.appendChild(skulls);
+
+          const sparkCont = document.createElement('div');
+          sparkCont.className = 'epic-spark-container';
+          for (let i = 0; i < 35; i++) {
+            const spark = document.createElement('div');
+            spark.className = 'epic-spark-particle';
+            const sz = 6 + Math.random() * 10;
+            spark.style.width = `${sz}px`;
+            spark.style.height = `${sz}px`;
+            spark.style.left = '50%';
+            spark.style.top = '50%';
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 70 + Math.random() * 190;
+            if (spark.style.setProperty) spark.style.setProperty('--burst-trans', `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px)`);
+            spark.style.animationDuration = `${0.5 + Math.random() * 0.65}s`;
+            spark.style.animationDelay = `${Math.random() * 0.25}s`;
+            sparkCont.appendChild(spark);
+          }
+          effect.appendChild(sparkCont);
+        } else if (kind === 'triple_kill') {
+          const thunderCrest = document.createElement('div');
+          thunderCrest.className = 'epic-triple-thunder-crest';
+          thunderCrest.innerText = '⚡⚡⚡';
+          effect.appendChild(thunderCrest);
+
+          const plasmaCont = document.createElement('div');
+          plasmaCont.className = 'epic-plasma-container';
+          for (let i = 0; i < 32; i++) {
+            const plasma = document.createElement('div');
+            plasma.className = 'epic-plasma-particle';
+            const sz = 8 + Math.random() * 14;
+            plasma.style.width = `${sz}px`;
+            plasma.style.height = `${sz}px`;
+            plasma.style.left = `${Math.random() * 95}%`;
+            plasma.style.top = `${Math.random() * 90}%`;
+            const px = (Math.random() - 0.5) * 60;
+            const py = (Math.random() - 0.5) * 60;
+            if (plasma.style.setProperty) plasma.style.setProperty('--plasma-trans', `translate(${px}px, ${py}px)`);
+            plasma.style.animationDuration = `${0.35 + Math.random() * 0.45}s`;
+            plasma.style.animationDelay = `${Math.random() * 0.3}s`;
+            plasmaCont.appendChild(plasma);
+          }
+          effect.appendChild(plasmaCont);
         } else if (kind === 'team_wipe') {
           const crown = document.createElement('div');
           crown.className = 'epic-crown-crest';
@@ -447,6 +500,40 @@
         flash.className = 'epic-screen-flash';
         overlay.appendChild(flash);
         setTimeout(() => { if (flash.parentNode) flash.parentNode.removeChild(flash); }, 350);
+      }
+
+      function showScreenFlashRed() {
+        const flash = document.createElement('div');
+        flash.className = 'epic-screen-flash-red';
+        overlay.appendChild(flash);
+        setTimeout(() => { if (flash.parentNode) flash.parentNode.removeChild(flash); }, 360);
+      }
+
+      function showScreenSlash() {
+        const slash = document.createElement('div');
+        slash.className = 'epic-screen-slash';
+        overlay.appendChild(slash);
+        setTimeout(() => { if (slash.parentNode) slash.parentNode.removeChild(slash); }, 400);
+      }
+
+      function showScreenFlashLightning() {
+        const flash = document.createElement('div');
+        flash.className = 'epic-screen-flash-lightning';
+        overlay.appendChild(flash);
+        setTimeout(() => { if (flash.parentNode) flash.parentNode.removeChild(flash); }, 420);
+      }
+
+      function spawnLightningArcs() {
+        for (let i = 0; i < 4; i++) {
+          const arc = document.createElement('div');
+          arc.className = 'epic-lightning-arc';
+          arc.style.left = `${15 + Math.random() * 70}vw`;
+          arc.style.top = `${Math.random() * 20}vh`;
+          arc.style.height = `${40 + Math.random() * 50}vh`;
+          arc.style.transform = `rotate(${(Math.random() - 0.5) * 35}deg)`;
+          overlay.appendChild(arc);
+          setTimeout(() => { if (arc.parentNode) arc.parentNode.removeChild(arc); }, 480);
+        }
       }
 
       function showScreenVignette(type) {
@@ -505,7 +592,6 @@
         playEpicEffect('team_wipe', 'FULL TEAM WIPE!', 'VOCÊ DESTRUIU O TIME INTEIRO (4 KILLS)!');
         GB.Sfx && GB.Sfx.epicTeamWipe && GB.Sfx.epicTeamWipe();
         previewState.hasCrown = true;
-        previewState.hasShades = true;
         updateChips();
       });
 
@@ -548,19 +634,16 @@
 
       // Chips de cosméticos manuais
       const chipCrown = document.getElementById('chip-crown');
-      const chipShades = document.getElementById('chip-shades');
       const chipFlame = document.getElementById('chip-flame');
       const chipBubble = document.getElementById('chip-bubble');
 
       function updateChips() {
         chipCrown.classList.toggle('active', previewState.hasCrown);
-        chipShades.classList.toggle('active', previewState.hasShades);
         chipFlame.classList.toggle('active', previewState.flameAura);
         chipBubble.classList.toggle('active', previewState.niceBubble || previewState.bubbleTimer > 0);
       }
 
       chipCrown.addEventListener('click', () => { previewState.hasCrown = !previewState.hasCrown; updateChips(); });
-      chipShades.addEventListener('click', () => { previewState.hasShades = !previewState.hasShades; updateChips(); });
       chipFlame.addEventListener('click', () => { previewState.flameAura = !previewState.flameAura; updateChips(); });
       chipBubble.addEventListener('click', () => {
         previewState.niceBubble = !previewState.niceBubble;
@@ -568,7 +651,7 @@
         updateChips();
       });
 
-      // Loop de renderização no Canvas do Palco
+      // Loop de renderização no Canvas do Palco com rotação contínua das rodas
       function resizeCanvas() {
         const dpr = Math.min(2, window.devicePixelRatio || 1);
         canvas.width = canvas.clientWidth * dpr;
@@ -581,6 +664,9 @@
       function renderLoop(time) {
         const dt = (time - lastTime) / 1000;
         lastTime = time;
+
+        // Rotação suave contínua das rodas para demonstrar a animação viva
+        previewState.wheelRot += 0.035;
 
         if (previewState.bubbleTimer > 0 && !previewState.niceBubble) {
           previewState.bubbleTimer = Math.max(0, previewState.bubbleTimer - dt);
@@ -648,15 +734,14 @@
         // Avatar atrás do veículo
         if (window.GB && GB.drawAvatar) {
           GB.drawAvatar(ctx, previewState.avatarId, previewState.mobileId, null, {
-            hasCrown: previewState.hasCrown,
-            hasShades: previewState.hasShades
+            hasCrown: previewState.hasCrown
           });
         }
 
-        // Sprite do Mobile
+        // Sprite do Mobile com animação viva de rodas
         if (window.GB && GB.drawMobile) {
           const previewAngle = (previewState.mobileId === 'khan' || previewState.mobileId === 'kuda') ? 0 : 35;
-          GB.drawMobile(ctx, previewState.mobileId, previewAngle, '#ffd27a');
+          GB.drawMobile(ctx, previewState.mobileId, previewAngle, '#ffd27a', previewState.wheelRot);
         }
         ctx.restore();
 

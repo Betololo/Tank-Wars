@@ -1405,7 +1405,6 @@
         this.epicEventTriggeredThisTurn = true;
         if (epicKind === 'team_wipe') {
           shooter.hasCrown = true;
-          shooter.hasShades = true;
         }
         if (epicKind === 'super_shot' || turnDmg >= 1000) {
           shooter.flameAura = true;
@@ -1465,8 +1464,10 @@
           if (damage >= 1000) subtitle = `${shooterName} eliminou 2 inimigos! (${damage} DANO)`;
           else if (damage >= 500) subtitle = `${shooterName} eliminou 2 inimigos! (${damage} DANO)`;
           else subtitle = `${shooterName} eliminou 2 inimigos no mesmo turno!`;
-          this.hitStopTimer = 0.08;
-          this.shake = Math.max(this.shake, 24);
+          this.hitStopTimer = 0.12;
+          this.shake = Math.max(this.shake, 32);
+          this.showScreenFlashRed();
+          this.showScreenSlash();
           if (shooter && damage >= 1000) shooter.flameAura = true;
           GB.Sfx.epicDoubleKill && GB.Sfx.epicDoubleKill();
           break;
@@ -1476,8 +1477,10 @@
           if (damage >= 1000) subtitle = `${shooterName} eliminou 3 inimigos! (${damage} DANO)`;
           else if (damage >= 500) subtitle = `${shooterName} eliminou 3 inimigos! (${damage} DANO)`;
           else subtitle = `${shooterName} eliminou 3 inimigos no mesmo turno!`;
-          this.hitStopTimer = 0.12;
-          this.shake = Math.max(this.shake, 34);
+          this.hitStopTimer = 0.16;
+          this.shake = Math.max(this.shake, 38);
+          this.showScreenFlashLightning();
+          this.spawnLightningArcs();
           if (shooter) {
             if (damage >= 1000) shooter.flameAura = true;
             this.effects && this.effects.cosmicLightning && this.effects.cosmicLightning(shooter.x, shooter.y - 12);
@@ -1493,7 +1496,6 @@
           this.shake = Math.max(this.shake, 42);
           if (shooter) {
             shooter.hasCrown = true;
-            shooter.hasShades = true;
             if (damage >= 1000) shooter.flameAura = true;
           }
           this.showScreenVignette('wipe');
@@ -1560,6 +1562,54 @@
           fireCont.appendChild(flame);
         }
         effect.appendChild(fireCont);
+      } else if (kind === 'double_kill') {
+        const skulls = document.createElement('div');
+        skulls.className = 'epic-double-skulls';
+        skulls.innerText = '💀💥💀';
+        effect.appendChild(skulls);
+
+        const sparkCont = document.createElement('div');
+        sparkCont.className = 'epic-spark-container';
+        for (let i = 0; i < 35; i++) {
+          const spark = document.createElement('div');
+          spark.className = 'epic-spark-particle';
+          const sz = 6 + Math.random() * 10;
+          spark.style.width = `${sz}px`;
+          spark.style.height = `${sz}px`;
+          spark.style.left = '50%';
+          spark.style.top = '50%';
+          const angle = Math.random() * Math.PI * 2;
+          const dist = 70 + Math.random() * 190;
+          if (spark.style.setProperty) spark.style.setProperty('--burst-trans', `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px)`);
+          spark.style.animationDuration = `${0.5 + Math.random() * 0.65}s`;
+          spark.style.animationDelay = `${Math.random() * 0.25}s`;
+          sparkCont.appendChild(spark);
+        }
+        effect.appendChild(sparkCont);
+      } else if (kind === 'triple_kill') {
+        const thunderCrest = document.createElement('div');
+        thunderCrest.className = 'epic-triple-thunder-crest';
+        thunderCrest.innerText = '⚡⚡⚡';
+        effect.appendChild(thunderCrest);
+
+        const plasmaCont = document.createElement('div');
+        plasmaCont.className = 'epic-plasma-container';
+        for (let i = 0; i < 32; i++) {
+          const plasma = document.createElement('div');
+          plasma.className = 'epic-plasma-particle';
+          const sz = 8 + Math.random() * 14;
+          plasma.style.width = `${sz}px`;
+          plasma.style.height = `${sz}px`;
+          plasma.style.left = `${Math.random() * 95}%`;
+          plasma.style.top = `${Math.random() * 90}%`;
+          const px = (Math.random() - 0.5) * 60;
+          const py = (Math.random() - 0.5) * 60;
+          if (plasma.style.setProperty) plasma.style.setProperty('--plasma-trans', `translate(${px}px, ${py}px)`);
+          plasma.style.animationDuration = `${0.35 + Math.random() * 0.45}s`;
+          plasma.style.animationDelay = `${Math.random() * 0.3}s`;
+          plasmaCont.appendChild(plasma);
+        }
+        effect.appendChild(plasmaCont);
       } else if (kind === 'team_wipe') {
         const crown = document.createElement('div');
         crown.className = 'epic-crown-crest';
@@ -1584,6 +1634,48 @@
       setTimeout(() => {
         if (effect.parentNode) effect.parentNode.removeChild(effect);
       }, 3400);
+    }
+
+    showScreenSlash() {
+      const overlay = document.getElementById('epic-banner-overlay');
+      if (!overlay) return;
+      const slash = document.createElement('div');
+      slash.className = 'epic-screen-slash';
+      overlay.appendChild(slash);
+      setTimeout(() => { if (slash.parentNode) slash.parentNode.removeChild(slash); }, 400);
+    }
+
+    showScreenFlashRed() {
+      const overlay = document.getElementById('epic-banner-overlay');
+      if (!overlay) return;
+      const flash = document.createElement('div');
+      flash.className = 'epic-screen-flash-red';
+      overlay.appendChild(flash);
+      setTimeout(() => { if (flash.parentNode) flash.parentNode.removeChild(flash); }, 360);
+    }
+
+    showScreenFlashLightning() {
+      const overlay = document.getElementById('epic-banner-overlay');
+      if (!overlay) return;
+      const flash = document.createElement('div');
+      flash.className = 'epic-screen-flash-lightning';
+      overlay.appendChild(flash);
+      setTimeout(() => { if (flash.parentNode) flash.parentNode.removeChild(flash); }, 420);
+    }
+
+    spawnLightningArcs() {
+      const overlay = document.getElementById('epic-banner-overlay');
+      if (!overlay) return;
+      for (let i = 0; i < 4; i++) {
+        const arc = document.createElement('div');
+        arc.className = 'epic-lightning-arc';
+        arc.style.left = `${15 + Math.random() * 70}vw`;
+        arc.style.top = `${Math.random() * 20}vh`;
+        arc.style.height = `${40 + Math.random() * 50}vh`;
+        arc.style.transform = `rotate(${(Math.random() - 0.5) * 35}deg)`;
+        overlay.appendChild(arc);
+        setTimeout(() => { if (arc.parentNode) arc.parentNode.removeChild(arc); }, 480);
+      }
     }
 
     showScreenFlash() {

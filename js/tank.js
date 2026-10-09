@@ -32,7 +32,7 @@
       this.avatarSkillUsed = false;
       this.flameAura = false;
       this.hasCrown = false;
-      this.hasShades = false;
+      this.wheelRot = 0;
       this.niceShotBubbleTimer = 0;
       this.fuel = GB.MAX_FUEL;
       this.alive = true;
@@ -179,6 +179,9 @@
         moved++;
         if (!this.supported()) break; // vai cair
       }
+      if (moved > 0) {
+        this.wheelRot = (this.wheelRot || 0) + dir * moved * 0.22;
+      }
       this._carry = steps;
       return moved;
     }
@@ -320,9 +323,9 @@
       ctx.beginPath(); ctx.ellipse(0, 0, 24, 4, 0, 0, 7); ctx.fill();
       ctx.scale(this.facing, 1);
       if (this.avatarId && GB.drawAvatar) {
-        GB.drawAvatar(ctx, this.avatarId, this.mobileId, null, { hasCrown: this.hasCrown, hasShades: this.hasShades });
+        GB.drawAvatar(ctx, this.avatarId, this.mobileId, null, { hasCrown: this.hasCrown });
       }
-      GB.drawMobile(ctx, this.mobileId, this.relativeAngle, this.color);
+      GB.drawMobile(ctx, this.mobileId, this.relativeAngle, this.color, this.wheelRot);
       ctx.restore();
 
       // Balãozinho "👍 NICE!" para Nice Shot
