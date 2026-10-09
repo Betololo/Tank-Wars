@@ -8,6 +8,7 @@
     constructor(opts) {
       this.mobile = (opts && GB.MOBILES[opts.mobileId]) || GB.MOBILES.armor;
       this.mobileId = opts.mobileId || 'armor';
+      this.avatarId = (opts && opts.avatarId) || 'a';
       this.team = opts.team;
       this.name = opts.name;
       this.color = opts.color;
@@ -249,6 +250,9 @@
       ctx.fillStyle = this.color + '55';
       ctx.beginPath(); ctx.ellipse(0, 0, 24, 4, 0, 0, 7); ctx.fill();
       ctx.scale(this.facing, 1);
+      if (this.avatarId && GB.drawAvatar) {
+        GB.drawAvatar(ctx, this.avatarId, this.mobileId);
+      }
       GB.drawMobile(ctx, this.mobileId, this.relativeAngle, this.color);
       ctx.restore();
 

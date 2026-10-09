@@ -149,6 +149,7 @@
 
       this.tanks = players.map((p, i) => new GB.Tank({
         mobileId: p.mobileId,
+        avatarId: p.avatarId || 'a',
         team: p.team,
         name: p.name,
         color: p.team === 0 ? '#ff4444' : '#3b82f6',

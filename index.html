@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20261008k">
+  <link rel="stylesheet" href="style.css?v=20261008o">
 </head>
 <body>
   <main id="app">
@@ -263,6 +263,11 @@
             </button>
 
             <div class="gb-quick-bar">
+              <button class="gb-qbtn" id="gb-btn-avatar" title="Trocar Avatar (F2)">
+                <span class="qbtn-f">F2</span>
+                <span class="qbtn-icon">👤</span>
+                <span class="qbtn-text">Avatar</span>
+              </button>
               <button class="gb-qbtn" id="gb-btn-mobile" title="Trocar Mobile (F3)">
                 <span class="qbtn-f">F3</span>
                 <span class="qbtn-icon">🚗</span>
@@ -293,7 +298,10 @@
           <!-- SIDEBAR: Mobile Stats & Itens -->
           <aside class="gb-room-sidebar">
             <div class="gb-side-card gb-mobile-info">
-              <div class="gb-card-title" id="gb-side-mob-name">Armor</div>
+              <div class="gb-card-title-row">
+                <div class="gb-card-title" id="gb-side-mob-name">Armor</div>
+                <button class="gb-side-change-btn" id="gb-side-avatar-badge" title="Trocar Avatar (F2)">👤 <span id="gb-side-avatar-name">Avatar A</span></button>
+              </div>
               <div class="gb-side-canvas-box">
                 <canvas id="gb-side-canvas" width="130" height="75"></canvas>
               </div>
@@ -373,6 +381,20 @@
         <div class="gb-modal-bottom-bar">
           <button class="btn accent gb-btn-rnd" id="gb-modal-random">🎲 Aleatório (Random)</button>
           <button class="btn primary" id="gb-modal-close">Confirmar Escolha</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= MODAL DE SELEÇÃO DE AVATAR (F2) ================= -->
+    <section class="screen overlay" id="scr-avatar-modal">
+      <div class="panel wide gb-avatar-modal-panel">
+        <div class="gb-modal-top">
+          <h2 class="gb-modal-title">SELEÇÃO DE AVATAR</h2>
+          <button class="btn ghost small gb-modal-x" id="gb-modal-avatar-x" title="Fechar">✕</button>
+        </div>
+        <div class="gb-avatar-grid" id="gb-modal-avatar-cards"></div>
+        <div class="gb-modal-bottom-bar">
+          <button class="btn primary" id="gb-modal-avatar-close">Confirmar Escolha</button>
         </div>
       </div>
     </section>
@@ -466,17 +488,17 @@
     </div>
   </main>
 
-  <script src="js/peerjs.min.js?v=20261008n" defer></script>
-  <script src="js/util.js?v=20261008n" defer></script>
-  <script src="js/items.js?v=20261008n" defer></script>
-  <script src="js/terrain.js?v=20261008n" defer></script>
-  <script src="js/mobiles.js?v=20261008n" defer></script>
-  <script src="js/tank.js?v=20261008n" defer></script>
-  <script src="js/projectile.js?v=20261008n" defer></script>
-  <script src="js/ai.js?v=20261008n" defer></script>
-  <script src="js/net.js?v=20261008n" defer></script>
-  <script src="js/input.js?v=20261008n" defer></script>
-  <script src="js/game.js?v=20261008n" defer></script>
-  <script src="js/main.js?v=20261008n" defer></script>
+  <script src="js/peerjs.min.js?v=20261008o" defer></script>
+  <script src="js/util.js?v=20261008o" defer></script>
+  <script src="js/items.js?v=20261008o" defer></script>
+  <script src="js/terrain.js?v=20261008o" defer></script>
+  <script src="js/mobiles.js?v=20261008o" defer></script>
+  <script src="js/tank.js?v=20261008o" defer></script>
+  <script src="js/projectile.js?v=20261008o" defer></script>
+  <script src="js/ai.js?v=20261008o" defer></script>
+  <script src="js/net.js?v=20261008o" defer></script>
+  <script src="js/input.js?v=20261008o" defer></script>
+  <script src="js/game.js?v=20261008o" defer></script>
+  <script src="js/main.js?v=20261008o" defer></script>
 </body>
 </html>

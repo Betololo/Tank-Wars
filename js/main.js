@@ -8,7 +8,7 @@
     game: null,
     screens: {
       menu: $('scr-menu'), select: $('scr-select'), online: $('scr-online'), lobby: $('scr-lobby'),
-      mobileModal: $('scr-mobile-modal'), help: $('scr-help'), pass: $('scr-pass'),
+      mobileModal: $('scr-mobile-modal'), avatarModal: $('scr-avatar-modal'), help: $('scr-help'), pass: $('scr-pass'),
       pause: $('scr-pause'), result: $('scr-result'), coinFlip: $('scr-coin-flip')
     },
     setup: { mode: null, diff: 1 },
@@ -21,6 +21,7 @@
     },
     mySlotIdx: 0,
     myName: 'Jogador',
+    myAvatarId: localStorage.getItem('gb_tankwars_avatar') || 'a',
 
     init() {
       // Impede arrasto elástico (bouncing) na página
@@ -54,6 +55,12 @@
 
       // Popula Cards de Mobile no Modal F3 e na seleção legada
       this.populateMobileCards();
+      // Popula Cards de Avatar no Modal F2
+      this.populateAvatarCards();
+      GB.onAvatarsLoaded = () => {
+        this.populateAvatarCards();
+        this.updateRoomLobbyUI();
+      };
 
       // Botões do Menu Principal
       $('m-pve').addEventListener('click', () => this.startOfflineLobby('pve'));
@@ -92,6 +99,24 @@
         } else {
           this.game.toast(`Código da sala: ${code}`);
         }
+      });
+
+      // Troca de Avatar (F2 / Botão / Badge)
+      $('gb-btn-avatar')?.addEventListener('click', () => {
+        GB.Sfx.click();
+        this.showScreen('avatarModal');
+      });
+      $('gb-side-avatar-badge')?.addEventListener('click', () => {
+        GB.Sfx.click();
+        this.showScreen('avatarModal');
+      });
+      $('gb-modal-avatar-close')?.addEventListener('click', () => {
+        GB.Sfx.click();
+        this.showScreen('lobby');
+      });
+      $('gb-modal-avatar-x')?.addEventListener('click', () => {
+        GB.Sfx.click();
+        this.showScreen('lobby');
       });
 
       $('gb-btn-mobile').addEventListener('click', () => {
@@ -133,6 +158,46 @@
           this.tryStartGame();
         } else {
           this.toggleMyReady();
+        }
+      });
+
+      // Teclas de Atalho do Lobby (F2 Avatar, F3 Mobile, F4 Time, F5 Start/Ready)
+      window.addEventListener('keydown', (e) => {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+        if (this.screens.lobby && this.screens.lobby.classList.contains('active')) {
+          if (e.key === 'F2') {
+            e.preventDefault();
+            GB.Sfx.click();
+            this.showScreen('avatarModal');
+          } else if (e.key === 'F3') {
+            e.preventDefault();
+            GB.Sfx.click();
+            this.showScreen('mobileModal');
+          } else if (e.key === 'F4') {
+            e.preventDefault();
+            GB.Sfx.click();
+            this.switchMyTeam();
+          } else if (e.key === 'F5') {
+            e.preventDefault();
+            GB.Sfx.click();
+            if (GB.Net.isHost || this.setup.mode !== 'online') {
+              this.tryStartGame();
+            } else {
+              this.toggleMyReady();
+            }
+          }
+        } else if (this.screens.avatarModal && this.screens.avatarModal.classList.contains('active')) {
+          if (e.key === 'Escape' || e.key === 'F2') {
+            e.preventDefault();
+            GB.Sfx.click();
+            this.showScreen('lobby');
+          }
+        } else if (this.screens.mobileModal && this.screens.mobileModal.classList.contains('active')) {
+          if (e.key === 'Escape' || e.key === 'F3') {
+            e.preventDefault();
+            GB.Sfx.click();
+            this.showScreen('lobby');
+          }
         }
       });
 
@@ -365,11 +430,63 @@
             this.showScreen('lobby');
           });
           list.appendChild(cell);
-          GB.drawMobilePreview(cell.querySelector('canvas'), mobId);
+          GB.drawMobilePreview(cell.querySelector('canvas'), mobId, this.myAvatarId || 'a');
         });
 
         modalBox.appendChild(col);
       });
+    },
+
+    // --- População de Avatares ---
+    populateAvatarCards() {
+      const modalBox = $('gb-modal-avatar-cards');
+      if (!modalBox) return;
+      modalBox.innerHTML = '';
+
+      const avatars = [
+        { id: 'a', name: 'Avatar A', role: 'Aviador', desc: 'Piloto audacioso com óculos de voo e cabelo ciano.' },
+        { id: 'b', name: 'Avatar B', role: 'Steampunk', desc: 'Engenheiro com lentes mecânicas duplas e cabelo roxo.' },
+        { id: 'c', name: 'Avatar C', role: 'Alquimista', desc: 'Estrategista de sobretudo verde, cabelo rubro e poções.' },
+        { id: 'd', name: 'Avatar D', role: 'Franco-atiradora', desc: 'Especialista de sobretudo roxo com monóculo de mira.' }
+      ];
+
+      const currentAv = this.myAvatarId || 'a';
+
+      avatars.forEach(av => {
+        const cell = document.createElement('div');
+        cell.className = 'gb-avatar-cell' + (av.id === currentAv ? ' selected' : '');
+        cell.dataset.id = av.id;
+        cell.title = `${av.name} (${av.role}): ${av.desc}`;
+        cell.innerHTML = `
+          <div class="gb-avatar-cell-img-wrap">
+            <img src="img/avatars/avatar_${av.id}.png" class="gb-avatar-cell-img" alt="${av.name}">
+          </div>
+          <span class="gb-avatar-cell-name">${av.name}</span>
+          <span class="gb-avatar-cell-desc">${av.desc}</span>
+        `;
+        cell.addEventListener('click', () => {
+          GB.Sfx.init(); GB.Sfx.click();
+          modalBox.querySelectorAll('.gb-avatar-cell').forEach(c => c.classList.remove('selected'));
+          cell.classList.add('selected');
+          this.changeMyAvatar(av.id);
+          this.showScreen('lobby');
+        });
+        modalBox.appendChild(cell);
+      });
+    },
+
+    changeMyAvatar(avatarId) {
+      this.myAvatarId = avatarId;
+      localStorage.setItem('gb_tankwars_avatar', avatarId);
+      const myP = this.room && this.room.slots && this.room.slots[this.mySlotIdx];
+      if (myP) {
+        myP.avatarId = avatarId;
+        if (this.setup.mode === 'online') {
+          if (GB.Net.isHost) GB.Net.broadcast({ t: 'room_state', room: this.room });
+          else GB.Net.send({ t: 'room_act', act: 'avatar', avatar: avatarId });
+        }
+        this.updateRoomLobbyUI();
+      }
     },
 
     // --- Lobby Offline (PvE / Local) ---
@@ -390,7 +507,7 @@
       // Slot 0: Jogador
       this.room.slots[0] = {
         id: 'p1', name: this.myName || 'Jogador 1',
-        team: 0, slotIdx: 0, mobile: 'armor',
+        team: 0, slotIdx: 0, mobile: 'armor', avatarId: this.myAvatarId || 'a',
         items: ['dual'], items2: 'nuclear', ready: true, isHost: true, ping: 0
       };
 
@@ -398,6 +515,7 @@
       this.room.slots[4] = {
         id: 'p2', name: mode === 'pve' ? 'CPU' : 'Jogador 2',
         team: 1, slotIdx: 4, mobile: mode === 'pve' ? 'bigfoot' : 'grub',
+        avatarId: mode === 'pve' ? 'b' : 'b',
         items: ['teleport'], items2: null, ready: true, isHost: false, ping: 0
       };
 
@@ -440,7 +558,7 @@
       // Adiciona o Host no Slot 0 (Time A)
       this.room.slots[0] = {
         id: 'host', name: this.myName,
-        team: 0, slotIdx: 0, mobile: 'armor',
+        team: 0, slotIdx: 0, mobile: 'armor', avatarId: this.myAvatarId || 'a',
         items: [], items2: null, ready: true, isHost: true, ping: 0
       };
 
@@ -507,6 +625,7 @@
             t: 'join_req',
             name: this.myName,
             mobile: 'armor',
+            avatar: this.myAvatarId || 'a',
             items: [],
             items2: null
           });
@@ -682,6 +801,7 @@
         team: assignedSlot < 4 ? 0 : 1,
         slotIdx: assignedSlot,
         mobile: m.mobile || 'armor',
+        avatarId: m.avatar || 'a',
         items: m.items || [],
         items2: m.items2 || null,
         ready: false,
@@ -704,6 +824,8 @@
 
       if (m.act === 'mobile') {
         slot.mobile = m.mobile;
+      } else if (m.act === 'avatar') {
+        slot.avatarId = m.avatar || 'a';
       } else if (m.act === 'items') {
         slot.items = m.items || [];
         slot.items2 = m.items2 || null;
@@ -896,6 +1018,7 @@
           name: p.name,
           team: p.team,
           mobileId: p.mobile,
+          avatarId: p.avatarId || 'a',
           items: [...(p.items || [])],
           items2: p.items2
         }));
@@ -943,6 +1066,7 @@
           name: p.name,
           team: p.team,
           mobileId: p.mobile,
+          avatarId: p.avatarId || 'a',
           items: [...(p.items || [])],
           items2: p.items2
         }));
@@ -975,6 +1099,7 @@
           team: p.team,
           color: p.team === 0 ? '#ff4444' : '#3b82f6',
           mobileId: p.mobileId,
+          avatarId: p.avatarId || 'a',
           items: p.items || [],
           items2: p.items2 || null,
           slotIdx: p.slotIdx,
@@ -1031,6 +1156,7 @@
           : (p.ready ? '<span class="gb-slot-badge ready">PRONTO</span>' : '<span class="gb-slot-badge waiting">AGUARDANDO</span>');
 
         el.className = 'gb-slot ' + (isTeamA ? 'team-a-slot' : 'team-b-slot');
+        const avTag = (p.avatarId || 'a').toUpperCase();
         el.innerHTML = `
           <div class="gb-slot-inner occupied">
             <div class="gb-slot-canvas-wrap">
@@ -1044,6 +1170,7 @@
               </div>
               <div class="gb-slot-subline">
                 <span class="gb-slot-mob">${(GB.MOBILES[p.mobile] || {}).name || p.mobile}</span>
+                <span class="gb-slot-avatar-tag">Av. ${avTag}</span>
                 <span class="gb-slot-ping">${pingMs}</span>
               </div>
             </div>
@@ -1052,7 +1179,7 @@
         `;
 
         const cv = $(`gb-slot-c-${i}`);
-        if (cv) GB.drawMobilePreview(cv, p.mobile);
+        if (cv) GB.drawMobilePreview(cv, p.mobile, p.avatarId || 'a');
       }
 
       // Contadores de Equipe
@@ -1093,7 +1220,12 @@
       // Sidebar: Status do Mobile do Jogador Local
       const mob = GB.MOBILES[myP.mobile] || GB.MOBILES.armor;
       $('gb-side-mob-name').textContent = mob.name;
-      GB.drawMobilePreview($('gb-side-canvas'), myP.mobile);
+      const avNameEl = $('gb-side-avatar-name');
+      if (avNameEl) {
+        const curAv = (GB.AVATARS && GB.AVATARS[myP.avatarId || 'a']) || { name: 'Avatar ' + (myP.avatarId || 'a').toUpperCase() };
+        avNameEl.textContent = curAv.name;
+      }
+      GB.drawMobilePreview($('gb-side-canvas'), myP.mobile, myP.avatarId || 'a');
 
       $('stat-atk').style.width = Math.round((mob.stats.Dano || 0.7) * 100) + '%';
       

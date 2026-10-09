@@ -2708,8 +2708,76 @@
     if (fn) fn(ctx, angle, team || '#fff');
   };
 
+  // ----------------------------------------------------------------
+  // Sistema de Avatares (A, B, C, D) montados nos Mobiles
+  // ----------------------------------------------------------------
+  GB.AVATARS = {
+    a: { id: 'a', name: 'Avatar A', desc: 'Piloto Aviador (Óculos de Proteção)', src: 'img/avatars/avatar_a.png' },
+    b: { id: 'b', name: 'Avatar B', desc: 'Engenheiro Steampunk (Lentes Duplas)', src: 'img/avatars/avatar_b.png' },
+    c: { id: 'c', name: 'Avatar C', desc: 'Alquimista de Batalha (Casaco Verde)', src: 'img/avatars/avatar_c.png' },
+    d: { id: 'd', name: 'Avatar D', desc: 'Atiradora Tecnológica (Monóculo)', src: 'img/avatars/avatar_d.png' }
+  };
+
+  // Âncoras do assento/guidão do piloto para cada veículo:
+  // x: posição horizontal do assento, y: altura do assento, scale: proporção do avatar
+  GB.AVATAR_ANCHORS = {
+    armor:    { x: -4, y: -14, scale: 0.082 },
+    bigfoot:  { x: -6, y: -16, scale: 0.082 },
+    grub:     { x: -7, y: -16, scale: 0.080 },
+    dj:       { x: -3, y: -18, scale: 0.082 },
+    launcher: { x: -5, y: -17, scale: 0.080 },
+    khan:     { x: -1, y: -15, scale: 0.080 },
+    doc:      { x: -9, y: -18, scale: 0.080 },
+    frigo:    { x: -13, y: -15, scale: 0.080 },
+    driller:  { x: 3.5, y: -15, scale: 0.080 },
+    kuda:     { x: -3, y: -15, scale: 0.080 }
+  };
+  GB.AVATAR_ANCHORS.nak = GB.AVATAR_ANCHORS.khan;
+
+  // Pré-carregamento dos sprites dos avatares
+  GB.avatarImages = {};
+  GB.avatarLoaded = false;
+  let avatarsLoadedCount = 0;
+  const totalAvatarKeys = Object.keys(GB.AVATARS);
+  totalAvatarKeys.forEach(id => {
+    const img = new Image();
+    img.onload = () => {
+      avatarsLoadedCount++;
+      if (avatarsLoadedCount === totalAvatarKeys.length) {
+        GB.avatarLoaded = true;
+        if (typeof GB.onAvatarsLoaded === 'function') GB.onAvatarsLoaded();
+      }
+    };
+    img.src = GB.AVATARS[id].src;
+    GB.avatarImages[id] = img;
+  });
+
+  // Renderiza o avatar montado atrás do veículo
+  GB.drawAvatar = function (ctx, avatarId, mobileId, customScale) {
+    const aid = avatarId || 'a';
+    const img = GB.avatarImages && GB.avatarImages[aid];
+    if (!img || !img.complete || !img.naturalWidth) return;
+
+    const anch = (GB.AVATAR_ANCHORS && (GB.AVATAR_ANCHORS[mobileId] || (mobileId === 'nak' ? GB.AVATAR_ANCHORS.khan : null))) || { x: -4, y: -15, scale: 0.08 };
+    const s = customScale || anch.scale || 0.08;
+
+    ctx.save();
+    ctx.translate(anch.x, anch.y);
+    if (anch.rot) ctx.rotate(anch.rot);
+
+    // Ponto de contato do assento/quadril na sprite original (259x360): x ≈ 115, y ≈ 340
+    const ox = 115 * s;
+    const oy = 340 * s;
+    const dw = img.naturalWidth * s;
+    const dh = img.naturalHeight * s;
+
+    ctx.drawImage(img, -ox, -oy, dw, dh);
+    ctx.restore();
+  };
+
   // Prévia para os cartões de seleção
-  GB.drawMobilePreview = function (canvas, id) {
+  GB.drawMobilePreview = function (canvas, id, avatarId) {
+    if (!canvas) return;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const w = canvas.clientWidth || 160, h = canvas.clientHeight || 80;
     canvas.width = w * dpr; canvas.height = h * dpr;
@@ -2723,6 +2791,9 @@
     const s = Math.min(h / 48, w / 60);
     ctx.translate(w / 2, h * 0.88);
     ctx.scale(s, s);
+    if (avatarId && GB.drawAvatar) {
+      GB.drawAvatar(ctx, avatarId, id);
+    }
     const previewAngle = (id === 'khan' || id === 'kuda') ? 0 : 35;
     GB.drawMobile(ctx, id, previewAngle, '#ffd27a');
   };
