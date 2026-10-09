@@ -588,7 +588,19 @@
       ctx.restore();
     },
 
-    grub(ctx, angle, team) {
+    grub(ctx, angle, team, wheelRot) {
+      const rot = wheelRot || 0;
+      // Animação de Fole / Sanfona da Lagarta (Worm) ao se movimentar
+      // O corpo contrai e expande em X e Y simulando o movimento de fole de sanfona
+      const accordionPhase = Math.sin(rot * 2.5);
+      const scaleX = 1 + accordionPhase * 0.10;
+      const scaleY = 1 - accordionPhase * 0.08;
+      const bodyWave = Math.sin(rot * 2.5) * 0.035;
+
+      ctx.save();
+      ctx.rotate(bodyWave);
+      ctx.scale(scaleX, scaleY);
+
       // 1. Corpo principal em domo amarelo (lagarta)
       ctx.beginPath();
       ctx.moveTo(-20, 0);
@@ -748,10 +760,86 @@
       ctx.ellipse(21, 0, 1.5, 3, 0, 0, Math.PI * 2);
       ctx.fillStyle = '#1a1a1a'; ctx.fill();
 
-      ctx.restore();
+      ctx.restore(); // Fecha canhão
+      ctx.restore(); // Fecha sanfona / fole
     },
 
-    dj(ctx, angle, team) {
+    dj(ctx, angle, team, wheelRot) {
+      const rot = wheelRot || 0;
+      // Animação dos pés de mola saltitantes: "boing boing boing boing boing!"
+      const hop1 = Math.abs(Math.sin(rot * 3.4));
+      const hop2 = Math.abs(Math.sin(rot * 3.4 + 0.5));
+      const bodyHopY = -Math.max(hop1, hop2) * 3.8;
+      const hopTilt = Math.sin(rot * 3.4) * 0.04;
+
+      const footLift1 = -Math.max(0, Math.sin(rot * 3.4)) * 2.2;
+      const footLift2 = -Math.max(0, Math.sin(rot * 3.4 + Math.PI)) * 2.2;
+
+      // Desenho das molas helicoidais em espiral elástica
+      const drawCoilSpring = (cx, topY, botY) => {
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(cx, topY);
+        const len = botY - topY;
+        const nTurns = 4;
+        const dy = len / nTurns;
+        for (let i = 0; i < nTurns; i++) {
+          const midY = topY + dy * (i + 0.5);
+          const endY = topY + dy * (i + 1);
+          const xOffset = (i % 2 === 0 ? 3.0 : -3.0);
+          ctx.bezierCurveTo(cx + xOffset, midY - 0.5, cx + xOffset, midY + 0.5, cx, endY);
+        }
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 2.4;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 1.0;
+        ctx.stroke();
+        ctx.restore();
+      };
+
+      // 2. Trem de pouso / Pés e Molas metálicas (Landing gear)
+      // Sapata Traseira
+      ctx.save();
+      ctx.translate(0, footLift1);
+      ctx.beginPath();
+      ctx.ellipse(-11.5, -3.5, 5.2, 3.5, 0, 0, Math.PI);
+      ctx.closePath();
+      const footG1 = ctx.createLinearGradient(0, -3.5, 0, 0.5);
+      footG1.addColorStop(0, '#e53935');
+      footG1.addColorStop(0.65, '#c62828');
+      footG1.addColorStop(1, '#7f0000');
+      ctx.fillStyle = footG1;
+      ctx.fill();
+      outline(ctx);
+      ctx.restore();
+
+      // Sapata Dianteira
+      ctx.save();
+      ctx.translate(0, footLift2);
+      ctx.beginPath();
+      ctx.ellipse(10.1, -3.5, 5.2, 3.5, 0, 0, Math.PI);
+      ctx.closePath();
+      const footG2 = ctx.createLinearGradient(0, -3.5, 0, 0.5);
+      footG2.addColorStop(0, '#e53935');
+      footG2.addColorStop(0.65, '#c62828');
+      footG2.addColorStop(1, '#7f0000');
+      ctx.fillStyle = footG2;
+      ctx.fill();
+      outline(ctx);
+      ctx.restore();
+
+      // Molas helicoidais conectando o chassi saltitante às sapatas no solo
+      drawCoilSpring(-11.5, -8.0 + bodyHopY, -3.5 + footLift1);
+      drawCoilSpring(10.1, -8.0 + bodyHopY, -3.5 + footLift2);
+
+      // Agora todo o caldeirão/corpo e canhão saltitando alegremente em boing-boing
+      ctx.save();
+      ctx.translate(0, bodyHopY);
+      ctx.rotate(hopTilt);
+
       // 1. Barriga arredondada inferior (Deep Maroon Underbelly)
       ctx.beginPath();
       ctx.ellipse(-1, -8.5, 9.0, 4.8, 0, 0, Math.PI);
@@ -759,8 +847,6 @@
       ctx.fill();
       outline(ctx);
 
-      // 2. Trem de pouso / Pés e Pistões metálicos (Landing gear)
-      // Pé Traseiro (x = -11.5)
       // Articulação/joelho traseiro
       ctx.beginPath();
       ctx.moveTo(-14, -10.5);
@@ -783,30 +869,6 @@
       ctx.fill();
       outline(ctx);
 
-      // Pistão vertical traseiro
-      ctx.beginPath();
-      ctx.rect(-12.8, -8.0, 2.6, 4.8);
-      const pistG1 = ctx.createLinearGradient(-12.8, 0, -10.2, 0);
-      pistG1.addColorStop(0, '#546e7a');
-      pistG1.addColorStop(0.5, '#cfd8dc');
-      pistG1.addColorStop(1, '#37474f');
-      ctx.fillStyle = pistG1;
-      ctx.fill();
-      outline(ctx);
-
-      // Sapata / Prato de apoio traseiro (hemisfério vermelho)
-      ctx.beginPath();
-      ctx.ellipse(-11.5, -3.5, 5.2, 3.5, 0, 0, Math.PI);
-      ctx.closePath();
-      const footG1 = ctx.createLinearGradient(0, -3.5, 0, 0.5);
-      footG1.addColorStop(0, '#e53935');
-      footG1.addColorStop(0.65, '#c62828');
-      footG1.addColorStop(1, '#7f0000');
-      ctx.fillStyle = footG1;
-      ctx.fill();
-      outline(ctx);
-
-      // Pé Dianteiro (x = 10)
       // Articulação/joelho dianteiro
       ctx.beginPath();
       ctx.moveTo(7.5, -10.5);
@@ -815,29 +877,6 @@
       ctx.lineTo(8.2, -7.5);
       ctx.closePath();
       ctx.fillStyle = '#7a0e0e';
-      ctx.fill();
-      outline(ctx);
-
-      // Pistão vertical dianteiro
-      ctx.beginPath();
-      ctx.rect(8.8, -8.0, 2.6, 4.8);
-      const pistG2 = ctx.createLinearGradient(8.8, 0, 11.4, 0);
-      pistG2.addColorStop(0, '#546e7a');
-      pistG2.addColorStop(0.5, '#cfd8dc');
-      pistG2.addColorStop(1, '#37474f');
-      ctx.fillStyle = pistG2;
-      ctx.fill();
-      outline(ctx);
-
-      // Sapata / Prato de apoio dianteiro (hemisfério vermelho)
-      ctx.beginPath();
-      ctx.ellipse(10.1, -3.5, 5.2, 3.5, 0, 0, Math.PI);
-      ctx.closePath();
-      const footG2 = ctx.createLinearGradient(0, -3.5, 0, 0.5);
-      footG2.addColorStop(0, '#e53935');
-      footG2.addColorStop(0.65, '#c62828');
-      footG2.addColorStop(1, '#7f0000');
-      ctx.fillStyle = footG2;
       ctx.fill();
       outline(ctx);
 
@@ -1098,7 +1137,8 @@
       ctx.fillStyle = '#ffffff';
       ctx.fill();
 
-      ctx.restore();
+      ctx.restore(); // Fecha canhão
+      ctx.restore(); // Fecha chassi saltitante (boing boing)
     },
 
     launcher(ctx, angle, team, wheelRot) {
@@ -1320,8 +1360,75 @@
       ctx.restore();
     },
 
-    khan(ctx, angle, team) {
-      // 1. O Bumbum / Abdômen disparador na traseira (x < 0)
+    khan(ctx, angle, team, wheelRot) {
+      const rot = wheelRot || 0;
+
+      // Animação de patas do besouro em marcha tripé mecânica (6 patas ao todo!)
+      function drawKhanLeg(px, phase, isBg) {
+        const cycle = rot * 3.0 + phase;
+        const swingX = Math.sin(cycle) * 2.4;
+        const liftY = -Math.max(0, Math.cos(cycle)) * 2.2;
+        const footTilt = Math.sin(cycle) * 0.10;
+        const baseX = isBg ? px - 2.5 : px;
+        const baseY = isBg ? -1.6 : 0;
+
+        ctx.save();
+        ctx.translate(baseX + swingX, baseY + liftY);
+        ctx.rotate(footTilt);
+
+        // Sola creme/marfim inferior
+        ctx.beginPath();
+        rr(ctx, -5, -5, 10, 5, 2.5);
+        ctx.fillStyle = isBg ? '#d8be92' : '#fce2b8';
+        ctx.fill();
+        outline(ctx);
+
+        // Almofada alaranjada da pata
+        ctx.beginPath();
+        rr(ctx, -5.5, -11, 11, 7.5, 3);
+        const podGrad = ctx.createLinearGradient(0, -11, 0, -3.5);
+        if (isBg) {
+          podGrad.addColorStop(0, '#cc6212');
+          podGrad.addColorStop(1, '#a63e04');
+        } else {
+          podGrad.addColorStop(0, '#f28324');
+          podGrad.addColorStop(1, '#d45b0d');
+        }
+        ctx.fillStyle = podGrad;
+        ctx.fill();
+        outline(ctx);
+
+        // Junta / círculo preto no centro da pata
+        ctx.beginPath();
+        ctx.arc(0, -6.5, 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = isBg ? '#222222' : '#111111';
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      // 1. Patas Traseiras / Fundo (3 patas do lado oposto - marcha anti-fase)
+      const podXs = [-8, 2, 12];
+      const bgPhases = [Math.PI, 0, Math.PI];
+      for (let i = 0; i < 3; i++) {
+        drawKhanLeg(podXs[i], bgPhases[i], true);
+      }
+
+      // 2. Patas de Primeiro Plano (3 patas do lado visível - marcha tripé sincronizada)
+      const fgPhases = [0, Math.PI, 0];
+      for (let i = 0; i < 3; i++) {
+        drawKhanLeg(podXs[i], fgPhases[i], false);
+      }
+
+      // 3. Tronco, Abdômen e Cabeça com balanço mecânico suave
+      const bodyBobY = Math.abs(Math.sin(rot * 3.0)) * 0.6;
+      const bodyTilt = Math.sin(rot * 1.5) * 0.02;
+
+      ctx.save();
+      ctx.translate(0, -bodyBobY);
+      ctx.rotate(bodyTilt);
+
+      // O Bumbum / Abdômen disparador na traseira (x < 0)
       // Conecta ao corpo em (-7, -14). Ele próprio mira de acordo com o ângulo (-35° a +35°)!
       ctx.save();
       ctx.translate(-7, -14);
@@ -1373,34 +1480,7 @@
 
       ctx.restore();
 
-      // 2. Patas / Pods inferiores (3 gomos com juntas pretas e solas creme)
-      const podXs = [-8, 2, 12];
-      for (const px of podXs) {
-        // Sola creme/marfim inferior
-        ctx.beginPath();
-        rr(ctx, px - 5, -5, 10, 5, 2.5);
-        ctx.fillStyle = '#fce2b8';
-        ctx.fill();
-        outline(ctx);
-
-        // Almofada alaranjada da pata
-        ctx.beginPath();
-        rr(ctx, px - 5.5, -11, 11, 7.5, 3);
-        const podGrad = ctx.createLinearGradient(px, -11, px, -3.5);
-        podGrad.addColorStop(0, '#f28324');
-        podGrad.addColorStop(1, '#d45b0d');
-        ctx.fillStyle = podGrad;
-        ctx.fill();
-        outline(ctx);
-
-        // Junta / círculo preto no centro da pata
-        ctx.beginPath();
-        ctx.arc(px, -6.5, 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = '#111111';
-        ctx.fill();
-      }
-
-      // 3. Carapaça / Segmentos vermelhos arqueados do corpo (inseto/besouro)
+      // Carapaça / Segmentos vermelhos arqueados do corpo (inseto/besouro)
       ctx.beginPath();
       ctx.moveTo(-10, -10);
       ctx.quadraticCurveTo(-8, -19, 0, -19);
@@ -1432,7 +1512,7 @@
       ctx.fillStyle = team;
       ctx.fillRect(-6, -11, 16, 2.5);
 
-      // 4. Cabeça frontal (formato inseto/capacete vermelho com olho grande)
+      // Cabeça frontal (formato inseto/capacete vermelho com olho grande)
       ctx.save();
       ctx.translate(15, -13);
 
@@ -1479,6 +1559,8 @@
       ctx.arc(4, 0.8, 0.9, 0, Math.PI * 2);
       ctx.fillStyle = '#ffffff';
       ctx.fill();
+
+      ctx.restore();
 
       ctx.restore();
     },
@@ -1790,7 +1872,9 @@
       ctx.restore();
     },
 
-    frigo(ctx, angle, team) {
+    frigo(ctx, angle, team, wheelRot) {
+      const rot = wheelRot || 0;
+
       // Cores principais fiéis à imagem de referência
       const cIceBase = '#7bb8e8';    // Azul celeste base da armadura
       const cIceLight = '#b2e2ff';   // Reflexo e topo iluminado das curvas
@@ -1802,6 +1886,18 @@
       const cSeatLight = '#2665a3';
 
       // 1. Pata Dianteira de Fundo (Perna direita/fundo - abaixo da cabeça)
+      // Animação de passada em oposição à pata dianteira (marcha quadrúpede/gorila)
+      const bgCycle = rot * 2.8 + Math.PI;
+      const bgSwing = Math.sin(bgCycle) * 0.16;
+      const bgLift = -Math.max(0, Math.cos(bgCycle)) * 2.2;
+      const bgShiftX = Math.sin(bgCycle) * 2.5;
+
+      ctx.save();
+      ctx.translate(16, -11);
+      ctx.rotate(bgSwing);
+      ctx.translate(-16, 11);
+      ctx.translate(bgShiftX * 0.4, bgLift * 0.5);
+
       ctx.beginPath();
       ctx.moveTo(13, -11);
       ctx.lineTo(19, -11);
@@ -1818,6 +1914,8 @@
       rr(ctx, 14.5, -1.5, 7.5, 1.5, 0.5);
       ctx.fillStyle = '#1c242c'; ctx.fill();
 
+      ctx.restore();
+
       // 2. Chassi inferior e grelha de refrigeração (barriga entre esteira e perna)
       ctx.beginPath();
       ctx.moveTo(-6, -7);
@@ -1832,23 +1930,43 @@
         ctx.beginPath(); ctx.moveTo(vx, -9.5); ctx.lineTo(vx, -5.5); ctx.stroke();
       }
 
-      // 3. Esteira Traseira (Lagarta / Treads)
+      // 3. Esteira Traseira (Lagarta / Treads com dentes móveis e rodas giratórias)
       rr(ctx, -20.5, -6.5, 16.5, 6.5, 3.2);
       ctx.fillStyle = '#1c222a'; ctx.fill(); outline(ctx);
-      // Dentes inferiores da esteira tocando o chão
+
+      // Dentes inferiores da esteira tocando o chão (deslocamento contínuo)
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(-20, -1.8, 15.5, 2.4);
+      ctx.clip();
       ctx.fillStyle = '#12171d';
-      for (let tx = -19; tx <= -6; tx += 2.5) {
+      const toothShift = ((rot * 3.5) % 2.5 + 2.5) % 2.5;
+      for (let tx = -23 + toothShift; tx <= -3; tx += 2.5) {
         ctx.fillRect(tx, -1.2, 1.4, 1.2);
       }
+      ctx.restore();
 
-      // Rodas de rolamento internas (2 rodas cinzas)
+      // Rodas de rolamento internas (2 rodas cinzas com parafusos giratórios fiéis ao estilo)
       [-16, -9.5].forEach(wx => {
+        ctx.save();
+        ctx.translate(wx, -3.2);
+        ctx.rotate(rot * 1.5);
+        // Aro externo
         ctx.beginPath();
-        ctx.arc(wx, -3.2, 2.6, 0, Math.PI * 2);
+        ctx.arc(0, 0, 2.6, 0, Math.PI * 2);
         ctx.fillStyle = '#455364'; ctx.fill();
+        outline(ctx);
+        // Parafusos / raios giratórios metálicos
+        ctx.fillStyle = '#8395a8';
+        for (let a = 0; a < 4; a++) {
+          const ang = a * Math.PI / 2;
+          ctx.fillRect(Math.cos(ang) * 1.5 - 0.4, Math.sin(ang) * 1.5 - 0.4, 0.8, 0.8);
+        }
+        // Cubo central
         ctx.beginPath();
-        ctx.arc(wx, -3.2, 1.3, 0, Math.PI * 2);
+        ctx.arc(0, 0, 1.2, 0, Math.PI * 2);
         ctx.fillStyle = '#1c222a'; ctx.fill();
+        ctx.restore();
       });
 
       // Blindagem / Para-lama da esteira (trapezoidal angular com chanfros)
@@ -2005,6 +2123,19 @@
       ctx.strokeStyle = '#12161c'; ctx.lineWidth = 2.2; ctx.stroke();
 
       // 7. Pata Dianteira de Primeiro Plano (Pata esquerda - O braço de gorila musculoso!)
+      // Ciclo de passada das juntas dos dedos no chão (Knuckle-walking)
+      const fgCycle = rot * 2.8;
+      const fgSwing = Math.sin(fgCycle) * 0.18;
+      const fgLift = -Math.max(0, Math.cos(fgCycle)) * 2.6;
+      const fgShiftX = Math.sin(fgCycle) * 2.8;
+
+      ctx.save();
+      // O ombro rotaciona e o braço avança/recua levantando a pata no passo
+      ctx.translate(0, -13);
+      ctx.rotate(fgSwing);
+      ctx.translate(0, 13);
+      ctx.translate(fgShiftX * 0.35, fgLift * 0.45);
+
       // Ombro / Junta circular grande (deltoide)
       ctx.beginPath();
       ctx.arc(0, -13, 6.2, 0, Math.PI * 2);
@@ -2051,6 +2182,8 @@
       // Sola / apoio de borracha
       rr(ctx, 2, -1.0, 7.5, 1.0, 0.4);
       ctx.fillStyle = '#1c242c'; ctx.fill();
+
+      ctx.restore();
 
       // 8. Berço / Suporte côncavo azul do canhão no dorso (em x = 6, y = -21)
       ctx.beginPath();
@@ -2511,15 +2644,30 @@
       ctx.restore();
     },
 
-    kuda(ctx, angle, team) {
-      // 1. Patas Traseiras/Distantes (3 cones periwinkle com listra branca, sombreados)
+    kuda(ctx, angle, team, wheelRot) {
+      const rot = wheelRot || 0;
+
+      // Animação ondulatória de centopeia mecânica (6 patas ao todo!)
+      // Onda metacronal viajando pelo corpo
+      const kudaBob = Math.abs(Math.sin(rot * 3.2)) * 0.5;
+      const kudaTilt = Math.sin(rot * 1.6) * 0.02;
+
+      // 1. Patas Traseiras/Distantes (3 cones periwinkle com listra branca, marcha em onda)
       const backLegXs = [-12, -1, 10];
-      for (const lx of backLegXs) {
+      for (let i = 0; i < backLegXs.length; i++) {
+        const lx = backLegXs[i];
+        const legCycle = rot * 3.2 - i * 1.05 + Math.PI;
+        const legSwing = Math.sin(legCycle) * 0.20;
+        const legLift = -Math.max(0, Math.cos(legCycle)) * 1.6;
+
         ctx.save();
+        ctx.translate(lx, -9);
+        ctx.rotate(legSwing);
+
         ctx.beginPath();
-        ctx.moveTo(lx - 4, -9);
-        ctx.lineTo(lx + 4, -9);
-        ctx.lineTo(lx, 0);
+        ctx.moveTo(-4, 0);
+        ctx.lineTo(4, 0);
+        ctx.lineTo(0, 9 + legLift);
         ctx.closePath();
         ctx.fillStyle = '#555ea4';
         ctx.fill();
@@ -2527,15 +2675,20 @@
 
         // Faixa branca no meio da perna
         ctx.beginPath();
-        ctx.moveTo(lx - 2.5, -5.5);
-        ctx.lineTo(lx + 2.5, -5.5);
-        ctx.lineTo(lx + 1.3, -3);
-        ctx.lineTo(lx - 1.3, -3);
+        ctx.moveTo(-2.5, 3.5);
+        ctx.lineTo(2.5, 3.5);
+        ctx.lineTo(1.3, 6.0 + legLift * 0.4);
+        ctx.lineTo(-1.3, 6.0 + legLift * 0.4);
         ctx.closePath();
         ctx.fillStyle = '#d5dbfc';
         ctx.fill();
         ctx.restore();
       }
+
+      // Corpo central, lançador e cabeça com suave ondulação
+      ctx.save();
+      ctx.translate(0, -kudaBob);
+      ctx.rotate(kudaTilt);
 
       // 2. Lançador Traseiro / Bumbum Articulado (Eleva com o ângulo de mira para trás, como Khan)
       // Pivot: [-8, -14]. Ângulo roda para trás (Math.PI + angle * GB.DEG)
@@ -2674,17 +2827,27 @@
       ctx.fillStyle = team;
       ctx.fillRect(-3, -11, 8, 2.5);
 
-      // 4. Patas Dianteiras / Próximas (3 cones com anel branco no centro)
+      ctx.restore(); // restore ondulação do corpo
+
+      // 4. Patas Dianteiras / Próximas (3 cones com anel branco no centro, marcha ondulatória)
       const frontLegXs = [-10, 2, 14];
-      for (const lx of frontLegXs) {
+      for (let i = 0; i < frontLegXs.length; i++) {
+        const lx = frontLegXs[i];
+        const legCycle = rot * 3.2 - i * 1.05;
+        const legSwing = Math.sin(legCycle) * 0.22;
+        const legLift = -Math.max(0, Math.cos(legCycle)) * 1.8;
+
         ctx.save();
+        ctx.translate(lx, -9);
+        ctx.rotate(legSwing);
+
         // Cone principal
         ctx.beginPath();
-        ctx.moveTo(lx - 5, -9);
-        ctx.lineTo(lx + 5, -9);
-        ctx.lineTo(lx, 0);
+        ctx.moveTo(-5, 0);
+        ctx.lineTo(5, 0);
+        ctx.lineTo(0, 9 + legLift);
         ctx.closePath();
-        const legGrad = ctx.createLinearGradient(lx - 5, -9, lx + 5, 0);
+        const legGrad = ctx.createLinearGradient(-5, 0, 5, 9);
         legGrad.addColorStop(0, '#929cf0');
         legGrad.addColorStop(0.6, '#727cd6');
         legGrad.addColorStop(1, '#535cb0');
@@ -2694,20 +2857,21 @@
 
         // Faixa branca horizontal no centro da perna
         ctx.beginPath();
-        ctx.moveTo(lx - 3.2, -5.5);
-        ctx.lineTo(lx + 3.2, -5.5);
-        ctx.lineTo(lx + 1.8, -2.8);
-        ctx.lineTo(lx - 1.8, -2.8);
+        ctx.moveTo(-3.2, 3.5);
+        ctx.lineTo(3.2, 3.5);
+        ctx.lineTo(1.8, 6.2 + legLift * 0.4);
+        ctx.lineTo(-1.8, 6.2 + legLift * 0.4);
         ctx.closePath();
         ctx.fillStyle = '#ffffff';
         ctx.fill();
         outline(ctx);
+
         ctx.restore();
       }
 
       // 5. Cabeça Frontal (Globo periwinkle + face branca + olhão preto + periscópio)
       ctx.save();
-      ctx.translate(16, -14);
+      ctx.translate(16, -14 - kudaBob);
 
       // Cabeça redonda
       ctx.beginPath();
