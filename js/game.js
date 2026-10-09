@@ -612,7 +612,7 @@
       
       if (isTeleport) {
         // TELEPORTE: DISPARO ÚNICO com o peso e aerodinâmica do mobile de quem está atirando!
-        // Não herda múltiplos projéteis (Bigfoot, Launcher, Grub, Frigo) nem mecânicas de dano.
+        // Não herda múltiplos projéteis (Yeti, Launcher, Worm, Frigo) nem mecânicas de dano.
         const teleportShot = {
           name: 'Teleporte',
           delay: 0,
@@ -631,16 +631,29 @@
         }];
         bulletsToLaunch = [...baseBullets];
         this.itemActive = null;
+      } else if (isNuclear || isNapalm || isOnda) {
+        // Regra do Usuário: A onda, nuclear e napalm SEMPRE sairão como tiros individuais, independente da arma que está lançando eles
+        const itemShot = {
+          name: isNuclear ? 'Nuclear' : isNapalm ? 'Napalm' : 'Onda',
+          delay: shot.delay,
+          dmg: isNuclear ? 600 : isNapalm ? 350 : 400,
+          r: isNuclear ? 90 : 0,
+          size: isNuclear ? 9 : isNapalm ? 7 : 8,
+          color: isNuclear ? '#ff2222' : isNapalm ? '#ff6600' : '#44aaff',
+          trail: isNuclear ? '#ff7700' : isNapalm ? '#ffaa00' : '#88ccff'
+        };
+        baseBullets = [{
+          off: 0,
+          pm: 1.0,
+          delay: 0,
+          shot: itemShot,
+          isNuclear,
+          isNapalm,
+          isOnda
+        }];
+        bulletsToLaunch = [...baseBullets];
+        this.itemActive = null;
       } else {
-        if (isNuclear || isNapalm || isOnda) {
-            let overrideShot = { ...shot, bouncy: false }; // Inherit aero properties
-            if (isNuclear) { overrideShot.color = '#ff2222'; overrideShot.size = 9; overrideShot.r = 90; }
-            else if (isNapalm) { overrideShot.color = '#ff6600'; overrideShot.size = 7; overrideShot.r = 0; }
-            else if (isOnda) { overrideShot.color = '#44aaff'; overrideShot.size = 8; overrideShot.r = 0; }
-            // Shoot ONLY ONE bullet per attack, inheriting the delay and pm of the first bullet
-            baseBullets = [{ off: 0, pm: baseBullets[0].pm, delay: baseBullets[0].delay, shot: overrideShot, isNuclear, isNapalm, isOnda }];
-        }
-
         bulletsToLaunch.push(...baseBullets);
 
         const activeItem1 = this.itemActive;
@@ -649,13 +662,9 @@
         if (activeItem1 === 'dual') {
            bulletsToLaunch.push(...baseBullets.map(b => ({ ...b, delay: b.delay + 0.6 })));
         } else if (activeItem1 === 'dualplus') {
-           if (isNuclear || isNapalm || isOnda) {
-              bulletsToLaunch.push(...baseBullets.map(b => ({ ...b, delay: b.delay + 0.6 })));
-           } else {
-              const otherShotIdx = shotIdx === 0 ? 1 : 0;
-              const otherShot = t.mobile.shots[otherShotIdx];
-              bulletsToLaunch.push(...otherShot.bullets.map(b => ({ off: b.off || 0, pm: b.pm || 1, delay: (b.delay || 0) + 0.6, shot: otherShot, isNuclear, isNapalm, isOnda })));
-           }
+           const otherShotIdx = shotIdx === 0 ? 1 : 0;
+           const otherShot = t.mobile.shots[otherShotIdx];
+           bulletsToLaunch.push(...otherShot.bullets.map(b => ({ off: b.off || 0, pm: b.pm || 1, delay: (b.delay || 0) + 0.6, shot: otherShot })));
         }
 
         if (activeItem2 === 'superdual') {
@@ -1042,7 +1051,7 @@
         GB.Sfx.boom(1.2);
         return;
       } else if (p.shot && p.shot.isSSRobot) {
-        // Contato direto do SS do Raon Launcher! Conta diretamente como a explosão do robô do SS!
+        // Contato direto do SS do Launcher! Conta diretamente como a explosão do robô do SS!
         this.explodeRobot({
           x: x,
           y: y,
@@ -1053,7 +1062,7 @@
         });
         return;
       } else if (p.shot && p.shot.spawnRobots && !p.shot.isSSRobot) {
-        // Contato direto do Tiro 2 do Raon Launcher! Conta como explosão de mini-robô!
+        // Contato direto do Tiro 2 do Launcher! Conta como explosão de mini-robô!
         this.explodeRobot({
           x: x,
           y: y,

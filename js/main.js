@@ -444,10 +444,10 @@
       modalBox.innerHTML = '';
 
       const avatars = [
-        { id: 'a', name: 'Avatar A', role: 'Aviador', desc: 'Piloto audacioso com óculos de voo e cabelo ciano.' },
-        { id: 'b', name: 'Avatar B', role: 'Steampunk', desc: 'Engenheiro com lentes mecânicas duplas e cabelo roxo.' },
-        { id: 'c', name: 'Avatar C', role: 'Alquimista', desc: 'Estrategista de sobretudo verde, cabelo rubro e poções.' },
-        { id: 'd', name: 'Avatar D', role: 'Franco-atiradora', desc: 'Especialista de sobretudo roxo com monóculo de mira.' }
+        { id: 'a', name: 'Avatar A', role: 'Escudo Protetor', desc: 'Concede 1 escudo a um aliado ou a si mesmo, anulando 100% do dano de 1 ataque. (+200 Delay)' },
+        { id: 'b', name: 'Avatar B', role: 'Controle do Vento', desc: 'Altera o vento para a direção e intensidade escolhidas, fixando-o por 4 turnos. (+50 Delay)' },
+        { id: 'c', name: 'Avatar C', role: 'Overcharge', desc: 'Consome 30% do HP máximo (mínimo 1 HP) para conceder +50% de dano no próximo disparo. (+300 Delay)' },
+        { id: 'd', name: 'Avatar D', role: 'Troca de Posição', desc: 'Troca de posição instantaneamente com qualquer outro jogador vivo em campo. (+400 Delay)' }
       ];
 
       const currentAv = this.myAvatarId || 'a';

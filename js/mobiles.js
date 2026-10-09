@@ -39,7 +39,7 @@
     },
     bigfoot: {
       id: 'bigfoot',
-      name: 'Bigfoot',
+      name: 'Yeti',
       desc: 'Robusto e destruidor de terreno: mísseis em leque. Sobe mal rampas.',
       hp: 1150, speed: 36, maxClimb: 2.8, fuelPerPx: 0.4, windInfl: 1.1,
       defense: 0.06,
@@ -53,7 +53,7 @@
     },
     grub: {
       id: 'grub',
-      name: 'Grub',
+      name: 'Worm',
       desc: 'Escala quase qualquer rampa e sofre pouco com o vento. HP baixo.',
       hp: 880, speed: 50, maxClimb: 9, fuelPerPx: 0.26, windInfl: 0.45,
       defense: 0.01,
@@ -81,7 +81,7 @@
     },
     launcher: {
       id: 'launcher',
-      name: 'Raon Launcher',
+      name: 'Launcher',
       desc: 'Mestre em invocações: correntes e mini-robôs rastreadores.',
       hp: 1000, speed: 45, maxClimb: 5, fuelPerPx: 0.3, windInfl: 1.0,
       defense: 0.01,
@@ -101,7 +101,7 @@
       defense: 0.10,
       stats: { HP: 0.55, Dano: 0.8, Destruição: 0.3, Mobilidade: 0.75 },
       pivot: [-7, -14], barrel: 23, hitR: 18,
-      minAngle: -35, maxAngle: 35, shootsBackwards: true,
+      minAngle: -90, maxAngle: 90, shootsBackwards: true,
       shots: [
         { name: 'Tiro 1', delay: 750, bullets: [{}], r: 30, dmg: 180, size: 5, color: '#f5b52c' },
         { name: 'Tiro 2', delay: 880, bullets: [{}], r: 35, dmg: 350, size: 6, color: '#ff2c56', isKhanT2: true },
@@ -168,6 +168,8 @@
   };
   GB.MOBILES = MOBILES;
   GB.MOBILES.nak = MOBILES.khan;
+  GB.MOBILES.yeti = MOBILES.bigfoot;
+  GB.MOBILES.worm = MOBILES.grub;
   GB.MOBILE_IDS = ['armor', 'bigfoot', 'grub', 'dj', 'launcher', 'khan', 'doc', 'frigo', 'driller', 'kuda'];
 
   GB.THOR = {
@@ -2703,6 +2705,8 @@
   }
 
   draw.nak = draw.khan;
+  draw.yeti = draw.bigfoot;
+  draw.worm = draw.grub;
   GB.drawMobile = function (ctx, id, angle, team) {
     const fn = draw[id] || (id === 'nak' ? draw.khan : null) || draw.armor;
     if (fn) fn(ctx, angle, team || '#fff');
@@ -2712,10 +2716,10 @@
   // Sistema de Avatares (A, B, C, D) montados nos Mobiles
   // ----------------------------------------------------------------
   GB.AVATARS = {
-    a: { id: 'a', name: 'Avatar A', desc: 'Piloto Aviador (Óculos de Proteção)', skillName: 'Escudo Protetor', skillDesc: 'Concede 1 escudo a um aliado ou a si mesmo (bloqueia 100% de 1 ataque).', skillDelay: 200, skillIcon: '🛡️', src: 'img/avatars/avatar_a.png' },
-    b: { id: 'b', name: 'Avatar B', desc: 'Engenheiro Steampunk (Lentes Duplas)', skillName: 'Mestre do Vento', skillDesc: 'Muda o vento imediatamente e o trava pelos próximos 4 turnos.', skillDelay: 50, skillIcon: '🌬️', src: 'img/avatars/avatar_b.png' },
-    c: { id: 'c', name: 'Avatar C', desc: 'Alquimista de Batalha (Casaco Verde)', skillName: 'Overcharge', skillDesc: 'Consome 30% do HP máx (mínimo 1 HP). Próximo disparo causa +50% de dano.', skillDelay: 300, skillIcon: '🔥', src: 'img/avatars/avatar_c.png' },
-    d: { id: 'd', name: 'Avatar D', desc: 'Atiradora Tecnológica (Monóculo)', skillName: 'Troca Espacial', skillDesc: 'Troca de posição com qualquer outro jogador vivo.', skillDelay: 400, skillIcon: '🌀', src: 'img/avatars/avatar_d.png' }
+    a: { id: 'a', name: 'Avatar A', desc: 'Concede 1 escudo a um aliado ou a si mesmo, anulando 100% do dano de 1 ataque. (Delay +200)', skillName: 'Escudo Protetor', skillDesc: 'Concede 1 escudo a um aliado ou a si mesmo (bloqueia 100% de 1 ataque).', skillDelay: 200, skillIcon: '🛡️', src: 'img/avatars/avatar_a.png' },
+    b: { id: 'b', name: 'Avatar B', desc: 'Altera o vento imediatamente para a direção e intensidade escolhidas, fixando-o por 4 turnos. (Delay +50)', skillName: 'Controle do Vento', skillDesc: 'Muda o vento imediatamente e o trava pelos próximos 4 turnos.', skillDelay: 50, skillIcon: '🌬️', src: 'img/avatars/avatar_b.png' },
+    c: { id: 'c', name: 'Avatar C', desc: 'Consome 30% do HP máximo (mínimo 1 HP) para conceder +50% de dano no próximo disparo. (Delay +300)', skillName: 'Overcharge', skillDesc: 'Consome 30% do HP máx (mínimo 1 HP). Próximo disparo causa +50% de dano.', skillDelay: 300, skillIcon: '🔥', src: 'img/avatars/avatar_c.png' },
+    d: { id: 'd', name: 'Avatar D', desc: 'Troca de posição instantaneamente com qualquer outro jogador vivo em campo. (Delay +400)', skillName: 'Troca de Posição', skillDesc: 'Troca de posição com qualquer outro jogador vivo.', skillDelay: 400, skillIcon: '🌀', src: 'img/avatars/avatar_d.png' }
   };
 
   // Âncoras do assento/guidão do piloto para cada veículo:
@@ -2733,6 +2737,8 @@
     kuda:     { x: -3,  y: -15, scale: 0.120 }
   };
   GB.AVATAR_ANCHORS.nak = GB.AVATAR_ANCHORS.khan;
+  GB.AVATAR_ANCHORS.yeti = GB.AVATAR_ANCHORS.bigfoot;
+  GB.AVATAR_ANCHORS.worm = GB.AVATAR_ANCHORS.grub;
 
   // Pré-carregamento dos sprites dos avatares
   GB.avatarImages = {};

@@ -24,12 +24,14 @@
       this.isNuclear = !this.isTeleport && (o.isNuclear || false);
       this.isNapalm = !this.isTeleport && (o.isNapalm || false);
       this.isOnda = !this.isTeleport && (o.isOnda || false);
-      this.isFrigoT1 = !this.isTeleport && !!o.shot.isFrigoT1;
-      this.isFrigoT2 = !this.isTeleport && !!o.shot.isFrigoT2;
-      this.isFrigoSS = !this.isTeleport && !!o.shot.isFrigoSS;
-      if (this.isTeleport) {
+      const isItem2Exclusive = this.isNuclear || this.isNapalm || this.isOnda;
+      this.isFrigoT1 = !this.isTeleport && !isItem2Exclusive && !!o.shot.isFrigoT1;
+      this.isFrigoT2 = !this.isTeleport && !isItem2Exclusive && !!o.shot.isFrigoT2;
+      this.isFrigoSS = !this.isTeleport && !isItem2Exclusive && !!o.shot.isFrigoSS;
+      if (this.isTeleport || isItem2Exclusive) {
         this.bouncy = false;
         this.drillLeft = 0;
+        this.drilling = false;
       }
       this.isDrillerAirDrill = o.isDrillerAirDrill || false;
       this.isThorBeam = o.isThorBeam || (o.shot && o.shot.isThorBeam) || false;
