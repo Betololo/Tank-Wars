@@ -2648,16 +2648,16 @@
       const rot = wheelRot || 0;
 
       // Animação ondulatória de centopeia mecânica (6 patas ao todo!)
-      // Onda metacronal viajando pelo corpo
+      // Onda metacronal viajando pelo corpo rumo à cabeça
       const kudaBob = Math.abs(Math.sin(rot * 3.2)) * 0.5;
-      const kudaTilt = Math.sin(rot * 1.6) * 0.02;
+      const kudaTilt = -Math.sin(rot * 1.6) * 0.02;
 
-      // 1. Patas Traseiras/Distantes (3 cones periwinkle com listra branca, marcha em onda)
+      // 1. Patas Traseiras/Distantes (3 cones periwinkle com listra branca, marcha em onda para frente)
       const backLegXs = [-12, -1, 10];
       for (let i = 0; i < backLegXs.length; i++) {
         const lx = backLegXs[i];
         const legCycle = rot * 3.2 - i * 1.05 + Math.PI;
-        const legSwing = Math.sin(legCycle) * 0.20;
+        const legSwing = -Math.sin(legCycle) * 0.20;
         const legLift = -Math.max(0, Math.cos(legCycle)) * 1.6;
 
         ctx.save();
@@ -2829,12 +2829,12 @@
 
       ctx.restore(); // restore ondulação do corpo
 
-      // 4. Patas Dianteiras / Próximas (3 cones com anel branco no centro, marcha ondulatória)
+      // 4. Patas Dianteiras / Próximas (3 cones com anel branco no centro, marcha ondulatória para frente)
       const frontLegXs = [-10, 2, 14];
       for (let i = 0; i < frontLegXs.length; i++) {
         const lx = frontLegXs[i];
         const legCycle = rot * 3.2 - i * 1.05;
-        const legSwing = Math.sin(legCycle) * 0.22;
+        const legSwing = -Math.sin(legCycle) * 0.22;
         const legLift = -Math.max(0, Math.cos(legCycle)) * 1.8;
 
         ctx.save();
