@@ -23,6 +23,8 @@
       this.dom = this.cacheDom();
       this.hudCache = {};
       this.netQueue = [];
+      this.fixedWindTurns = 0;
+      this.fixedWindVal = 0;
       this.resize();
       window.addEventListener('resize', () => this.resize());
       this.bindInput();
@@ -171,6 +173,16 @@
         t.item2Unlocked = false; // Item 2 começa bloqueado até causar 900 de dano
         t.dmgDealt = 0;
         t.hasUsedItem1ThisTurn = false;
+        t.hasShield = false;
+        t.shieldCharges = 0;
+        t.overcharged = false;
+        t.avatarSkillUsed = false;
+        t.onShieldBreak = () => {
+          this.effects.explosion(t.x, t.y - 12, 45, '#a6f0ff', '#ffffff');
+          this.effects.text(t.x, t.y - 35, '🛡️ BLOQUEADO!', '#5ce1ff', true);
+          GB.Sfx.boom && GB.Sfx.boom(0.5);
+          this.toast(`🛡️ O escudo de ${t.name} absorveu todo o dano!`);
+        };
         t.respawnTimer = 0;
         t.isWaitingRespawn = false;
         t.respawnTargetX = t.x;
@@ -411,6 +423,7 @@
     // ================= Turnos =================
     beginTurn(forcedTurn) {
       if (!this.running || this.phase === 'over') return;
+      this.closeSkillModals && this.closeSkillModals();
       const { over, winner } = this.checkMatchOver();
       if (over) {
         return this.finish(winner);
@@ -508,6 +521,13 @@
     }
 
     newWind() {
+      // Bloqueio de vento do Avatar B: fixo obrigatoriamente pelos próximos 4 turnos
+      if (this.fixedWindTurns > 0) {
+        this.fixedWindTurns--;
+        this.windPrev = this.windLast;
+        this.windLast = this.fixedWindVal;
+        return this.fixedWindVal;
+      }
       if (this.windTurns === undefined) this.windTurns = 0;
       this.windTurns++;
       if (this.windTurns % 6 === 1 || this.windLast === undefined) {
@@ -648,6 +668,7 @@
       this.itemActive = null;
       this.itemActive2 = null;
 
+      const isOvercharged = !!t.overcharged;
       for (const b of bulletsToLaunch) {
          const ai = t.aimInfo(t.angle + b.off);
          const v = power * b.pm * GB.POWER_SCALE;
@@ -655,8 +676,12 @@
             owner: t, shot: b.shot, x: ai.mx, y: ai.my, vx: ai.dx * v, vy: ai.dy * v, 
             delay: b.delay, windInfl: t.mobile.windInfl, bouncy: b.shot.bouncy, 
             isTeleport: !!b.isTeleport,
-            isNuclear: b.isNuclear, isNapalm: b.isNapalm, isOnda: b.isOnda
+            isNuclear: b.isNuclear, isNapalm: b.isNapalm, isOnda: b.isOnda,
+            overchargeMult: isOvercharged ? 1.5 : 1
          }));
+      }
+      if (isOvercharged) {
+         t.overcharged = false;
       }
 
       // Adiciona o delay da ação + tempo gasto
@@ -698,6 +723,235 @@
       this.toast('Tempo esgotado!');
       this.phase = 'settle';
       this.settleT = 0;
+    }
+
+    passTurn(fromRemote) {
+      if (this.phase !== 'aim') return;
+      this.closeSkillModals && this.closeSkillModals();
+      const t = this.active;
+      if (!t || !t.alive) return;
+      if (this.mode === 'online' && !fromRemote && t.kind !== 'human') return;
+
+      if (this.mode === 'online' && !fromRemote) {
+        this.send({ t: 'pass', pIdx: t.playerIdx });
+      }
+
+      this.charging = false;
+      this.power = 0;
+      t.delay += 50;
+      this.toast(`⏭️ ${t.name} passou o turno! (+50 Delay)`);
+      this.effects.text(t.x, t.y - 35, '⏭️ PASSOU (+50)', '#ffd27a', true);
+      GB.Sfx.click && GB.Sfx.click();
+
+      this.phase = 'settle';
+      this.settleT = 0;
+    }
+
+    executeAvatarSkill(tank, skillId, targetIdx, windVal, fromRemote) {
+      if (!tank || !tank.alive || tank.avatarSkillUsed) return;
+      const aid = skillId || tank.avatarId || 'a';
+
+      if (!fromRemote && this.mode === 'online' && tank.kind === 'human') {
+        this.send({
+          t: 'avatar_skill',
+          pIdx: tank.playerIdx,
+          skill: aid,
+          targetIdx: targetIdx,
+          wind: windVal
+        });
+      }
+
+      tank.avatarSkillUsed = true;
+
+      if (aid === 'a') {
+        tank.delay += 200;
+        const target = (targetIdx != null && this.tanks[targetIdx]) ? this.tanks[targetIdx] : tank;
+        target.hasShield = true;
+        target.shieldCharges = 1;
+
+        this.effects.explosion(target.x, target.y - 12, 38, '#70d6ff', '#ffffff');
+        this.effects.text(target.x, target.y - 45, '🛡️ ESCUDO ATIVO!', '#5ce1ff', true);
+        GB.Sfx.power && GB.Sfx.power();
+        this.toast(`🛡️ ${tank.name} concedeu Escudo a ${target.name}! (+200 Delay)`);
+
+      } else if (aid === 'b') {
+        tank.delay += 50;
+        let chosen = (windVal != null) ? windVal : 6;
+        if (chosen === 0) chosen = 1;
+        this.windPrev = this.wind;
+        this.wind = chosen;
+        this.windLast = chosen;
+        this.fixedWindTurns = 4;
+        this.fixedWindVal = chosen;
+
+        const centerX = this.cw ? (this.cam.x + this.cw / 2) : (GB.WORLD_W / 2);
+        this.effects.text(centerX, 120, '🌬️ VENTO FIXADO POR 4T!', '#ffd27a', true);
+        GB.Sfx.power && GB.Sfx.power();
+        this.toast(`🌬️ Vento fixado em ${chosen > 0 ? '▶ +' : '◀ '}${chosen} por 4 turnos! (+50 Delay)`);
+
+      } else if (aid === 'c') {
+        tank.delay += 300;
+        const cost = Math.round(tank.maxHp * 0.30);
+        tank.hp = Math.max(1, tank.hp - cost);
+        tank.overcharged = true;
+
+        this.effects.explosion(tank.x, tank.y - 12, 38, '#ff2222', '#ff7700');
+        this.effects.text(tank.x, tank.y - 35, `-${cost} HP (OVERCHARGE)`, '#ff4444', true);
+        GB.Sfx.power && GB.Sfx.power();
+        this.toast(`🔥 OVERCHARGE! +50% dano no próximo tiro! (+300 Delay)`);
+
+      } else if (aid === 'd') {
+        tank.delay += 400;
+        const target = (targetIdx != null && this.tanks[targetIdx]) ? this.tanks[targetIdx] : null;
+        if (target && target.alive && target !== tank) {
+          const x1 = tank.x, y1 = tank.y;
+          const x2 = target.x, y2 = target.y;
+
+          this.effects.explosion(x1, y1 - 12, 36, '#c466ff', '#ffffff');
+          this.effects.explosion(x2, y2 - 12, 36, '#c466ff', '#ffffff');
+          this.effects.text(x1, y1 - 40, '🌀 TROCA!', '#e299ff', true);
+          this.effects.text(x2, y2 - 40, '🌀 TROCA!', '#e299ff', true);
+
+          tank.x = x2; tank.y = y2; tank.targetX = x2; tank.targetY = y2;
+          target.x = x1; target.y = y1; target.targetX = x1; target.targetY = y1;
+
+          tank.updateTilt(true);
+          target.updateTilt(true);
+          this.shake = Math.min(16, this.shake + 6);
+          GB.Sfx.boom && GB.Sfx.boom(0.4);
+          this.toast(`🌀 ${tank.name} trocou de lugar com ${target.name}! (+400 Delay)`);
+        }
+      }
+
+      this.updateHud();
+    }
+
+    closeSkillModals() {
+      const m1 = document.getElementById('modal-skill-target');
+      const m2 = document.getElementById('modal-skill-wind');
+      const m3 = document.getElementById('modal-skill-swap');
+      if (m1) m1.classList.add('hidden');
+      if (m2) m2.classList.add('hidden');
+      if (m3) m3.classList.add('hidden');
+    }
+
+    openShieldTargetModal(t) {
+      const modal = document.getElementById('modal-skill-target');
+      const list = document.getElementById('skill-target-list');
+      if (!modal || !list) return;
+      list.innerHTML = '';
+
+      const allies = this.tanks.filter(o => o.alive && o.team === t.team);
+      allies.forEach(ally => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'skill-target-item';
+        const isSelf = ally === t;
+        const hasSh = ally.hasShield;
+        btn.innerHTML = `
+          <div class="skill-target-info">
+            <span class="skill-target-name" style="color: ${ally.color}">
+              ${ally.name} ${isSelf ? '(Você)' : ''}
+            </span>
+            <span class="skill-target-meta">HP: ${ally.hp}/${ally.maxHp}${hasSh ? ' • 🛡️ Já protegido' : ''}</span>
+          </div>
+          <span class="skill-target-pick">SELECIONAR</span>
+        `;
+        btn.addEventListener('click', () => {
+          this.closeSkillModals();
+          this.executeAvatarSkill(t, 'a', this.tanks.indexOf(ally));
+        });
+        list.appendChild(btn);
+      });
+      modal.classList.remove('hidden');
+    }
+
+    openWindPickerModal(t) {
+      const modal = document.getElementById('modal-skill-wind');
+      if (!modal) return;
+
+      let chosenDir = -1; // -1 = Esquerda, 1 = Direita
+      let chosenMag = 6;
+
+      const btnLeft = document.getElementById('btn-wdir-left');
+      const btnRight = document.getElementById('btn-wdir-right');
+      const slider = document.getElementById('wind-intensity-range');
+      const valLabel = document.getElementById('wind-intensity-val');
+      const previewArrow = document.getElementById('wind-preview-arrow');
+      const previewVal = document.getElementById('wind-preview-val');
+      const btnConfirm = document.getElementById('btn-wind-confirm');
+
+      const updateWindModalUI = () => {
+        if (btnLeft) btnLeft.classList.toggle('active', chosenDir === -1);
+        if (btnRight) btnRight.classList.toggle('active', chosenDir === 1);
+        if (slider) slider.value = chosenMag;
+        if (valLabel) valLabel.textContent = chosenMag;
+        if (previewVal) previewVal.textContent = (chosenDir === -1 ? '◀ ' : '▶ ') + chosenMag;
+        if (previewArrow) {
+          previewArrow.style.transform = `rotate(${chosenDir === 1 ? 0 : 180}deg) scale(${0.8 + chosenMag / 12})`;
+        }
+      };
+
+      if (btnLeft && !btnLeft._boundWind) {
+        btnLeft._boundWind = true;
+        btnLeft.addEventListener('click', () => { chosenDir = -1; updateWindModalUI(); });
+      }
+      if (btnRight && !btnRight._boundWind) {
+        btnRight._boundWind = true;
+        btnRight.addEventListener('click', () => { chosenDir = 1; updateWindModalUI(); });
+      }
+      if (slider && !slider._boundWind) {
+        slider._boundWind = true;
+        slider.addEventListener('input', (e) => {
+          chosenMag = parseInt(e.target.value, 10) || 1;
+          updateWindModalUI();
+        });
+      }
+      if (btnConfirm) {
+        btnConfirm.onclick = () => {
+          this.closeSkillModals();
+          const finalVal = chosenDir * chosenMag;
+          this.executeAvatarSkill(t, 'b', null, finalVal);
+        };
+      }
+
+      updateWindModalUI();
+      modal.classList.remove('hidden');
+    }
+
+    openSwapTargetModal(t) {
+      const modal = document.getElementById('modal-skill-swap');
+      const list = document.getElementById('skill-swap-list');
+      if (!modal || !list) return;
+      list.innerHTML = '';
+
+      const targets = this.tanks.filter(o => o.alive && o !== t);
+      if (targets.length === 0) {
+        this.toast('Nenhum outro jogador vivo para trocar de lugar!');
+        return;
+      }
+
+      targets.forEach(tgt => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'skill-target-item';
+        const isAlly = tgt.team === t.team;
+        btn.innerHTML = `
+          <div class="skill-target-info">
+            <span class="skill-target-name" style="color: ${tgt.color}">
+              ${tgt.name} <span class="skill-target-team">${isAlly ? '(Aliado)' : '(Inimigo)'}</span>
+            </span>
+            <span class="skill-target-meta">HP: ${tgt.hp}/${tgt.maxHp} • Pos: X ${Math.round(tgt.x)}</span>
+          </div>
+          <span class="skill-target-pick">TROCAR</span>
+        `;
+        btn.addEventListener('click', () => {
+          this.closeSkillModals();
+          this.executeAvatarSkill(t, 'd', this.tanks.indexOf(tgt));
+        });
+        list.appendChild(btn);
+      });
+      modal.classList.remove('hidden');
     }
 
     explode(p, x, y, final, subOpts) {
@@ -753,6 +1007,7 @@
              
              let dmgMultiplier = 1 - 0.5 * (Math.max(0, d - tk.mobile.hitR) / 300);
              let nukeDmg = 150 * dmgMultiplier;
+             if (p.overchargeMult) nukeDmg *= p.overchargeMult;
              if (p.owner && p.owner.atkDebuff) nukeDmg *= (1 - p.owner.atkDebuff);
              if (tk.defBuff) nukeDmg *= (1 - tk.defBuff);
              if (tk.defDebuff) nukeDmg *= (1 + tk.defDebuff);
@@ -960,6 +1215,7 @@
         let finalDmg = baseDmg * dmgMultiplier;
         if (p.shot.isDJ_T1) finalDmg *= 0.3; // Dano simples no impacto, o resto é no choque
         if (p.damageMult) finalDmg *= p.damageMult; // Bônus Force (+50%) ou Redução Black (-50%)
+        if (p.overchargeMult) finalDmg *= p.overchargeMult; // Overcharge Avatar C (+50%)
         
         // Aplica debuff de ataque de quem atirou
         if (p.owner && p.owner.atkDebuff) {
@@ -1099,6 +1355,7 @@
     }
 
     endTurn() {
+      this.closeSkillModals && this.closeSkillModals();
       // mortes
       this.processTankDeaths();
 
@@ -1175,7 +1432,10 @@
           tanks: this.tanks.map((t) => ({
             x: t.x, y: t.y, hp: t.hp, al: t.alive, ss: t.ssCooldown, f: t.facing, a: t.angle, lp: t.lastPower,
             dd: t.dmgDealt, u2: t.item2Unlocked, i2u: t.item2Used,
-            wr: t.isWaitingRespawn, rt: t.respawnTimer, rx: t.respawnTargetX
+            wr: t.isWaitingRespawn, rt: t.respawnTimer, rx: t.respawnTargetX,
+            sh: t.hasShield ? 1 : 0,
+            oc: t.overcharged ? 1 : 0,
+            asu: t.avatarSkillUsed ? 1 : 0
           })),
           teamLives: this.teamLives,
           delays: this.tanks.map(t => t.delay),
@@ -1201,7 +1461,9 @@
           })),
           thor: this.thor || null,
           weatherIndex: this.weatherIndex,
-          weatherTurnsLeft: this.weatherTurnsLeft
+          weatherTurnsLeft: this.weatherTurnsLeft,
+          fixedWindTurns: this.fixedWindTurns || 0,
+          fixedWindVal: this.fixedWindVal || 0
         });
       }
       if (over) return this.finish(winner);
@@ -1274,6 +1536,10 @@
           t.respawnTimer = s.rt || 0;
           t.respawnTargetX = s.rx || t.x;
           t.alive = !!s.al;
+          t.hasShield = !!s.sh;
+          t.shieldCharges = s.sh ? 1 : 0;
+          t.overcharged = !!s.oc;
+          t.avatarSkillUsed = !!s.asu;
           t.updateTilt(true);
         });
       }
@@ -1309,6 +1575,10 @@
           GB.Sfx.power && GB.Sfx.power();
         }
         this.updateWeatherHUD();
+      }
+      if (m.fixedWindTurns !== undefined) {
+        this.fixedWindTurns = m.fixedWindTurns;
+        this.fixedWindVal = m.fixedWindVal || 0;
       }
       
       if (m.over) return this.finish(m.winner);
@@ -1418,6 +1688,17 @@
           if (this.phase === 'aim' && this.active && this.active.kind === 'remote') {
             if (this.cfg && this.cfg.isHost) GB.Net.broadcast(m);
             this.skipTurn(true);
+          }
+        } else if (m.t === 'pass') {
+          if (this.phase === 'aim' && this.active && (this.active.kind === 'remote' || (this.cfg && this.cfg.isHost))) {
+            if (this.cfg && this.cfg.isHost) GB.Net.broadcast(m);
+            this.passTurn(true);
+          }
+        } else if (m.t === 'avatar_skill') {
+          const shooter = (m.pIdx !== undefined ? this.tanks[m.pIdx] : null) || this.active;
+          if (shooter) {
+            this.executeAvatarSkill(shooter, m.skill, m.targetIdx, m.wind, true);
+            if (this.cfg && this.cfg.isHost) GB.Net.broadcast(m);
           }
         } else if (m.t === 'respawn_pos') {
           if (this.tanks[m.pIdx]) {
@@ -1572,6 +1853,61 @@
              t.shotSel = 1;
              this.toast('SS bloqueado pelo Dual! Tiro 2 selecionado.');
          }
+      });
+
+      // Botão de Passar Turno (Mecânica 1: Encerra turno com +50 delay)
+      const btnPass = document.getElementById('btn-pass-turn');
+      if (btnPass && !this._boundPassTurn) {
+        this._boundPassTurn = true;
+        btnPass.addEventListener('click', () => {
+          if (!this.isMyTurn() || this.charging || this.phase !== 'aim') return;
+          this.passTurn();
+        });
+      }
+
+      // Botão de Habilidade do Avatar (Mecânica 2: 1x por partida)
+      const btnAvatarSkill = document.getElementById('btn-avatar-skill');
+      if (btnAvatarSkill && !this._boundAvatarSkill) {
+        this._boundAvatarSkill = true;
+        btnAvatarSkill.addEventListener('click', () => {
+          if (!this.isMyTurn() || this.charging || this.phase !== 'aim') return;
+          const t = this.active;
+          if (!t || !t.alive) return;
+          if (t.avatarSkillUsed) {
+            this.toast('Habilidade do avatar já foi usada nesta partida!');
+            return;
+          }
+          const aid = (t.avatarId || 'a').toLowerCase();
+          if (aid === 'a') {
+            this.openShieldTargetModal(t);
+          } else if (aid === 'b') {
+            this.openWindPickerModal(t);
+          } else if (aid === 'c') {
+            this.executeAvatarSkill(t, 'c');
+          } else if (aid === 'd') {
+            this.openSwapTargetModal(t);
+          }
+        });
+      }
+
+      // Botões de Cancelar Modais
+      ['btn-target-cancel', 'btn-wind-cancel', 'btn-swap-cancel'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !el._boundCancel) {
+          el._boundCancel = true;
+          el.addEventListener('click', () => this.closeSkillModals());
+        }
+      });
+
+      // Fechar ao clicar no fundo escuro do modal
+      ['modal-skill-target', 'modal-skill-wind', 'modal-skill-swap'].forEach(id => {
+        const m = document.getElementById(id);
+        if (m && !m._boundBackdrop) {
+          m._boundBackdrop = true;
+          m.addEventListener('click', (e) => {
+            if (e.target === m) this.closeSkillModals();
+          });
+        }
       });
     }
 
@@ -2673,6 +3009,22 @@
       if (!target) return;
       s.t -= dt;
       if (s.stage === 'think' && s.t <= 0) {
+        if (!t.avatarSkillUsed && Math.random() < 0.4) {
+          const aid = (t.avatarId || 'a').toLowerCase();
+          if (aid === 'a') {
+            const ally = this.tanks.find(o => o.team === t.team && o.alive && !o.hasShield) || t;
+            this.executeAvatarSkill(t, 'a', this.tanks.indexOf(ally));
+          } else if (aid === 'b') {
+            const chosenDir = (target.x > t.x) ? 1 : -1;
+            const chosenInt = Math.floor(GB.rand(4, 9));
+            this.executeAvatarSkill(t, 'b', null, chosenDir * chosenInt);
+          } else if (aid === 'c' && t.hp > t.maxHp * 0.45) {
+            this.executeAvatarSkill(t, 'c');
+          } else if (aid === 'd' && (t.hp < t.maxHp * 0.3 || Math.random() < 0.25)) {
+            const enemy = this.tanks.find(o => o.team !== t.team && o.alive);
+            if (enemy) this.executeAvatarSkill(t, 'd', this.tanks.indexOf(enemy));
+          }
+        }
         const dir = GB.AI.moveDecision(this, t, target);
         if (dir) { s.stage = 'move'; s.dir = dir; s.t = GB.rand(0.4, 1.1); }
         else s.stage = 'plan';
@@ -3072,6 +3424,17 @@
          document.getElementById('wind-prev-arrow').style.transform = `rotate(${wp < 0 ? 180 : 0}deg) scale(${0.8 + Math.abs(wp) / 24})`;
          document.getElementById('wind-prev-arrow').style.opacity = wp === 0 ? '0.25' : '1';
       }
+
+      const elWindLock = document.getElementById('wind-lock');
+      if (elWindLock) {
+        if (this.fixedWindTurns > 0) {
+          elWindLock.classList.remove('hidden');
+          elWindLock.textContent = `🔒 ${this.fixedWindTurns}T`;
+          elWindLock.title = `Vento travado por habilidade do Avatar (${this.fixedWindTurns} turnos restantes)`;
+        } else {
+          elWindLock.classList.add('hidden');
+        }
+      }
       
       if (!t) return;
       this.setText(d.turnName, 'tn', this.phase === 'aim' ? t.name : this.phase === 'waitSync' ? 'Sincronizando…' : '···');
@@ -3141,6 +3504,32 @@
            this.setClass(btn2, 'iba3', 'active', this.itemActive2 === t.items2);
         } else {
            this.setStyle(btn2, 'ib3', 'display', 'none');
+        }
+
+        // Atualização dos botões de Habilidade de Avatar e Passar Turno
+        const btnSkill = document.getElementById('btn-avatar-skill');
+        if (btnSkill) {
+          const aid = (t.avatarId || 'a').toLowerCase();
+          const avData = GB.AVATARS && GB.AVATARS[aid];
+          const iconEl = document.getElementById('skill-icon');
+          const badgeEl = document.getElementById('skill-badge');
+          if (iconEl && avData) iconEl.textContent = avData.skillIcon || '🛡️';
+          const isMyTurn = this.isMyTurn();
+          const used = !!t.avatarSkillUsed;
+          this.setClass(btnSkill, 'avUsed', 'used', used);
+          this.setClass(btnSkill, 'avDis', 'disabled', !isMyTurn || used || this.charging);
+          if (badgeEl) badgeEl.textContent = used ? '0X' : '1X';
+          if (avData) {
+            btnSkill.title = used 
+              ? `${avData.skillName} (Já utilizado nesta partida)`
+              : `${avData.skillName}: ${avData.skillDesc} (Delay +${avData.skillDelay})`;
+          }
+        }
+
+        const btnPass = document.getElementById('btn-pass-turn');
+        if (btnPass) {
+          const isMyTurn = this.isMyTurn();
+          this.setClass(btnPass, 'passDis', 'disabled', !isMyTurn || this.charging || this.phase !== 'aim');
         }
       }
       

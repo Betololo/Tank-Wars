@@ -800,6 +800,152 @@ button { font-family: inherit; color: inherit; border: 0; background: none; curs
 .item-use-btn.used { opacity: 0.3; pointer-events: none; }
 .item-use-btn.active { border-color: var(--primary); box-shadow: 0 0 8px var(--primary); }
 
+/* ===================== Habilidades dos Avatares & Passar Turno ===================== */
+.skill-btn {
+  position: relative;
+  width: 32px; height: 30px; border-radius: 6px;
+  background: linear-gradient(180deg, #ff9e42, #d83a15);
+  border: 1px solid rgba(255, 230, 160, 0.6);
+  color: #fff; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 10px rgba(255, 140, 40, 0.45);
+  cursor: pointer; transition: all .15s;
+  user-select: none;
+}
+.skill-btn:active { transform: scale(0.92); }
+.skill-btn.used {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: none; opacity: 0.4; cursor: not-allowed;
+}
+.skill-badge {
+  position: absolute; top: -5px; right: -5px;
+  background: #00e5ff; color: #000;
+  font-size: 8px; font-weight: 900;
+  padding: 1px 3px; border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  pointer-events: none;
+}
+.skill-btn.used .skill-badge {
+  background: #555; color: #aaa;
+}
+
+.pass-btn {
+  width: 44px; height: 30px; border-radius: 6px;
+  background: linear-gradient(180deg, #3f5573, #212d3d);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff; font-family: Outfit, sans-serif;
+  font-weight: 800; font-size: 11px;
+  display: flex; align-items: center; justify-content: center; gap: 2px;
+  cursor: pointer; transition: all .15s;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+  user-select: none;
+}
+.pass-btn:hover { background: linear-gradient(180deg, #4f6b91, #2b3a4f); }
+.pass-btn:active { transform: scale(0.92); }
+
+.wind-lock {
+  display: inline-flex; align-items: center;
+  font-size: 10px; font-weight: 900;
+  color: #ffd27a; background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(255, 210, 120, 0.4);
+  border-radius: 4px; padding: 1px 4px;
+  margin-left: 4px;
+  animation: windLockPulse 1.5s infinite alternate;
+}
+.wind-lock.hidden { display: none; }
+@keyframes windLockPulse {
+  to { border-color: #ffd700; box-shadow: 0 0 8px rgba(255, 215, 0, 0.6); }
+}
+
+/* Modais de Habilidades */
+.skill-modal {
+  position: fixed; inset: 0;
+  background: rgba(10, 8, 22, 0.82);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 120;
+  padding: 16px;
+  animation: modalFadeIn .2s ease;
+}
+.skill-modal.hidden { display: none; }
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.skill-modal-content {
+  background: linear-gradient(180deg, #221e38 0%, #161326 100%);
+  border: 2px solid #ffaa44;
+  border-radius: 14px;
+  padding: 20px 24px;
+  width: 100%; max-width: 380px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 20px rgba(255,160,50,0.3);
+  color: #fff;
+}
+.skill-modal-content h3 {
+  margin: 0 0 6px 0; font-family: 'Lilita One', sans-serif;
+  font-size: 20px; letter-spacing: 0.5px; color: #ffd27a;
+}
+.skill-modal-content p {
+  margin: 0 0 14px 0; font-size: 13px; color: rgba(255,255,255,0.75); line-height: 1.3;
+}
+.skill-target-list {
+  display: flex; flex-direction: column; gap: 8px;
+  margin-bottom: 16px; max-height: 190px; overflow-y: auto;
+}
+.skill-target-btn {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-radius: 8px;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18);
+  color: #fff; font-family: Outfit, sans-serif; font-weight: 700; font-size: 14px;
+  cursor: pointer; transition: all .15s;
+}
+.skill-target-btn:hover {
+  background: rgba(255, 170, 60, 0.25); border-color: #ffaa44;
+  transform: translateX(3px);
+}
+.skill-modal-cancel {
+  padding: 8px 18px; border-radius: 8px;
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+  color: #ddd; font-family: Outfit, sans-serif; font-weight: 700; font-size: 13px;
+  cursor: pointer; transition: all .15s;
+}
+.skill-modal-cancel:hover { background: rgba(255,255,255,0.18); color: #fff; }
+
+.wind-picker-dir { display: flex; gap: 10px; margin: 12px 0; }
+.wind-dir-btn {
+  flex: 1; padding: 10px; border-radius: 8px;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);
+  color: #fff; font-family: Outfit, sans-serif; font-weight: 800; font-size: 13px;
+  cursor: pointer; transition: all .15s;
+}
+.wind-dir-btn.active {
+  background: linear-gradient(180deg, #ffaa33, #e66a00);
+  border-color: #ffd27a; box-shadow: 0 0 10px rgba(255, 170, 50, 0.5);
+}
+.wind-picker-slider-wrap {
+  display: flex; flex-direction: column; gap: 6px; margin: 12px 0;
+  font-size: 13px; font-weight: 700; text-align: left;
+}
+.wind-picker-slider-wrap input[type=range] {
+  width: 100%; accent-color: #ffaa33; cursor: pointer;
+}
+.wind-preview-box {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin: 10px 0 16px 0; font-size: 24px; font-weight: 900; color: #ffd27a;
+}
+.wind-preview-arrow { display: inline-block; transition: transform .2s; }
+.skill-modal-actions { display: flex; gap: 10px; }
+.skill-modal-confirm {
+  flex: 1; padding: 10px 14px; border-radius: 8px;
+  background: linear-gradient(180deg, #38d662, #188636);
+  border: none; color: #fff; font-family: Outfit, sans-serif;
+  font-weight: 800; font-size: 14px; cursor: pointer;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+}
+.skill-modal-confirm:hover { background: linear-gradient(180deg, #48ea74, #219d42); }
+
 /* ===================== Rotate hint ===================== */
 #rotate-hint { display: none; position: fixed; inset: 0; z-index: 100; background: var(--bg-0); flex-direction: column; align-items: center; justify-content: center; gap: 22px; color: var(--muted); font-weight: 600; }
 .phone-icon { width: 50px; height: 86px; border: 4px solid var(--primary); border-radius: 10px; animation: rot 2s ease-in-out infinite; }

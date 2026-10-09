@@ -17,6 +17,7 @@
 
   class Terrain {
     constructor(seed) {
+      seed = (seed !== undefined && !isNaN(seed)) ? Math.abs(Math.floor(seed)) : Math.floor(Math.random() * 1000000);
       this.seed = seed;
       this.W = GB.WORLD_W;
       this.H = GB.WORLD_H;

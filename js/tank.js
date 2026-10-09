@@ -26,6 +26,10 @@
       this.defDebuff = 0;
       this.blizzardStacks = 0;
       this.frozen = false;
+      this.hasShield = false;
+      this.shieldCharges = 0;
+      this.overcharged = false;
+      this.avatarSkillUsed = false;
       this.fuel = GB.MAX_FUEL;
       this.alive = true;
       this.tilt = 0;
@@ -223,6 +227,15 @@
         this.hp = Math.min(this.maxHp, this.hp - Math.round(amount));
         return -(this.hp - prev);
       }
+      // Escudo Protetor (Avatar A): Anula 100% de 1 ataque / fonte de dano
+      if (this.hasShield) {
+        this.hasShield = false;
+        this.shieldCharges = 0;
+        if (typeof this.onShieldBreak === 'function') {
+          this.onShieldBreak();
+        }
+        return 0;
+      }
       // DANO RECEBIDO REAL = DANO RECEBIDO * (1 - DEFESA DO PERSONAGEM)
       const def = (this.mobile && this.mobile.defense != null) ? this.mobile.defense : 0;
       const realAmount = amount * (1 - def);
@@ -243,6 +256,32 @@
     draw(ctx, opts) {
       if (!this.alive && !this.drawDead) return;
       const shake = this.hurt > 0 ? Math.sin(this.hurt * 80) * 2 : 0;
+
+      // Aura de Overcharge (Avatar C): névoa e fogo carmesim
+      if (this.overcharged) {
+        ctx.save();
+        const tSec = Date.now() * 0.004;
+        const auraR = 30 + Math.sin(tSec * 4.5) * 4;
+        const g = ctx.createRadialGradient(this.x, this.y - 12, 6, this.x, this.y - 12, auraR);
+        g.addColorStop(0, 'rgba(255, 30, 30, 0.5)');
+        g.addColorStop(0.65, 'rgba(255, 80, 0, 0.22)');
+        g.addColorStop(1, 'rgba(180, 0, 0, 0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y - 12, auraR, 0, Math.PI * 2);
+        ctx.fill();
+
+        for (let i = 0; i < 3; i++) {
+          const offX = Math.sin(tSec * 3 + i * 2.1) * 16;
+          const offY = -12 - ((tSec * 28 + i * 14) % 28);
+          ctx.beginPath();
+          ctx.arc(this.x + offX, this.y + offY, 4.5, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255, 50, 50, 0.35)';
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
       ctx.save();
       ctx.translate(this.x + shake, this.y + 1);
       ctx.rotate(this.tilt);
@@ -255,6 +294,26 @@
       }
       GB.drawMobile(ctx, this.mobileId, this.relativeAngle, this.color);
       ctx.restore();
+
+      // Cúpula protetora de Escudo (Avatar A): bolha ciano brilhante
+      if (this.hasShield) {
+        ctx.save();
+        const pulse = Math.sin(Date.now() * 0.005) * 2;
+        ctx.beginPath();
+        ctx.ellipse(this.x, this.y - 14, 28 + pulse, 24 + pulse, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(70, 205, 255, 0.22)';
+        ctx.fill();
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = 'rgba(170, 245, 255, 0.9)';
+        ctx.shadowColor = '#00f0ff';
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(this.x - 9, this.y - 23, 5, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.fill();
+        ctx.restore();
+      }
 
       if (opts.showAim) this.drawAim(ctx);
 

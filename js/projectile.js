@@ -51,6 +51,7 @@
       this.b1Alive = true;
       this.b2Alive = true;
       this.bCenterAlive = true;
+      this.overchargeMult = o.overchargeMult || 1;
     }
 
     // Avança a simulação; chama cb.explode(x, y, final) nas colisões.
@@ -638,6 +639,16 @@
       }
       ctx.save();
       ctx.translate(this.x, this.y);
+      if (this.overchargeMult > 1) {
+        const ocG = ctx.createRadialGradient(0, 0, 0, 0, 0, (s.size || 5) * 2.8);
+        ocG.addColorStop(0, 'rgba(255, 255, 120, 0.95)');
+        ocG.addColorStop(0.45, 'rgba(255, 60, 0, 0.8)');
+        ocG.addColorStop(1, 'rgba(255, 0, 0, 0)');
+        ctx.fillStyle = ocG;
+        ctx.beginPath();
+        ctx.arc(0, 0, (s.size || 5) * 2.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
       if (this.isTeleport) {
         ctx.rotate(Math.atan2(this.vy, this.vx));
         // Brilho exterior azul-ciano

@@ -58,6 +58,10 @@
         if (e.key === '5') document.getElementById('item-btn-1')?.click();
         if (e.key === '6') document.getElementById('item-btn-2')?.click();
         if (e.key === '7') document.getElementById('item-btn-3')?.click();
+
+        // Atalhos de Habilidade do Avatar (E) e Passar Turno (P)
+        if (e.key === 'e' || e.key === 'E') document.getElementById('btn-avatar-skill')?.click();
+        if (e.key === 'p' || e.key === 'P') document.getElementById('btn-pass-turn')?.click();
       });
       window.addEventListener('keyup', (e) => {
         if (keyMap[e.key]) this.held[keyMap[e.key]] = false;

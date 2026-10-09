@@ -2712,10 +2712,10 @@
   // Sistema de Avatares (A, B, C, D) montados nos Mobiles
   // ----------------------------------------------------------------
   GB.AVATARS = {
-    a: { id: 'a', name: 'Avatar A', desc: 'Piloto Aviador (Óculos de Proteção)', src: 'img/avatars/avatar_a.png' },
-    b: { id: 'b', name: 'Avatar B', desc: 'Engenheiro Steampunk (Lentes Duplas)', src: 'img/avatars/avatar_b.png' },
-    c: { id: 'c', name: 'Avatar C', desc: 'Alquimista de Batalha (Casaco Verde)', src: 'img/avatars/avatar_c.png' },
-    d: { id: 'd', name: 'Avatar D', desc: 'Atiradora Tecnológica (Monóculo)', src: 'img/avatars/avatar_d.png' }
+    a: { id: 'a', name: 'Avatar A', desc: 'Piloto Aviador (Óculos de Proteção)', skillName: 'Escudo Protetor', skillDesc: 'Concede 1 escudo a um aliado ou a si mesmo (bloqueia 100% de 1 ataque).', skillDelay: 200, skillIcon: '🛡️', src: 'img/avatars/avatar_a.png' },
+    b: { id: 'b', name: 'Avatar B', desc: 'Engenheiro Steampunk (Lentes Duplas)', skillName: 'Mestre do Vento', skillDesc: 'Muda o vento imediatamente e o trava pelos próximos 4 turnos.', skillDelay: 50, skillIcon: '🌬️', src: 'img/avatars/avatar_b.png' },
+    c: { id: 'c', name: 'Avatar C', desc: 'Alquimista de Batalha (Casaco Verde)', skillName: 'Overcharge', skillDesc: 'Consome 30% do HP máx (mínimo 1 HP). Próximo disparo causa +50% de dano.', skillDelay: 300, skillIcon: '🔥', src: 'img/avatars/avatar_c.png' },
+    d: { id: 'd', name: 'Avatar D', desc: 'Atiradora Tecnológica (Monóculo)', skillName: 'Troca Espacial', skillDesc: 'Troca de posição com qualquer outro jogador vivo.', skillDelay: 400, skillIcon: '🌀', src: 'img/avatars/avatar_d.png' }
   };
 
   // Âncoras do assento/guidão do piloto para cada veículo:

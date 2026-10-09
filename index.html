@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20261009b">
+  <link rel="stylesheet" href="style.css?v=20261009c">
 </head>
 <body>
   <main id="app">
@@ -36,6 +36,7 @@
             <div class="wind-current">
               <span class="wind-arrow" id="wind-arrow">➤</span>
               <span class="wind-val" id="wind-val">0</span>
+              <span class="wind-lock hidden" id="wind-lock" title="Vento Travado pelo Avatar B">🔒 4T</span>
             </div>
             <div class="wind-history hidden" id="wind-history" title="Último vento">
               <span class="wind-arrow" id="wind-prev-arrow">➤</span>
@@ -103,6 +104,14 @@
                <button class="item-use-btn" id="item-btn-2"></button>
                <button class="item-use-btn i2" id="item-btn-3"></button>
             </div>
+            <button class="skill-btn" id="btn-avatar-skill" title="Habilidade do Avatar (1x por partida)">
+              <span class="skill-icon" id="skill-icon">🛡️</span>
+              <span class="skill-badge" id="skill-badge">1X</span>
+            </button>
+            <button class="pass-btn" id="btn-pass-turn" title="Passar Turno (+50 Delay)">
+              <span class="pass-icon">⏭️</span>
+              <span class="pass-txt">PASS</span>
+            </button>
           </div>
         </div>
 
@@ -114,6 +123,48 @@
           <button class="fire-btn" id="btn-fire" aria-label="Atirar (segure para carregar a força)">FIRE</button>
         </div>
       </footer>
+
+      <!-- Modais de Habilidades de Avatar -->
+      <div class="skill-modal hidden" id="modal-skill-target">
+        <div class="skill-modal-content">
+          <h3 id="skill-target-title">🛡️ CONCEDER ESCUDO</h3>
+          <p id="skill-target-desc">Escolha um jogador aliado para receber o escudo (+200 Delay):</p>
+          <div class="skill-target-list" id="skill-target-list"></div>
+          <button class="skill-modal-cancel" id="btn-target-cancel">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="skill-modal hidden" id="modal-skill-wind">
+        <div class="skill-modal-content">
+          <h3>🌬️ CONTROLE DO VENTO</h3>
+          <p>Escolha a direção e intensidade do vento para os próximos 4 turnos (+50 Delay):</p>
+          <div class="wind-picker-dir">
+            <button class="wind-dir-btn active" id="btn-wdir-left" type="button">◀ ESQUERDA</button>
+            <button class="wind-dir-btn" id="btn-wdir-right" type="button">DIREITA ▶</button>
+          </div>
+          <div class="wind-picker-slider-wrap">
+            <label for="wind-intensity-range">Intensidade: <b id="wind-intensity-val">6</b></label>
+            <input type="range" id="wind-intensity-range" min="1" max="12" value="6">
+          </div>
+          <div class="wind-preview-box">
+            <span class="wind-preview-arrow" id="wind-preview-arrow">➤</span>
+            <span class="wind-preview-val" id="wind-preview-val">6</span>
+          </div>
+          <div class="skill-modal-actions">
+            <button class="skill-modal-confirm" id="btn-wind-confirm" type="button">Confirmar Vento</button>
+            <button class="skill-modal-cancel" id="btn-wind-cancel" type="button">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="skill-modal hidden" id="modal-skill-swap">
+        <div class="skill-modal-content">
+          <h3>🌀 TROCA DE POSIÇÃO</h3>
+          <p>Escolha qualquer outro jogador vivo para trocar de lugar (+400 Delay):</p>
+          <div class="skill-target-list" id="skill-swap-list"></div>
+          <button class="skill-modal-cancel" id="btn-swap-cancel" type="button">Cancelar</button>
+        </div>
+      </div>
 
       <div class="toast" id="toast"></div>
     </section>
@@ -488,17 +539,17 @@
     </div>
   </main>
 
-  <script src="js/peerjs.min.js?v=20261009b" defer></script>
-  <script src="js/util.js?v=20261009b" defer></script>
-  <script src="js/items.js?v=20261009b" defer></script>
-  <script src="js/terrain.js?v=20261009b" defer></script>
-  <script src="js/mobiles.js?v=20261009b" defer></script>
-  <script src="js/tank.js?v=20261009b" defer></script>
-  <script src="js/projectile.js?v=20261009b" defer></script>
-  <script src="js/ai.js?v=20261009b" defer></script>
-  <script src="js/net.js?v=20261009b" defer></script>
-  <script src="js/input.js?v=20261009b" defer></script>
-  <script src="js/game.js?v=20261009b" defer></script>
-  <script src="js/main.js?v=20261009b" defer></script>
+  <script src="js/peerjs.min.js?v=20261009c" defer></script>
+  <script src="js/util.js?v=20261009c" defer></script>
+  <script src="js/items.js?v=20261009c" defer></script>
+  <script src="js/terrain.js?v=20261009c" defer></script>
+  <script src="js/mobiles.js?v=20261009c" defer></script>
+  <script src="js/tank.js?v=20261009c" defer></script>
+  <script src="js/projectile.js?v=20261009c" defer></script>
+  <script src="js/ai.js?v=20261009c" defer></script>
+  <script src="js/net.js?v=20261009c" defer></script>
+  <script src="js/input.js?v=20261009c" defer></script>
+  <script src="js/game.js?v=20261009c" defer></script>
+  <script src="js/main.js?v=20261009c" defer></script>
 </body>
 </html>
