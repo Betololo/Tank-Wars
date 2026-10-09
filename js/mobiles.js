@@ -2721,16 +2721,16 @@
   // Âncoras do assento/guidão do piloto para cada veículo:
   // x: posição horizontal do assento, y: altura do assento, scale: proporção do avatar
   GB.AVATAR_ANCHORS = {
-    armor:    { x: -4, y: -14, scale: 0.082 },
-    bigfoot:  { x: -6, y: -16, scale: 0.082 },
-    grub:     { x: -7, y: -16, scale: 0.080 },
-    dj:       { x: -3, y: -18, scale: 0.082 },
-    launcher: { x: -5, y: -17, scale: 0.080 },
-    khan:     { x: -1, y: -15, scale: 0.080 },
-    doc:      { x: -9, y: -18, scale: 0.080 },
-    frigo:    { x: -13, y: -15, scale: 0.080 },
-    driller:  { x: 3.5, y: -15, scale: 0.080 },
-    kuda:     { x: -3, y: -15, scale: 0.080 }
+    armor:    { x: -16, y: -12, scale: 0.123 },
+    bigfoot:  { x: -8,  y: -14, scale: 0.123 },
+    grub:     { x: -7,  y: -16, scale: 0.120 },
+    dj:       { x: -17, y: -9,  scale: 0.123 },
+    launcher: { x: -18, y: -12, scale: 0.120 },
+    khan:     { x: -1,  y: -15, scale: 0.120 },
+    doc:      { x: -9,  y: -17, scale: 0.120 },
+    frigo:    { x: -13, y: -15, scale: 0.120 },
+    driller:  { x: -7,  y: -15, scale: 0.120 },
+    kuda:     { x: -3,  y: -15, scale: 0.120 }
   };
   GB.AVATAR_ANCHORS.nak = GB.AVATAR_ANCHORS.khan;
 
@@ -2758,8 +2758,8 @@
     const img = GB.avatarImages && GB.avatarImages[aid];
     if (!img || !img.complete || !img.naturalWidth) return;
 
-    const anch = (GB.AVATAR_ANCHORS && (GB.AVATAR_ANCHORS[mobileId] || (mobileId === 'nak' ? GB.AVATAR_ANCHORS.khan : null))) || { x: -4, y: -15, scale: 0.08 };
-    const s = customScale || anch.scale || 0.08;
+    const anch = (GB.AVATAR_ANCHORS && (GB.AVATAR_ANCHORS[mobileId] || (mobileId === 'nak' ? GB.AVATAR_ANCHORS.khan : null))) || { x: -4, y: -15, scale: 0.120 };
+    const s = customScale || anch.scale || 0.120;
 
     ctx.save();
     ctx.translate(anch.x, anch.y);
