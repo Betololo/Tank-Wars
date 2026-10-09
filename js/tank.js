@@ -44,6 +44,7 @@
       this.debris = [];
       this.moving = false;
       this.falling = false;
+      this.isParachuting = false;
       this.dispHp = this.hp;
       const sy = this.terrain.surfaceBelow(this.x, 0);
       this.y = sy < 0 ? 0 : sy;
@@ -105,7 +106,7 @@
         // empurra para fora se ficou "enterrado"
         let guard = 0;
         while (this.terrain.isSolid(this.x, this.y - 1) && guard++ < 6) this.y -= 1;
-        if (this.falling) { this.falling = false; this.vy = 0; }
+        if (this.falling) { this.falling = false; this.vy = 0; this.isParachuting = false; }
       }
       if (this.y > GB.WORLD_H + 40) {
         this.alive = false;
@@ -429,6 +430,45 @@
       // Debris voando (peças de máquinas ou bio-slime)
       if (this.debris && this.debris.length && GB.drawDamageDebris) {
         GB.drawDamageDebris(ctx, this.debris);
+      }
+
+      // Paraquedas no respawn (Modo Score)
+      if (this.isParachuting && this.falling) {
+        ctx.save();
+        const px = this.x;
+        const py = this.y - 14;
+        const canW = 28;
+        const canH = 18;
+        const topY = py - 32;
+
+        // Cordas do paraquedas
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(px - 10, py); ctx.lineTo(px - canW * 0.9, topY + canH * 0.3);
+        ctx.moveTo(px - 4, py);  ctx.lineTo(px - canW * 0.3, topY);
+        ctx.moveTo(px + 4, py);  ctx.lineTo(px + canW * 0.3, topY);
+        ctx.moveTo(px + 10, py); ctx.lineTo(px + canW * 0.9, topY + canH * 0.3);
+        ctx.stroke();
+
+        // Cúpula do paraquedas
+        ctx.beginPath();
+        ctx.arc(px, topY + 4, canW, Math.PI, 0, false);
+        ctx.closePath();
+        ctx.fillStyle = this.color || '#ff4444';
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Gomos do paraquedas
+        ctx.beginPath();
+        ctx.ellipse(px, topY + 4, canW * 0.5, canH, 0, Math.PI, 0, false);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.restore();
       }
 
       // Balãozinho "👍 NICE!" para Nice Shot

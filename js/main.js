@@ -707,13 +707,13 @@
           }
           if (this.game && this.game.running) {
             const dcTank = this.game.tanks.find(t => (slot && t.playerIdx === slot.slotIdx) || (t.id === peerId));
-            if (dcTank && dcTank.alive) {
+            if (dcTank) {
               dcTank.alive = false;
               dcTank.hp = 0;
+              dcTank.isWaitingRespawn = false;
               this.game.toast(`${dcTank.name} desconectou.`);
               if (this.game.active === dcTank) {
-                this.game.phase = 'settle';
-                this.game.settleT = 0;
+                this.game.skipTurn(true);
               }
             }
           }
@@ -1112,6 +1112,7 @@
         mode: this.setup.mode,
         modeType: cfg.modeType || this.room.mode || 'single_life',
         isHost: cfg.isHost,
+        mySlotIdx: this.mySlotIdx,
         seed: cfg.seed,
         wind: cfg.wind,
         map: cfg.map,
