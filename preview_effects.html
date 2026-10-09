@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tank Wars — Preview de Efeitos Épicos e Letreiros</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=20261009f">
+  <style>
+    :root {
+      --bg-dark: #0a0814;
+      --card-bg: rgba(22, 18, 38, 0.88);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --accent: #ffd27a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: radial-gradient(circle at 50% 20%, #1c1438 0%, #0c0818 60%, #05030a 100%);
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    /* Overlay idêntico ao do jogo em tela cheia */
+    #epic-banner-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    header.preview-header {
+      width: 100%;
+      max-width: 1100px;
+      padding: 24px 20px 10px;
+      text-align: center;
+      z-index: 10;
+    }
+    header h1 {
+      font-family: 'Lilita One', cursive;
+      font-size: clamp(28px, 4vw, 44px);
+      letter-spacing: 1.5px;
+      background: linear-gradient(180deg, #fff 0%, #ffd27a 60%, #f59e0b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 3px 12px rgba(245, 158, 11, 0.5));
+    }
+    header p {
+      color: #b3a9d6;
+      font-size: 15px;
+      margin-top: 6px;
+      font-weight: 600;
+    }
+
+    .main-container {
+      width: 100%;
+      max-width: 1100px;
+      padding: 16px 20px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      z-index: 10;
+    }
+
+    /* Painel de Ações e Botões de Efeito */
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .effect-btn {
+      position: relative;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px 14px;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+      backdrop-filter: blur(8px);
+      text-align: center;
+    }
+    .effect-btn:hover {
+      transform: translateY(-3px) scale(1.02);
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+    .effect-btn:active {
+      transform: translateY(1px) scale(0.98);
+    }
+    .effect-btn .icon {
+      font-size: 32px;
+      line-height: 1;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4));
+    }
+    .effect-btn .title {
+      font-family: 'Lilita One', cursive;
+      font-size: 18px;
+      letter-spacing: 0.8px;
+    }
+    .effect-btn .desc {
+      font-size: 11px;
+      color: #9f96c2;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    /* Cores personalizadas por botão */
+    .btn-nice { border-color: rgba(255, 215, 0, 0.3); }
+    .btn-nice:hover { box-shadow: 0 0 25px rgba(255, 215, 0, 0.45); }
+    .btn-nice .title { color: #ffe066; }
+
+    .btn-super { border-color: rgba(255, 85, 0, 0.35); }
+    .btn-super:hover { box-shadow: 0 0 30px rgba(255, 68, 0, 0.55); }
+    .btn-super .title { color: #ff5722; }
+
+    .btn-double { border-color: rgba(255, 34, 68, 0.35); }
+    .btn-double:hover { box-shadow: 0 0 25px rgba(255, 34, 68, 0.5); }
+    .btn-double .title { color: #ff3366; }
+
+    .btn-triple { border-color: rgba(168, 85, 247, 0.35); }
+    .btn-triple:hover { box-shadow: 0 0 30px rgba(168, 85, 247, 0.55); }
+    .btn-triple .title { color: #c084fc; }
+
+    .btn-wipe { border-color: rgba(255, 215, 0, 0.45); background: linear-gradient(135deg, rgba(38, 28, 6, 0.9), rgba(24, 16, 40, 0.9)); }
+    .btn-wipe:hover { box-shadow: 0 0 35px rgba(255, 215, 0, 0.65); }
+    .btn-wipe .title { color: #ffd700; }
+
+    .btn-showcase {
+      grid-column: 1 / -1;
+      background: linear-gradient(90deg, #ff0077, #7928ca, #0070f3);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 16px;
+      font-size: 18px;
+    }
+    .btn-showcase .title { font-size: 20px; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+
+    /* Canvas de Prévia do Tanque e Cosméticos */
+    .preview-stage {
+      background: rgba(13, 10, 24, 0.9);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+    }
+    .stage-header {
+      padding: 12px 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .stage-title {
+      font-family: 'Lilita One', cursive;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+      color: #ffd27a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .stage-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+    .stage-controls select, .stage-controls button {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 6px 12px;
+      cursor: pointer;
+      outline: none;
+    }
+    .stage-controls select option {
+      background: #18122b;
+      color: #fff;
+    }
+    .toggle-chip {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #ccc;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      user-select: none;
+      transition: all 0.15s;
+    }
+    .toggle-chip.active {
+      background: #ffd27a;
+      color: #120e24;
+      border-color: #ffd27a;
+    }
+
+    #stage-canvas {
+      width: 100%;
+      height: 280px;
+      display: block;
+      background: radial-gradient(circle at 50% 80%, #20133b 0%, #110920 70%, #07040d 100%);
+    }
+
+    /* Detalhes do efeito ativo */
+    .info-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 16px 20px;
+      font-size: 13px;
+      color: #c9c2e6;
+      line-height: 1.6;
+    }
+    .info-card b {
+      color: #ffd27a;
+    }
+    .info-card ul {
+      margin-left: 20px;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Overlay para os letreiros com estilo e animações diretas da tela -->
+  <div id="epic-banner-overlay" class="epic-banner-overlay"></div>
+
+  <header class="preview-header">
+    <h1>VISUALIZADOR DE EFEITOS ÉPICOS</h1>
+    <p>Tank Wars • Letreiros Gigantes sem Caixa de Snackbar • Áudio & Animações Arcade</p>
+  </header>
+
+  <main class="main-container">
+    <!-- Grid de Efeitos -->
+    <div class="button-grid">
+      <button class="effect-btn btn-nice" id="btn-nice">
+        <span class="icon">🎯</span>
+        <span class="title">NICE SHOT!</span>
+        <span class="desc">Causar 500+ Dano<br>Letreiro Elástico Ouro & Balão 👍</span>
+      </button>
+
+      <button class="effect-btn btn-super" id="btn-super">
+        <span class="icon">🔥</span>
+        <span class="title">SUPER SHOT!</span>
+        <span class="desc">Causar 1000+ Dano<br>Flash Branco + Fogo Vivo + Aura</span>
+      </button>
+
+      <button class="effect-btn btn-double" id="btn-double">
+        <span class="icon">💀💀</span>
+        <span class="title">DOUBLE KILL!</span>
+        <span class="desc">2 Abates em 1 Turno<br>Impacto Cromado Sanguíneo & Hit-stop</span>
+      </button>
+
+      <button class="effect-btn btn-triple" id="btn-triple">
+        <span class="icon">⚡💀⚡</span>
+        <span class="title">TRIPLE KILL!</span>
+        <span class="desc">3 Abates em 1 Turno<br>Raios Cósmicos & Neon Violeta</span>
+      </button>
+
+      <button class="effect-btn btn-wipe" id="btn-wipe">
+        <span class="icon">👑</span>
+        <span class="title">FULL TEAM WIPE!</span>
+        <span class="desc">4 Abates em 1 Turno<br>Coroa Real, Óculos Deal-With-It & Chuva de Ouro</span>
+      </button>
+
+      <button class="effect-btn btn-showcase" id="btn-showcase">
+        <span class="title">🎬 EXECUTAR TODOS EM SEQUÊNCIA (SHOWCASE COMPLETO)</span>
+        <span class="desc" style="color: #fff; opacity: 0.85;">Apresenta Nice Shot, Super Shot, Double Kill, Triple Kill e Full Team Wipe com áudio e vozes</span>
+      </button>
+    </div>
+
+    <!-- Prévia do Tanque, Avatar e Cosméticos -->
+    <div class="preview-stage">
+      <div class="stage-header">
+        <div class="stage-title">
+          <span>🎨 Prévia de Cosméticos do Tanque & Avatar</span>
+        </div>
+        <div class="stage-controls">
+          <label>Veículo:
+            <select id="sel-mobile">
+              <option value="mortar">Mortar</option>
+              <option value="launcher">Launcher</option>
+              <option value="worm">Worm</option>
+              <option value="yeti">Yeti</option>
+              <option value="dj">DJ</option>
+              <option value="driller">Driller</option>
+              <option value="nak">Nak</option>
+              <option value="mage">Mage</option>
+              <option value="lightning">Lightning</option>
+              <option value="boomer">Boomer</option>
+              <option value="kuda">Kuda</option>
+            </select>
+          </label>
+          <label>Avatar:
+            <select id="sel-avatar">
+              <option value="a">Avatar A (Escudo)</option>
+              <option value="b">Avatar B (Vento)</option>
+              <option value="c">Avatar C (Overcharge)</option>
+              <option value="d">Avatar D (Teleport)</option>
+            </select>
+          </label>
+          <span class="toggle-chip" id="chip-crown">👑 Coroa Imperial</span>
+          <span class="toggle-chip" id="chip-shades">🕶️ Óculos Deal With It</span>
+          <span class="toggle-chip" id="chip-flame">🔥 Aura de Fogo</span>
+          <span class="toggle-chip" id="chip-bubble">👍 Balão Nice</span>
+        </div>
+      </div>
+      <canvas id="stage-canvas"></canvas>
+    </div>
+
+    <div class="info-card">
+      <b>Sobre a Nova Apresentação de Letreiros Arcade:</b>
+      <ul>
+        <li><b>Sem caixas ou snackbars:</b> Os títulos aparecem diretamente sobre a tela como em jogos de luta arcade (<i>Street Fighter, Guilty Gear</i>) e <i>Gunbound</i> clássico.</li>
+        <li><b>Super Shot com Fogo Vivo:</b> Dispara flash de tela de luz branca puro (0.35s), seguido do letreiro flamejante com 36 partículas de labaredas em ascensão real e brilho dinâmico.</li>
+        <li><b>Áudio e Vozes Sintetizadas:</b> Cada evento conta com efeitos sonoros via Web Audio API e narração por síntese de voz (Nice shot!, Super shot!, Double kill!, Triple kill!, Full team wipe!).</li>
+        <li><b>Cosméticos Permamentes do Turno:</b> Jogadores que realizam Super Shot ganham a aura de fogo incandescente pelo resto da partida. Quem executa um Full Team Wipe recebe a Coroa Real e os óculos escuros Deal-with-it pixelados sobre seu avatar!</li>
+      </ul>
+    </div>
+  </main>
+
+  <!-- Dependências do jogo -->
+  <script src="js/util.js?v=20261009f"></script>
+  <script src="js/mobiles.js?v=20261009f"></script>
+  <script src="js/tank.js?v=20261009f"></script>
+
+  <script>
+    // Inicialização da Prévia
+    window.addEventListener('load', () => {
+      const overlay = document.getElementById('epic-banner-overlay');
+      const canvas = document.getElementById('stage-canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Estado do tanque na prévia
+      const previewState = {
+        mobileId: 'mortar',
+        avatarId: 'a',
+        hasCrown: false,
+        hasShades: false,
+        flameAura: false,
+        niceBubble: false,
+        bubbleTimer: 0
+      };
+
+      // Carrega imagens dos avatares se ainda não carregaram
+      if (window.GB && GB.loadAvatarImages) {
+        GB.loadAvatarImages();
+      }
+
+      // Função de disparo dos letreiros arcade
+      function playEpicEffect(kind, title, subtitle) {
+        // Remove letreiros anteriores
+        const old = overlay.querySelectorAll('.epic-effect');
+        old.forEach(e => e.remove());
+
+        if (kind === 'super_shot') {
+          showScreenFlash();
+        } else if (kind === 'triple_kill') {
+          showScreenVignette('triple');
+        } else if (kind === 'team_wipe') {
+          showScreenVignette('wipe');
+          spawnConfetti();
+        }
+
+        const effect = document.createElement('div');
+        const suffix = kind === 'team_wipe' ? 'wipe' : (kind === 'nice_shot' ? 'nice' : (kind === 'super_shot' ? 'super' : (kind === 'double_kill' ? 'double' : 'triple')));
+        effect.className = `epic-effect epic-effect-${suffix}`;
+
+        if (kind === 'nice_shot') {
+          const starburst = document.createElement('div');
+          starburst.className = 'epic-starburst';
+          effect.appendChild(starburst);
+        } else if (kind === 'super_shot') {
+          const fireCont = document.createElement('div');
+          fireCont.className = 'epic-fire-container';
+          for (let i = 0; i < 36; i++) {
+            const flame = document.createElement('div');
+            flame.className = 'epic-flame-particle';
+            const sz = 16 + Math.random() * 26;
+            flame.style.width = `${sz}px`;
+            flame.style.height = `${sz * 1.5}px`;
+            flame.style.left = `${Math.random() * 96}%`;
+            flame.style.animationDuration = `${0.5 + Math.random() * 0.7}s`;
+            flame.style.animationDelay = `${Math.random() * 0.45}s`;
+            fireCont.appendChild(flame);
+          }
+          effect.appendChild(fireCont);
+        } else if (kind === 'team_wipe') {
+          const crown = document.createElement('div');
+          crown.className = 'epic-crown-crest';
+          crown.innerText = '👑';
+          effect.appendChild(crown);
+        }
+
+        const titleEl = document.createElement('div');
+        titleEl.className = 'epic-title-main';
+        titleEl.innerText = title;
+        effect.appendChild(titleEl);
+
+        if (subtitle) {
+          const subEl = document.createElement('div');
+          subEl.className = 'epic-sub-badge';
+          subEl.innerText = subtitle;
+          effect.appendChild(subEl);
+        }
+
+        overlay.appendChild(effect);
+
+        setTimeout(() => {
+          if (effect.parentNode) effect.parentNode.removeChild(effect);
+        }, 3400);
+      }
+
+      function showScreenFlash() {
+        const flash = document.createElement('div');
+        flash.className = 'epic-screen-flash';
+        overlay.appendChild(flash);
+        setTimeout(() => { if (flash.parentNode) flash.parentNode.removeChild(flash); }, 350);
+      }
+
+      function showScreenVignette(type) {
+        const vig = document.createElement('div');
+        vig.className = `epic-vignette epic-vignette-${type}`;
+        overlay.appendChild(vig);
+        setTimeout(() => { if (vig.parentNode) vig.parentNode.removeChild(vig); }, 3200);
+      }
+
+      function spawnConfetti() {
+        const colors = ['#ffd700', '#ff4757', '#2ed573', '#1e90ff', '#e056fd', '#ffa502'];
+        for (let i = 0; i < 50; i++) {
+          const p = document.createElement('div');
+          p.className = 'epic-confetti-particle';
+          p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+          p.style.left = `${Math.random() * 98}vw`;
+          const size = 7 + Math.random() * 8;
+          p.style.width = `${size}px`;
+          p.style.height = `${size * 0.7}px`;
+          p.style.borderRadius = Math.random() > 0.5 ? '2px' : '50%';
+          const dur = 2.2 + Math.random() * 1.5;
+          p.style.animationDuration = `${dur}s`;
+          p.style.animationDelay = `${Math.random() * 0.5}s`;
+          overlay.appendChild(p);
+          setTimeout(() => { if (p.parentNode) p.parentNode.removeChild(p); }, (dur + 0.6) * 1000);
+        }
+      }
+
+      // Eventos dos Botões
+      document.getElementById('btn-nice').addEventListener('click', () => {
+        playEpicEffect('nice_shot', 'NICE SHOT!', 'Você causou 560 de dano!');
+        GB.Sfx && GB.Sfx.epicNiceShot && GB.Sfx.epicNiceShot();
+        previewState.niceBubble = true;
+        previewState.bubbleTimer = 3.5;
+        updateChips();
+      });
+
+      document.getElementById('btn-super').addEventListener('click', () => {
+        playEpicEffect('super_shot', 'SUPER SHOT!', 'Você causou 1140 DE DANO!');
+        GB.Sfx && GB.Sfx.epicSuperShot && GB.Sfx.epicSuperShot();
+        previewState.flameAura = true;
+        updateChips();
+      });
+
+      document.getElementById('btn-double').addEventListener('click', () => {
+        playEpicEffect('double_kill', 'DOUBLE KILL!', 'Você eliminou 2 inimigos no mesmo turno!');
+        GB.Sfx && GB.Sfx.epicDoubleKill && GB.Sfx.epicDoubleKill();
+      });
+
+      document.getElementById('btn-triple').addEventListener('click', () => {
+        playEpicEffect('triple_kill', 'TRIPLE KILL!', 'Você eliminou 3 inimigos no mesmo turno!');
+        GB.Sfx && GB.Sfx.epicTripleKill && GB.Sfx.epicTripleKill();
+      });
+
+      document.getElementById('btn-wipe').addEventListener('click', () => {
+        playEpicEffect('team_wipe', 'FULL TEAM WIPE!', 'VOCÊ DESTRUIU O TIME INTEIRO (4 KILLS)!');
+        GB.Sfx && GB.Sfx.epicTeamWipe && GB.Sfx.epicTeamWipe();
+        previewState.hasCrown = true;
+        previewState.hasShades = true;
+        updateChips();
+      });
+
+      // Showcase Sequencial
+      let showcaseRunning = false;
+      document.getElementById('btn-showcase').addEventListener('click', () => {
+        if (showcaseRunning) return;
+        showcaseRunning = true;
+        
+        // 1. Nice Shot
+        document.getElementById('btn-nice').click();
+
+        setTimeout(() => {
+          // 2. Super Shot
+          document.getElementById('btn-super').click();
+        }, 3600);
+
+        setTimeout(() => {
+          // 3. Double Kill
+          document.getElementById('btn-double').click();
+        }, 7200);
+
+        setTimeout(() => {
+          // 4. Triple Kill
+          document.getElementById('btn-triple').click();
+        }, 10800);
+
+        setTimeout(() => {
+          // 5. Full Team Wipe
+          document.getElementById('btn-wipe').click();
+          showcaseRunning = false;
+        }, 14400);
+      });
+
+      // Seletores de Mobile e Avatar
+      const selMobile = document.getElementById('sel-mobile');
+      const selAvatar = document.getElementById('sel-avatar');
+      selMobile.addEventListener('change', () => { previewState.mobileId = selMobile.value; });
+      selAvatar.addEventListener('change', () => { previewState.avatarId = selAvatar.value; });
+
+      // Chips de cosméticos manuais
+      const chipCrown = document.getElementById('chip-crown');
+      const chipShades = document.getElementById('chip-shades');
+      const chipFlame = document.getElementById('chip-flame');
+      const chipBubble = document.getElementById('chip-bubble');
+
+      function updateChips() {
+        chipCrown.classList.toggle('active', previewState.hasCrown);
+        chipShades.classList.toggle('active', previewState.hasShades);
+        chipFlame.classList.toggle('active', previewState.flameAura);
+        chipBubble.classList.toggle('active', previewState.niceBubble || previewState.bubbleTimer > 0);
+      }
+
+      chipCrown.addEventListener('click', () => { previewState.hasCrown = !previewState.hasCrown; updateChips(); });
+      chipShades.addEventListener('click', () => { previewState.hasShades = !previewState.hasShades; updateChips(); });
+      chipFlame.addEventListener('click', () => { previewState.flameAura = !previewState.flameAura; updateChips(); });
+      chipBubble.addEventListener('click', () => {
+        previewState.niceBubble = !previewState.niceBubble;
+        previewState.bubbleTimer = previewState.niceBubble ? 9999 : 0;
+        updateChips();
+      });
+
+      // Loop de renderização no Canvas do Palco
+      function resizeCanvas() {
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        canvas.width = canvas.clientWidth * dpr;
+        canvas.height = canvas.clientHeight * dpr;
+      }
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+
+      let lastTime = performance.now();
+      function renderLoop(time) {
+        const dt = (time - lastTime) / 1000;
+        lastTime = time;
+
+        if (previewState.bubbleTimer > 0 && !previewState.niceBubble) {
+          previewState.bubbleTimer = Math.max(0, previewState.bubbleTimer - dt);
+        }
+
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        const w = canvas.width / dpr;
+        const h = canvas.height / dpr;
+
+        ctx.save();
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, w, h);
+
+        // Chão de terreno simulado
+        ctx.fillStyle = '#2b1f47';
+        ctx.beginPath();
+        ctx.moveTo(0, h * 0.78);
+        ctx.quadraticCurveTo(w * 0.5, h * 0.74, w, h * 0.78);
+        ctx.lineTo(w, h);
+        ctx.lineTo(0, h);
+        ctx.closePath();
+        ctx.fill();
+
+        // Linha de grama/neon superior
+        ctx.strokeStyle = '#4a3b73';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        const tankX = w * 0.5;
+        const tankY = h * 0.76;
+
+        // Aura de fogo incandescente (Super Shot)
+        if (previewState.flameAura) {
+          ctx.save();
+          const tSec = Date.now() * 0.005;
+          const auraR = 38 + Math.sin(tSec * 4) * 4;
+          const g = ctx.createRadialGradient(tankX, tankY - 14, 8, tankX, tankY - 14, auraR);
+          g.addColorStop(0, 'rgba(255, 230, 80, 0.55)');
+          g.addColorStop(0.35, 'rgba(255, 100, 20, 0.45)');
+          g.addColorStop(0.7, 'rgba(220, 30, 0, 0.25)');
+          g.addColorStop(1, 'rgba(160, 0, 0, 0)');
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(tankX, tankY - 14, auraR, 0, Math.PI * 2);
+          ctx.fill();
+
+          for (let i = 0; i < 5; i++) {
+            const offX = Math.sin(tSec * 4 + i * 1.8) * 24;
+            const offY = -14 - ((tSec * 40 + i * 14) % 36);
+            ctx.beginPath();
+            ctx.arc(tankX + offX, tankY + offY, 6, 0, Math.PI * 2);
+            ctx.fillStyle = (i % 2 === 0) ? 'rgba(255, 220, 50, 0.6)' : 'rgba(255, 110, 20, 0.5)';
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+
+        // Renderiza o Tanque e o Avatar
+        ctx.save();
+        ctx.translate(tankX, tankY);
+        // Sombra suave sob as esteiras
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.beginPath(); ctx.ellipse(0, 4, 32, 6, 0, 0, Math.PI * 2); ctx.fill();
+
+        // Avatar atrás do veículo
+        if (window.GB && GB.drawAvatar) {
+          GB.drawAvatar(ctx, previewState.avatarId, previewState.mobileId, null, {
+            hasCrown: previewState.hasCrown,
+            hasShades: previewState.hasShades
+          });
+        }
+
+        // Sprite do Mobile
+        if (window.GB && GB.drawMobile) {
+          const previewAngle = (previewState.mobileId === 'khan' || previewState.mobileId === 'kuda') ? 0 : 35;
+          GB.drawMobile(ctx, previewState.mobileId, previewAngle, '#ffd27a');
+        }
+        ctx.restore();
+
+        // Balão 👍 NICE!
+        if (previewState.bubbleTimer > 0 || previewState.niceBubble) {
+          ctx.save();
+          const bx = tankX;
+          const by = tankY - 82;
+          ctx.font = "bold 13px 'Outfit', sans-serif";
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          
+          ctx.fillStyle = '#ffe066';
+          ctx.strokeStyle = '#b38600';
+          ctx.lineWidth = 2;
+          
+          // Retângulo arredondado do balão
+          const rw = 72, rh = 26, rx = bx - 36, ry = by - 13;
+          ctx.beginPath();
+          ctx.roundRect ? ctx.roundRect(rx, ry, rw, rh, 6) : ctx.rect(rx, ry, rw, rh);
+          ctx.fill();
+          ctx.stroke();
+
+          // Rabicho do balão
+          ctx.beginPath();
+          ctx.moveTo(bx - 5, by + 13);
+          ctx.lineTo(bx, by + 19);
+          ctx.lineTo(bx + 5, by + 13);
+          ctx.fillStyle = '#ffe066';
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#4a3800';
+          ctx.fillText("👍 NICE!", bx, by);
+          ctx.restore();
+        }
+
+        ctx.restore();
+        requestAnimationFrame(renderLoop);
+      }
+      requestAnimationFrame(renderLoop);
+    });
+  </script>
+</body>
+</html>

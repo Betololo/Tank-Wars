@@ -1436,73 +1436,61 @@
       const kills = evt.kills || 0;
       this.lastEpicEventTime = Date.now();
 
-      let bannerClass = '';
       let title = '';
       let subtitle = '';
-      let icon = '';
 
       switch (evt.kind) {
         case 'nice_shot':
-          bannerClass = 'epic-banner-nice';
           title = 'NICE SHOT!';
-          subtitle = `🎯 ${shooterName} causou ${damage} de dano!`;
-          icon = '🎯';
-          this.shake = Math.max(this.shake, 14);
+          subtitle = `${shooterName} causou ${damage} de dano!`;
+          this.shake = Math.max(this.shake, 16);
           if (shooter) shooter.niceShotBubbleTimer = 3.2;
           GB.Sfx.epicNiceShot && GB.Sfx.epicNiceShot();
           break;
 
         case 'super_shot':
-          bannerClass = 'epic-banner-super';
           title = 'SUPER SHOT!';
-          subtitle = `🔥 ${shooterName} causou ${damage} DE DANO!`;
-          icon = '🔥';
-          this.shake = Math.max(this.shake, 28);
+          subtitle = `${shooterName} causou ${damage} DE DANO!`;
+          this.shake = Math.max(this.shake, 30);
           if (shooter) shooter.flameAura = true;
           this.showScreenFlash();
-          if (shooter) {
+          if (shooter && this.effects && this.effects.emp) {
             this.effects.emp(shooter.x, shooter.y, 80);
           }
           GB.Sfx.epicSuperShot && GB.Sfx.epicSuperShot();
           break;
 
         case 'double_kill':
-          bannerClass = 'epic-banner-double';
           title = 'DOUBLE KILL!';
-          if (damage >= 1000) subtitle = `💀💀 ${shooterName} eliminou 2 inimigos! (SUPER SHOT! ${damage} DANO)`;
-          else if (damage >= 500) subtitle = `💀💀 ${shooterName} eliminou 2 inimigos! (NICE SHOT! ${damage} DANO)`;
-          else subtitle = `💀💀 ${shooterName} eliminou 2 inimigos no mesmo turno!`;
-          icon = '💀💀';
+          if (damage >= 1000) subtitle = `${shooterName} eliminou 2 inimigos! (${damage} DANO)`;
+          else if (damage >= 500) subtitle = `${shooterName} eliminou 2 inimigos! (${damage} DANO)`;
+          else subtitle = `${shooterName} eliminou 2 inimigos no mesmo turno!`;
           this.hitStopTimer = 0.08;
-          this.shake = Math.max(this.shake, 22);
+          this.shake = Math.max(this.shake, 24);
           if (shooter && damage >= 1000) shooter.flameAura = true;
           GB.Sfx.epicDoubleKill && GB.Sfx.epicDoubleKill();
           break;
 
         case 'triple_kill':
-          bannerClass = 'epic-banner-triple';
           title = 'TRIPLE KILL!';
-          if (damage >= 1000) subtitle = `⚡💀⚡ ${shooterName} eliminou 3 inimigos! (SUPER SHOT! ${damage} DANO)`;
-          else if (damage >= 500) subtitle = `⚡💀⚡ ${shooterName} eliminou 3 inimigos! (NICE SHOT! ${damage} DANO)`;
-          else subtitle = `⚡💀⚡ ${shooterName} eliminou 3 inimigos no mesmo turno!`;
-          icon = '⚡💀⚡';
+          if (damage >= 1000) subtitle = `${shooterName} eliminou 3 inimigos! (${damage} DANO)`;
+          else if (damage >= 500) subtitle = `${shooterName} eliminou 3 inimigos! (${damage} DANO)`;
+          else subtitle = `${shooterName} eliminou 3 inimigos no mesmo turno!`;
           this.hitStopTimer = 0.12;
-          this.shake = Math.max(this.shake, 32);
+          this.shake = Math.max(this.shake, 34);
           if (shooter) {
             if (damage >= 1000) shooter.flameAura = true;
-            this.effects.cosmicLightning && this.effects.cosmicLightning(shooter.x, shooter.y - 12);
+            this.effects && this.effects.cosmicLightning && this.effects.cosmicLightning(shooter.x, shooter.y - 12);
           }
           this.showScreenVignette('triple');
           GB.Sfx.epicTripleKill && GB.Sfx.epicTripleKill();
           break;
 
         case 'team_wipe':
-          bannerClass = 'epic-banner-wipe';
           title = 'FULL TEAM WIPE!';
-          subtitle = `👑 ${shooterName} DESTRUIU O TIME INTEIRO (4 KILLS)!`;
-          icon = '👑⚔️👑';
+          subtitle = `${shooterName} DESTRUIU O TIME INTEIRO!`;
           this.cinematicZoomTimer = 3.5;
-          this.shake = Math.max(this.shake, 40);
+          this.shake = Math.max(this.shake, 42);
           if (shooter) {
             shooter.hasCrown = true;
             shooter.hasShades = true;
@@ -1514,33 +1502,88 @@
           break;
       }
 
-      this.displayEpicBanner(bannerClass, icon, title, subtitle);
+      this.displayEpicBanner(evt.kind, title, subtitle);
 
       const combatLog = document.getElementById('combat-log');
       if (combatLog) {
         const div = document.createElement('div');
-        div.innerHTML = `<b>${icon} ${title}:</b> ${subtitle}`;
+        div.innerHTML = `<b>${title}:</b> ${subtitle}`;
         combatLog.prepend(div);
       }
     }
 
-    displayEpicBanner(bannerClass, icon, title, subtitle) {
+    displayEpicBanner(kindOrClass, titleOrIcon, subtitleOrTitle, legacySub) {
       const overlay = document.getElementById('epic-banner-overlay');
       if (!overlay) return;
-      overlay.innerHTML = '';
-      const banner = document.createElement('div');
-      banner.className = `epic-banner ${bannerClass}`;
-      banner.innerHTML = `
-        <div class="epic-badge-icon">${icon}</div>
-        <div class="epic-banner-text">
-          <div class="epic-title">${title}</div>
-          <div class="epic-sub">${subtitle}</div>
-        </div>
-      `;
-      overlay.appendChild(banner);
+
+      let kind = kindOrClass;
+      let title = titleOrIcon;
+      let subtitle = subtitleOrTitle;
+
+      if (legacySub !== undefined) {
+        // Formato legado: (bannerClass, icon, title, subtitle)
+        title = subtitleOrTitle;
+        subtitle = legacySub;
+        if (typeof kindOrClass === 'string') {
+          if (kindOrClass.includes('nice')) kind = 'nice_shot';
+          else if (kindOrClass.includes('super')) kind = 'super_shot';
+          else if (kindOrClass.includes('double')) kind = 'double_kill';
+          else if (kindOrClass.includes('triple')) kind = 'triple_kill';
+          else if (kindOrClass.includes('wipe')) kind = 'team_wipe';
+        }
+      }
+
+      // Remove apenas banners e letreiros anteriores, preservando flash, vinhetas ou confetes
+      const oldEffects = overlay.querySelectorAll ? overlay.querySelectorAll('.epic-effect') : [];
+      oldEffects.forEach(el => { if (el && typeof el.remove === 'function') el.remove(); });
+
+      const effect = document.createElement('div');
+      const suffix = kind === 'team_wipe' ? 'wipe' : (kind === 'nice_shot' ? 'nice' : (kind === 'super_shot' ? 'super' : (kind === 'double_kill' ? 'double' : (kind === 'triple_kill' ? 'triple' : 'nice'))));
+      effect.className = `epic-effect epic-effect-${suffix}`;
+
+      if (kind === 'nice_shot') {
+        const starburst = document.createElement('div');
+        starburst.className = 'epic-starburst';
+        effect.appendChild(starburst);
+      } else if (kind === 'super_shot') {
+        const fireCont = document.createElement('div');
+        fireCont.className = 'epic-fire-container';
+        for (let i = 0; i < 36; i++) {
+          const flame = document.createElement('div');
+          flame.className = 'epic-flame-particle';
+          const sz = 16 + Math.random() * 26;
+          flame.style.width = `${sz}px`;
+          flame.style.height = `${sz * 1.5}px`;
+          flame.style.left = `${Math.random() * 96}%`;
+          flame.style.animationDuration = `${0.5 + Math.random() * 0.7}s`;
+          flame.style.animationDelay = `${Math.random() * 0.45}s`;
+          fireCont.appendChild(flame);
+        }
+        effect.appendChild(fireCont);
+      } else if (kind === 'team_wipe') {
+        const crown = document.createElement('div');
+        crown.className = 'epic-crown-crest';
+        crown.innerText = '👑';
+        effect.appendChild(crown);
+      }
+
+      const titleEl = document.createElement('div');
+      titleEl.className = 'epic-title-main';
+      titleEl.innerText = title;
+      effect.appendChild(titleEl);
+
+      if (subtitle) {
+        const subEl = document.createElement('div');
+        subEl.className = 'epic-sub-badge';
+        subEl.innerText = subtitle;
+        effect.appendChild(subEl);
+      }
+
+      overlay.appendChild(effect);
+
       setTimeout(() => {
-        if (banner.parentNode) banner.parentNode.removeChild(banner);
-      }, 3300);
+        if (effect.parentNode) effect.parentNode.removeChild(effect);
+      }, 3400);
     }
 
     showScreenFlash() {
