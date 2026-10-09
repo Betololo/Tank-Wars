@@ -2722,7 +2722,7 @@
   // x: posição horizontal do assento, y: altura do assento, scale: proporção do avatar
   GB.AVATAR_ANCHORS = {
     armor:    { x: -16, y: -12, scale: 0.123 },
-    bigfoot:  { x: -8,  y: -14, scale: 0.123 },
+    bigfoot:  { x: -14, y: -14, scale: 0.123 },
     grub:     { x: -7,  y: -16, scale: 0.120 },
     dj:       { x: -17, y: -9,  scale: 0.123 },
     launcher: { x: -18, y: -12, scale: 0.120 },
