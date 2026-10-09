@@ -1364,11 +1364,12 @@
             if (curLives > 0) {
               this.teamLives[t.team] = curLives - 1;
               t.isWaitingRespawn = true;
+              t.respawnTargetLocked = false;
               t.respawnTimer = 4; // Nasce exatamente após 4 turnos
               t.respawnTargetX = Math.round(t.x);
               this.toast(t.fellOff
-                ? `💀 ${t.name} caiu! (Vidas restantes: ${this.teamLives[t.team]} | Respawn em 4 turnos - Clique no mapa para escolher onde renascer!)`
-                : `💀 ${t.name} K.O.! (Vidas restantes: ${this.teamLives[t.team]} | Respawn em 4 turnos - Clique no mapa para escolher onde renascer!)`, 4000);
+                ? `💀 ${t.name} caiu! (Vidas restantes: ${this.teamLives[t.team]} | Respawn em 4 turnos - Clique para travar onde vai cair!)`
+                : `💀 ${t.name} K.O.! (Vidas restantes: ${this.teamLives[t.team]} | Respawn em 4 turnos - Clique para travar onde vai cair!)`, 4000);
             } else {
               t.isWaitingRespawn = false;
               this.toast(t.fellOff ? `💀 ${t.name} caiu! Sem vidas de equipe restantes.` : `💀 ${t.name} K.O.! Sem vidas de equipe.`, 3000);
@@ -1743,7 +1744,7 @@
             tanks: this.tanks.map((t) => ({
               x: t.x, y: t.y, hp: t.hp, al: t.alive, ss: t.ssCooldown, f: t.facing, a: t.angle, lp: t.lastPower,
               dd: t.dmgDealt, u2: t.item2Unlocked, i2u: t.item2Used,
-              wr: t.isWaitingRespawn, rt: t.respawnTimer, rx: t.respawnTargetX,
+              wr: t.isWaitingRespawn, rt: t.respawnTimer, rx: t.respawnTargetX, rl: t.respawnTargetLocked ? 1 : 0,
               sh: t.hasShield ? 1 : 0, oc: t.overcharged ? 1 : 0, asu: t.avatarSkillUsed ? 1 : 0,
               fa: t.flameAura ? 1 : 0, dka: t.doubleKillAura ? 1 : 0, tka: t.tripleKillAura ? 1 : 0, cr: t.hasCrown ? 1 : 0
             }))
@@ -1765,20 +1766,14 @@
               t.maxFuel = (t.mobile && t.mobile.fuel != null) ? t.mobile.fuel : GB.MAX_FUEL;
               t.fuel = t.maxFuel;
               t.isWaitingRespawn = false;
+              t.respawnTargetLocked = false;
               t.deathShown = false;
               t.fellOff = false;
-              t.x = Math.max(60, Math.min(this.terrain.W - 60, t.respawnTargetX || t.x));
-              const checkSy = this.terrain ? this.terrain.surfaceBelow(t.x, 0) : -1;
-              if (checkSy < 0 || checkSy > GB.WORLD_H - 40) {
-                for (let dx = 20; dx < 300; dx += 20) {
-                  if (this.terrain.surfaceBelow(t.x + dx, 0) > 0) { t.x += dx; break; }
-                  if (this.terrain.surfaceBelow(t.x - dx, 0) > 0) { t.x -= dx; break; }
-                }
-              }
-              t.y = 20; // Cai com paraquedas suave
+              t.x = Math.max(30, Math.min(this.terrain.W - 30, t.respawnTargetX != null ? t.respawnTargetX : t.x));
+              t.y = -60; // Cai do céu, lá de cima do mapa
               t.falling = true;
               t.isParachuting = true;
-              t.vy = 80;
+              t.vy = 140;
               
               let maxDelay = 0;
               this.tanks.forEach(o => { if (o.alive && o !== t && o.delay > maxDelay) maxDelay = o.delay; });
@@ -1835,7 +1830,7 @@
           tanks: this.tanks.map((t) => ({
             x: t.x, y: t.y, hp: t.hp, al: t.alive, ss: t.ssCooldown, f: t.facing, a: t.angle, lp: t.lastPower,
             dd: t.dmgDealt, u2: t.item2Unlocked, i2u: t.item2Used,
-            wr: t.isWaitingRespawn, rt: t.respawnTimer, rx: t.respawnTargetX,
+            wr: t.isWaitingRespawn, rt: t.respawnTimer, rx: t.respawnTargetX, rl: t.respawnTargetLocked ? 1 : 0,
             sh: t.hasShield ? 1 : 0,
             oc: t.overcharged ? 1 : 0,
             asu: t.avatarSkillUsed ? 1 : 0,
@@ -1952,6 +1947,7 @@
           t.isWaitingRespawn = !!s.wr;
           t.respawnTimer = s.rt || 0;
           t.respawnTargetX = s.rx || t.x;
+          t.respawnTargetLocked = !!s.rl;
           t.alive = !!s.al;
           t.hasShield = !!s.sh;
           t.shieldCharges = s.sh ? 1 : 0;
@@ -2130,8 +2126,10 @@
             if (this.cfg && this.cfg.isHost) GB.Net.broadcast(m);
           }
         } else if (m.t === 'respawn_pos') {
-          if (this.tanks[m.pIdx]) {
-            this.tanks[m.pIdx].respawnTargetX = m.x;
+          const targetTank = this.tanks[m.pIdx] || this.tanks.find(t => t.playerIdx === m.pIdx);
+          if (targetTank) {
+            targetTank.respawnTargetX = m.x;
+            if (m.locked) targetTank.respawnTargetLocked = true;
           }
           if (this.cfg && this.cfg.isHost) {
             GB.Net.broadcast(m);
@@ -2164,16 +2162,21 @@
           if (pDownPos && Math.hypot(e.clientX - pDownPos.x, e.clientY - pDownPos.y) > 12) return; // Se arrastou a câmera, não conta como clique
           const myTank = this.tanks.find(t => t.kind === 'human');
           if (myTank && !myTank.alive && myTank.isWaitingRespawn) {
+            if (myTank.respawnTargetLocked) {
+              this.toast('🔒 Posição de queda já travada! Você não pode mais alterar onde vai cair.', 2500);
+              return;
+            }
             const rect = canvasEl.getBoundingClientRect();
             const sx = (e.clientX - rect.left);
             const wx = this.cam.x + sx / this.cam.zoom;
             const maxW = this.terrain ? this.terrain.W : GB.WORLD_W;
-            const targetX = Math.round(Math.max(60, Math.min(maxW - 60, wx)));
+            const targetX = Math.round(Math.max(40, Math.min(maxW - 40, wx)));
             myTank.respawnTargetX = targetX;
-            this.toast(`🎯 Ponto de respawn marcado em X: ${targetX} (Respawn em ${myTank.respawnTimer} turnos)`);
+            myTank.respawnTargetLocked = true;
+            this.toast(`🎯 Posição de queda travada em X: ${targetX}! O personagem cairá do céu nesta coordenada em ${myTank.respawnTimer} turnos.`, 4000);
             GB.Sfx.click();
             if (this.mode === 'online') {
-              this.send({ t: 'respawn_pos', pIdx: myTank.playerIdx, x: targetX });
+              this.send({ t: 'respawn_pos', pIdx: myTank.playerIdx, x: targetX, locked: true });
             }
           }
         });
@@ -2187,15 +2190,20 @@
           if (this.modeType !== 'score') return;
           const myTank = this.tanks.find(t => t.kind === 'human');
           if (myTank && !myTank.alive && myTank.isWaitingRespawn) {
+            if (myTank.respawnTargetLocked) {
+              this.toast('🔒 Posição de queda já travada! Você não pode mais alterar onde vai cair.', 2500);
+              return;
+            }
             const rect = mm.getBoundingClientRect();
             const ratio = (e.clientX - rect.left) / rect.width;
             const maxW = this.terrain ? this.terrain.W : GB.WORLD_W;
-            const targetX = Math.round(Math.max(60, Math.min(maxW - 60, ratio * maxW)));
+            const targetX = Math.round(Math.max(40, Math.min(maxW - 40, ratio * maxW)));
             myTank.respawnTargetX = targetX;
-            this.toast(`🎯 Ponto de respawn marcado em X: ${targetX} (Respawn em ${myTank.respawnTimer} turnos)`);
+            myTank.respawnTargetLocked = true;
+            this.toast(`🎯 Posição de queda travada em X: ${targetX}! O personagem cairá do céu nesta coordenada em ${myTank.respawnTimer} turnos.`, 4000);
             GB.Sfx.click();
             if (this.mode === 'online') {
-              this.send({ t: 'respawn_pos', pIdx: myTank.playerIdx, x: targetX });
+              this.send({ t: 'respawn_pos', pIdx: myTank.playerIdx, x: targetX, locked: true });
             }
           }
         });
@@ -2418,7 +2426,10 @@
          }
          tk.updatePhysics(dt);
       }
-      
+      if (this.tanks.some(tk => !tk.alive && !tk.deathShown)) {
+        this.processTankDeaths();
+      }
+
       this.updateRobots(dt);
 
       if (this.phase === 'aim' && t) {
@@ -3632,26 +3643,34 @@
           if (!t.alive && t.isWaitingRespawn) {
             const rx = t.respawnTargetX || t.x;
             const sy = this.terrain ? this.terrain.surfaceBelow(rx, 0) : 400;
+            const isVoid = sy < 0;
+            const targetY = isVoid ? (GB.WORLD_H + 40) : sy;
             ctx.save();
-            const grad = ctx.createLinearGradient(rx, 0, rx, sy);
-            grad.addColorStop(0, t.team === 0 ? 'rgba(255, 68, 68, 0.45)' : 'rgba(59, 130, 246, 0.45)');
-            grad.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
+            const grad = ctx.createLinearGradient(rx, 0, rx, targetY);
+            if (isVoid) {
+              grad.addColorStop(0, 'rgba(255, 30, 30, 0.65)');
+              grad.addColorStop(1, 'rgba(255, 0, 0, 0.25)');
+            } else {
+              grad.addColorStop(0, t.team === 0 ? 'rgba(255, 68, 68, 0.45)' : 'rgba(59, 130, 246, 0.45)');
+              grad.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
+            }
             ctx.fillStyle = grad;
-            ctx.fillRect(rx - 16, 0, 32, sy);
+            ctx.fillRect(rx - 16, 0, 32, targetY);
             
-            ctx.strokeStyle = t.color;
+            ctx.strokeStyle = isVoid ? '#ff2222' : t.color;
             ctx.lineWidth = 2.5;
             ctx.beginPath();
-            ctx.ellipse(rx, sy, 24, 7, 0, 0, Math.PI * 2);
+            ctx.ellipse(rx, targetY, 24, 7, 0, 0, Math.PI * 2);
             ctx.stroke();
 
             ctx.fillStyle = '#ffffff';
             ctx.font = "bold 13px 'Lilita One', sans-serif";
             ctx.textAlign = 'center';
-            ctx.fillText(`🪂 ${t.name}`, rx, sy - 28);
-            ctx.fillStyle = '#ffd27a';
+            ctx.fillText(isVoid ? `⚠️ ${t.name} (ABISMO!)` : `🪂 ${t.name}`, rx, targetY - 28);
+            ctx.fillStyle = isVoid ? '#ff4d4d' : '#ffd27a';
             ctx.font = "bold 11px 'Outfit', sans-serif";
-            ctx.fillText(`Respawn em ${t.respawnTimer}T`, rx, sy - 14);
+            const lockLabel = t.respawnTargetLocked ? '🔒 Alvo travado' : '🎯 Escolhendo alvo';
+            ctx.fillText(`${lockLabel} · Queda em ${t.respawnTimer}T`, rx, targetY - 14);
             ctx.restore();
           }
         }
@@ -3800,20 +3819,22 @@
         for (const t of this.tanks) {
           if (!t.alive && t.isWaitingRespawn) {
             const rx = t.respawnTargetX || t.x;
-            const rSy = this.terrain ? this.terrain.surfaceBelow(rx, 0) : 400;
+            const sy = this.terrain ? this.terrain.surfaceBelow(rx, 0) : 400;
+            const isVoid = sy < 0;
+            const rSy = isVoid ? GB.WORLD_H : sy;
             c.save();
-            c.strokeStyle = t.color || '#ff4444';
+            c.strokeStyle = isVoid ? '#ff2222' : (t.color || '#ff4444');
             c.lineWidth = 1.5;
             c.beginPath();
             c.moveTo(rx * sx, 0);
             c.lineTo(rx * sx, rSy * sy);
             c.stroke();
 
-            c.fillStyle = '#ffffff';
+            c.fillStyle = isVoid ? '#ff0000' : '#ffffff';
             c.beginPath();
             c.arc(rx * sx, rSy * sy, 3.5, 0, Math.PI * 2);
             c.fill();
-            c.strokeStyle = t.color || '#ff4444';
+            c.strokeStyle = isVoid ? '#ffffff' : (t.color || '#ff4444');
             c.lineWidth = 1.5;
             c.stroke();
             c.restore();

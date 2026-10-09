@@ -95,7 +95,7 @@
       if (!this.supported()) {
         this.falling = true;
         this.targetY = this.y; // Alinha targetY para impedir updateRemote de lutar contra a gravidade
-        this.vy = Math.min(this.vy + GB.GRAVITY * 1.4 * dt, 900);
+        this.vy = this.isParachuting ? 140 : Math.min(this.vy + GB.GRAVITY * 1.4 * dt, 900);
         let dy = this.vy * dt;
         while (dy > 0) {
           this.y += 1; dy -= 1;
