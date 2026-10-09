@@ -230,11 +230,14 @@
     }
 
     applyCraters(list) {
+      this.craters = [];
+      if (!list || !list.length) return;
       for (const c of list) {
          if (!Array.isArray(c)) { if (c.k === 'col') this.carveColumns(c.x0, c.t, c.d, false); }
          else if (c[2] < 0) this.carveFlat(c[0], c[1], -c[2], c[3], false);
          else this.carve(c[0], c[1], c[2], false);
       }
+      this.craters = [...list];
     }
   }
 

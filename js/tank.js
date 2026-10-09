@@ -44,14 +44,18 @@
     supported() {
       const t = this.terrain;
       let supportPoints = 0;
+      let centerSupported = false;
       for (const dx of FEET) {
          if (t.isSolid(this.x + dx, this.y) || t.isSolid(this.x + dx, this.y + 1) || t.isSolid(this.x + dx, this.y + 2)) {
             // É chão e não parede vertical contínua
             if (!t.isSolid(this.x + dx, this.y - 4)) {
                supportPoints++;
+               if (Math.abs(dx) <= 3) centerSupported = true;
             }
          }
       }
+      // Se não há suporte sob o centro e restou menos de 2 pontos de apoio na ponta, o tanque não se sustenta e cai
+      if (!centerSupported && supportPoints < 2) return false;
       return supportPoints > 0;
     }
 
@@ -75,6 +79,7 @@
       // Se o chão sumiu por baixo da posição atual, ajusta para baixo
       if (!this.supported()) {
         this.falling = true;
+        this.targetY = this.y; // Alinha targetY para impedir updateRemote de lutar contra a gravidade
         this.vy = Math.min(this.vy + GB.GRAVITY * 1.4 * dt, 900);
         let dy = this.vy * dt;
         while (dy > 0) {
@@ -112,12 +117,21 @@
       }
       if (this.targetY !== undefined) {
         const dy = this.targetY - this.y;
-        if (Math.abs(dy) > 140) {
-          this.y = this.targetY;
-        } else if (Math.abs(dy) > 0.05) {
-          this.y += dy * Math.min(1, dt * 20);
+        if (this.falling || !this.supported()) {
+          // Se o tanque está em queda ou sem chão de sustentação, não puxa o Y para cima
+          if (dy < 0) {
+            this.targetY = this.y;
+          } else {
+            this.y += dy * Math.min(1, dt * 20);
+          }
         } else {
-          this.y = this.targetY;
+          if (Math.abs(dy) > 140) {
+            this.y = this.targetY;
+          } else if (Math.abs(dy) > 0.05) {
+            this.y += dy * Math.min(1, dt * 20);
+          } else {
+            this.y = this.targetY;
+          }
         }
       }
       if (this.targetAngle !== undefined) {

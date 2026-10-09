@@ -409,31 +409,35 @@
 
     // ================= Turnos =================
     beginTurn(forcedTurn) {
-      if (!this.running) return;
-      const { over } = this.checkMatchOver();
+      if (!this.running || this.phase === 'over') return;
+      const { over, winner } = this.checkMatchOver();
       if (over) {
-        this.endTurn();
-        return;
+        return this.finish(winner);
       }
       if (forcedTurn !== undefined && forcedTurn >= 0 && forcedTurn < this.tanks.length && this.tanks[forcedTurn].alive) {
         this.turn = forcedTurn;
       } else {
         // Sistema de Delay Tank Wars: próximo turno é do jogador vivo com MENOR delay acumulado
         let lowest = Infinity;
-        let nextIdx = 0;
+        let nextIdx = -1;
         for (let i = 0; i < this.tanks.length; i++) {
           if (this.tanks[i].alive && this.tanks[i].delay < lowest) {
             lowest = this.tanks[i].delay;
             nextIdx = i;
           }
         }
-        this.turn = nextIdx;
+        if (nextIdx >= 0) {
+          this.turn = nextIdx;
+        } else {
+          const check = this.checkMatchOver();
+          return this.finish(check.winner);
+        }
       }
       
       const t = this.active;
       if (!t || !t.alive) {
-        this.endTurn();
-        return;
+        const check = this.checkMatchOver();
+        return this.finish(check.winner);
       }
 
       // Tratamento de jogador congelado (5 stacks de blizzard): perde o turno e reseta
@@ -486,23 +490,8 @@
       }
       GB.Input.releaseAll();
 
-      // Atualiza Ciclo de Efeitos Climáticos do Mapa (a cada 4 turnos muda o efeito)
+      // Atualiza HUD de Efeitos Climáticos do Mapa
       if (this.weatherSequence && this.weatherSequence.length > 0) {
-        this.turnNumber = (this.turnNumber || 0) + 1;
-        if (this.turnNumber > 1) {
-          this.weatherTurnsLeft--;
-          if (this.weatherTurnsLeft <= 0) {
-            this.weatherIndex++;
-            this.weatherTurnsLeft = 4;
-            if (this.weatherIndex >= this.weatherSequence.length) {
-              this.weatherIndex = 0;
-            }
-            this.activeWeather = this.weatherSequence[this.weatherIndex];
-            const wNames = { force: 'FORCE ☀️ (+50% DANO)', tornado: 'TORNADO 🌀 (DESVIO)', black: 'BLACK 🌙 (-50% DANO)', thunder: 'THUNDER ⚡ (RAIOS)' };
-            this.toast(`CLIMA: ${wNames[this.activeWeather.type] || this.activeWeather.type.toUpperCase()}!`);
-            GB.Sfx.power && GB.Sfx.power();
-          }
-        }
         this.updateWeatherHUD();
       }
 
@@ -702,7 +691,9 @@
       if (this.mode === 'online' && !fromRemote) this.send({ t: 'skip' });
       this.charging = false;
       const timeSpent = Math.max(0, GB.TURN_TIME - this.timer);
-      this.active.delay += 100 + Math.floor(timeSpent) * 10;
+      if (this.active) {
+        this.active.delay += 100 + Math.floor(timeSpent) * 10;
+      }
       this.toast('Tempo esgotado!');
       this.phase = 'settle';
       this.settleT = 0;
@@ -1156,6 +1147,26 @@
         }
       }
 
+      // Avança o clima no Host para o próximo turno antes de transmitir o sync
+      if (!over && this.weatherSequence && this.weatherSequence.length > 0) {
+        this.turnNumber = (this.turnNumber || 0) + 1;
+        if (this.turnNumber > 1) {
+          this.weatherTurnsLeft--;
+          if (this.weatherTurnsLeft <= 0) {
+            this.weatherIndex++;
+            this.weatherTurnsLeft = 4;
+            if (this.weatherIndex >= this.weatherSequence.length) {
+              this.weatherIndex = 0;
+            }
+            this.activeWeather = this.weatherSequence[this.weatherIndex];
+            const wNames = { force: 'FORCE ☀️ (+50% DANO)', tornado: 'TORNADO 🌀 (DESVIO)', black: 'BLACK 🌙 (-50% DANO)', thunder: 'THUNDER ⚡ (RAIOS)' };
+            this.toast(`CLIMA: ${wNames[this.activeWeather.type] || this.activeWeather.type.toUpperCase()}!`);
+            GB.Sfx.power && GB.Sfx.power();
+          }
+        }
+        this.updateWeatherHUD();
+      }
+
       const wind = this.newWind();
       if (this.mode === 'online') {
         this.send({
@@ -1202,12 +1213,35 @@
       this.projectiles = [];
       this.phase = 'settle';
 
-      // Sincronização inteligente de crateras sem destruir nem recriar o terreno procedural
+      // Sincronização inteligente e robusta de crateras sem destruir desnecessariamente o terreno
       if (m.craters && this.terrain) {
-        const curCount = this.terrain.craters ? this.terrain.craters.length : 0;
-        if (m.craters.length > curCount) {
-          for (let i = curCount; i < m.craters.length; i++) {
-            const c = m.craters[i];
+        const curCraters = this.terrain.craters || [];
+        const hostCraters = m.craters;
+
+        const isSameCrater = (c1, c2) => {
+          if (!c1 || !c2) return false;
+          if (Array.isArray(c1) && Array.isArray(c2)) {
+            return c1.length === c2.length && c1[0] === c2[0] && c1[1] === c2[1] && c1[2] === c2[2] && (c1[3] === c2[3]);
+          }
+          if (c1.k === 'col' && c2.k === 'col') {
+            return c1.x0 === c2.x0 && c1.d === c2.d && c1.t && c2.t && c1.t.length === c2.t.length;
+          }
+          return false;
+        };
+
+        let prefixMatches = curCraters.length <= hostCraters.length;
+        if (prefixMatches) {
+          for (let i = 0; i < curCraters.length; i++) {
+            if (!isSameCrater(curCraters[i], hostCraters[i])) {
+              prefixMatches = false;
+              break;
+            }
+          }
+        }
+
+        if (prefixMatches) {
+          for (let i = curCraters.length; i < hostCraters.length; i++) {
+            const c = hostCraters[i];
             if (Array.isArray(c)) {
               if (c[2] < 0) this.terrain.carveFlat(c[0], c[1], -c[2], c[3], false);
               else this.terrain.carve(c[0], c[1], c[2], false);
@@ -1215,30 +1249,33 @@
               this.terrain.carveColumns(c.x0, c.t, c.d, false);
             }
           }
-          this.terrain.craters = [...m.craters];
-        } else if (m.craters.length < curCount) {
-          // Se houve rollback raro de terreno
+          this.terrain.craters = [...hostCraters];
+        } else {
+          // Se houve qualquer divergência física, reconstrói o terreno autoritativo do Host
           this.terrain = new GB.Terrain(this.cfg.seed);
-          this.terrain.applyCraters(m.craters);
+          this.terrain.applyCraters(hostCraters);
+          this.terrain.craters = [...hostCraters];
           this.tanks.forEach((t) => { t.terrain = this.terrain; });
         }
       }
 
       // Atualiza o estado autoritativo absoluto de todos os tanques vindo do Host
-      m.tanks.forEach((s, i) => {
-        const t = this.tanks[i];
-        if (!t) return;
-        t.x = s.x; t.y = s.y; t.hp = s.hp; t.ssCooldown = s.ss; t.facing = s.f; t.angle = s.a; t.lastPower = s.lp;
-        t.targetX = s.x; t.targetY = s.y; t.targetAngle = s.a;
-        t.dmgDealt = s.dd || 0;
-        t.item2Unlocked = !!s.u2;
-        t.item2Used = !!s.i2u;
-        t.isWaitingRespawn = !!s.wr;
-        t.respawnTimer = s.rt || 0;
-        t.respawnTargetX = s.rx || t.x;
-        t.alive = !!s.al;
-        t.updateTilt(true);
-      });
+      if (m.tanks) {
+        m.tanks.forEach((s, i) => {
+          const t = this.tanks[i];
+          if (!t) return;
+          t.x = s.x; t.y = s.y; t.hp = s.hp; t.ssCooldown = s.ss; t.facing = s.f; t.angle = s.a; t.lastPower = s.lp;
+          t.targetX = s.x; t.targetY = s.y; t.targetAngle = s.a;
+          t.dmgDealt = s.dd || 0;
+          t.item2Unlocked = !!s.u2;
+          t.item2Used = !!s.i2u;
+          t.isWaitingRespawn = !!s.wr;
+          t.respawnTimer = s.rt || 0;
+          t.respawnTargetX = s.rx || t.x;
+          t.alive = !!s.al;
+          t.updateTilt(true);
+        });
+      }
       if (m.teamLives) this.teamLives = m.teamLives;
       this.processTankDeaths();
       this.napalms = m.napalms || [];
@@ -1261,9 +1298,15 @@
       }));
       if (m.thor) this.thor = m.thor;
       if (m.weatherIndex !== undefined) {
+        const oldWIdx = this.weatherIndex;
         this.weatherIndex = m.weatherIndex;
         this.weatherTurnsLeft = m.weatherTurnsLeft;
         this.activeWeather = (this.weatherSequence && this.weatherSequence[this.weatherIndex]) || null;
+        if (this.activeWeather && oldWIdx !== this.weatherIndex && this.turnNumber > 0) {
+          const wNames = { force: 'FORCE ☀️ (+50% DANO)', tornado: 'TORNADO 🌀 (DESVIO)', black: 'BLACK 🌙 (-50% DANO)', thunder: 'THUNDER ⚡ (RAIOS)' };
+          this.toast(`CLIMA: ${wNames[this.activeWeather.type] || this.activeWeather.type.toUpperCase()}!`);
+          GB.Sfx.power && GB.Sfx.power();
+        }
         this.updateWeatherHUD();
       }
       
@@ -1277,6 +1320,7 @@
     }
 
     finish(winner) {
+      if (this.phase === 'over') return;
       this.phase = 'over';
       this.winner = winner;
       this.processTankDeaths();
@@ -1434,16 +1478,16 @@
         });
       }
       I.handlers.fireStart = () => {
-        if (!this.isMyTurn() || this.charging) return;
+        if (!this.isMyTurn() || this.charging || !this.active) return;
         this.charging = true;
         this.power = 0;
       };
       I.handlers.fireEnd = () => {
-        if (!this.isMyTurn() || !this.charging) return;
+        if (!this.isMyTurn() || !this.charging || !this.active) return;
         this.fire(this.active.shotSel, Math.max(1, this.power));
       };
       I.handlers.shot = (i) => {
-        if (!this.isMyTurn()) return;
+        if (!this.isMyTurn() || !this.active) return;
         const t = this.active;
         if (i === 2 && t.ssCooldown > 0) { this.toast(`SS em cooldown (${t.ssCooldown} turnos)`); return; }
         if (i === 2 && (this.itemActive === 'dual' || this.itemActive === 'dualplus')) {
@@ -1568,11 +1612,10 @@
       }
 
       if (this.phase !== 'over' && this.phase !== 'waitSync') {
-         const { over } = this.checkMatchOver();
+         const { over, winner } = this.checkMatchOver();
          if (over && (this.phase === 'aim' || this.phase === 'pass')) {
             this.processTankDeaths();
-            this.endTurn();
-            return;
+            return this.finish(winner);
          }
       }
 
@@ -1749,8 +1792,15 @@
 
         const falling = this.tanks.some((tk) => tk.alive && tk.falling);
         const hasActiveRobots = this.robots && this.robots.some(r => r.type === 'ss' || (r.type === 'mini' && r.pendingWalk > 0));
-        this.settleT = (falling || hasActiveWaves || hasPendingShocks || hasActiveRobots || hasSSPushes) ? 0 : this.settleT + dt;
+        const waitingForPhysics = (falling || hasActiveWaves || hasPendingShocks || hasActiveRobots || hasSSPushes);
+        this.settleWaitTime = (this.settleWaitTime || 0) + dt;
+        if (waitingForPhysics && this.settleWaitTime < 4.0) {
+          this.settleT = 0;
+        } else {
+          this.settleT += dt;
+        }
         if (this.settleT > 0.7) {
+            this.settleWaitTime = 0;
             if (this.napalms && this.napalms.length > 0 && !this.napalmProcessed) {
                 this.napalmProcessed = true;
                 for (const n of this.napalms) {
@@ -3058,7 +3108,8 @@
       if (t) {
         for (let i = 0; i < 3; i++) {
           const btn = document.getElementById(`item-btn-${i}`);
-          const item = t.items[i];
+          if (!btn) continue;
+          const item = (t.items && t.items[i]) || null;
           if (!item) { this.setStyle(btn, 'ib'+i, 'display', 'none'); continue; }
           this.setStyle(btn, 'ib'+i, 'display', 'flex');
           const html = GB.itemLabelHTML(item);
