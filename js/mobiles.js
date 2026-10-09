@@ -1,4 +1,4 @@
-/* Definição dos mobiles (Armor, Bigfoot, Grub): atributos, padrões de tiro e desenho vetorial. */
+/* Definição dos mobiles (Mortar, Yeti, Worm): atributos, padrões de tiro e desenho vetorial. */
 (function (GB) {
   'use strict';
 
@@ -25,7 +25,7 @@
   const MOBILES = {
     armor: {
       id: 'armor',
-      name: 'Armor',
+      name: 'Mortar',
       desc: 'Equilibrado e fácil de usar. Ótimo para começar.',
       hp: 1000, speed: 46, maxClimb: 3.5, fuelPerPx: 0.32, windInfl: 1.0,
       defense: 0.10,
@@ -170,6 +170,7 @@
   GB.MOBILES.nak = MOBILES.khan;
   GB.MOBILES.yeti = MOBILES.bigfoot;
   GB.MOBILES.worm = MOBILES.grub;
+  GB.MOBILES.mortar = MOBILES.armor;
   GB.MOBILE_IDS = ['armor', 'bigfoot', 'grub', 'dj', 'launcher', 'khan', 'doc', 'frigo', 'driller', 'kuda'];
 
   GB.THOR = {
@@ -2707,6 +2708,7 @@
   draw.nak = draw.khan;
   draw.yeti = draw.bigfoot;
   draw.worm = draw.grub;
+  draw.mortar = draw.armor;
   GB.drawMobile = function (ctx, id, angle, team) {
     const fn = draw[id] || (id === 'nak' ? draw.khan : null) || draw.armor;
     if (fn) fn(ctx, angle, team || '#fff');
@@ -2739,6 +2741,7 @@
   GB.AVATAR_ANCHORS.nak = GB.AVATAR_ANCHORS.khan;
   GB.AVATAR_ANCHORS.yeti = GB.AVATAR_ANCHORS.bigfoot;
   GB.AVATAR_ANCHORS.worm = GB.AVATAR_ANCHORS.grub;
+  GB.AVATAR_ANCHORS.mortar = GB.AVATAR_ANCHORS.armor;
 
   // Pré-carregamento dos sprites dos avatares
   GB.avatarImages = {};
