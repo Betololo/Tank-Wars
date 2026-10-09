@@ -6,8 +6,8 @@
 
   class Tank {
     constructor(opts) {
-      this.mobile = (opts && GB.MOBILES[opts.mobileId]) || GB.MOBILES.armor;
-      this.mobileId = opts.mobileId || 'armor';
+      this.mobile = (opts && (opts.mobile || GB.MOBILES[opts.mobileId])) || GB.MOBILES.armor;
+      this.mobileId = (opts && opts.mobileId) || (this.mobile && this.mobile.id) || 'armor';
       this.avatarId = (opts && opts.avatarId) || 'a';
       this.team = opts.team;
       this.name = opts.name;
@@ -35,8 +35,8 @@
       this.tripleKillAura = false;
       this.hasCrown = false;
       this.wheelRot = 0;
-      this.niceShotBubbleTimer = 0;
-      this.fuel = GB.MAX_FUEL;
+      this.maxFuel = (this.mobile && this.mobile.fuel != null) ? this.mobile.fuel : GB.MAX_FUEL;
+      this.fuel = this.maxFuel;
       this.alive = true;
       this.tilt = 0;
       this.lastPower = -1;

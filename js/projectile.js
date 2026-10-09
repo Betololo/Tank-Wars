@@ -129,7 +129,7 @@
         let grav = GB.GRAVITY;
         if (this.isThorBeam) grav = 0; // Raio laser do Thor viaja reto direto ao alvo
         if (this.drilling) grav = GB.GRAVITY * 0.25;
-        if (this.underground) grav = -2 * GB.GRAVITY; // Khan T2 aceleração vertical multiplicada por -2 embaixo da terra
+        if (this.underground) grav = -3 * GB.GRAVITY; // Khan T2 aceleração vertical multiplicada por -3 embaixo da terra
 
         let currentAx = ax;
         if (this.underground) currentAx *= 1.5; // Vento fica 1.5x mais forte debaixo da terra para o efeito ser visível na medida certa

@@ -494,7 +494,8 @@
         tk.aliveAtTurnStart = tk.alive;
         tk.turnDamage = 0;
       });
-      t.fuel = GB.MAX_FUEL;
+      t.maxFuel = (t.mobile && t.mobile.fuel != null) ? t.mobile.fuel : GB.MAX_FUEL;
+      t.fuel = t.maxFuel;
       this.timer = GB.TURN_TIME;
       this.power = 0;
       this.targetPower = 0;
@@ -1741,7 +1742,8 @@
               // Renasce o jogador!
               t.alive = true;
               t.hp = t.maxHp;
-              t.fuel = GB.MAX_FUEL;
+              t.maxFuel = (t.mobile && t.mobile.fuel != null) ? t.mobile.fuel : GB.MAX_FUEL;
+              t.fuel = t.maxFuel;
               t.isWaitingRespawn = false;
               t.deathShown = false;
               t.fellOff = false;
@@ -1813,7 +1815,8 @@
             dka: t.doubleKillAura ? 1 : 0,
             tka: t.tripleKillAura ? 1 : 0,
             cr: t.hasCrown ? 1 : 0,
-            shd: t.hasShades ? 1 : 0
+            shd: t.hasShades ? 1 : 0,
+            fu: Math.round(t.fuel)
           })),
           teamLives: this.teamLives,
           delays: this.tanks.map(t => t.delay),
@@ -1923,6 +1926,7 @@
           t.tripleKillAura = !!s.tka;
           t.hasCrown = !!s.cr;
           t.hasShades = !!s.shd;
+          if (s.fu !== undefined) t.fuel = s.fu;
           t.updateTilt(true);
         });
       }
@@ -3850,7 +3854,9 @@
          document.getElementById('angle-last-val').textContent = '';
       }
       
-      this.setStyle(d.fuel, 'fu', 'width', t.fuel.toFixed(0) + '%');
+      const maxF = (t.maxFuel || (t.mobile && t.mobile.fuel) || GB.MAX_FUEL);
+      const fuelPct = maxF > 0 ? Math.max(0, Math.min(100, (t.fuel / maxF) * 100)) : 0;
+      this.setStyle(d.fuel, 'fu', 'width', fuelPct.toFixed(1) + '%');
       this.setStyle(d.power, 'pw', 'width', this.power.toFixed(1) + '%');
       this.setStyle(d.powerLast, 'pl', 'left', `calc(${Math.max(0, t.lastPower)}% - 1px)`);
       this.setStyle(d.powerLast, 'plo', 'opacity', t.lastPower >= 0 ? '1' : '0');
