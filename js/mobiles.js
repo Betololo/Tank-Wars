@@ -125,7 +125,7 @@
     frigo: {
       id: 'frigo',
       name: 'Frigo',
-      desc: 'Robô-gorila de gelo: disparos orbitais independentes. Cada stack de Blizzard reduz ângulo, mobilidade e 15% da defesa. Com 5 stacks congela e perde o turno.',
+      desc: 'Robô-gorila de gelo: disparos orbitais independentes. Cada stack de Blizzard reduz ângulo, mobilidade e 7% da defesa. Com 5 stacks congela e perde o turno.',
       hp: 960, speed: 42, maxClimb: 6.0, fuel: 30, fuelPerPx: 0.32, windInfl: 0.9,
       defense: 0.04,
       stats: { HP: 0.6, Dano: 0.65, Destruição: 0.45, Mobilidade: 0.55 },

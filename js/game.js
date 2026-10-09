@@ -1284,13 +1284,13 @@
         if (blizzardGain > 0) {
            const oldStacks = t.blizzardStacks || 0;
            t.blizzardStacks = Math.min(5, oldStacks + blizzardGain);
-           t.defDebuff = t.blizzardStacks * 0.15; // 15% por stack acumulado
+           t.defDebuff = t.blizzardStacks * 0.07; // 7% por stack acumulado
            const actualGain = t.blizzardStacks - oldStacks;
            t.angle = GB.clamp(t.angle, t.effectiveMinAngle, t.effectiveMaxAngle);
            if (t.blizzardStacks >= 5) {
               t.frozen = true;
               this.effects.text(c.x, c.y - 50, 'CONGELADO! (5/5 ❄)', '#79b9e7', true);
-              this.effects.text(c.x, c.y - 68, '-75% DEF (+75% DANO)', '#ff7043', true);
+              this.effects.text(c.x, c.y - 68, '-35% DEF (+35% DANO)', '#ff7043', true);
            } else if (actualGain > 0) {
               this.effects.text(c.x, c.y - 50, `+${actualGain} ❄ (${t.blizzardStacks}/5)`, '#79b9e7', true);
               this.effects.text(c.x, c.y - 68, `-${Math.round(t.defDebuff * 100)}% DEF (+${Math.round(t.defDebuff * 100)}% DANO)`, '#ff7043', true);
@@ -1816,7 +1816,12 @@
             tka: t.tripleKillAura ? 1 : 0,
             cr: t.hasCrown ? 1 : 0,
             shd: t.hasShades ? 1 : 0,
-            fu: Math.round(t.fuel)
+            fu: Math.round(t.fuel),
+            bz: t.blizzardStacks || 0,
+            fz: t.frozen ? 1 : 0,
+            ddb: +(t.defDebuff || 0).toFixed(2),
+            dfb: +(t.defBuff || 0).toFixed(2),
+            adb: +(t.atkDebuff || 0).toFixed(2)
           })),
           teamLives: this.teamLives,
           delays: this.tanks.map(t => t.delay),
@@ -1927,6 +1932,11 @@
           t.hasCrown = !!s.cr;
           t.hasShades = !!s.shd;
           if (s.fu !== undefined) t.fuel = s.fu;
+          if (s.bz !== undefined) t.blizzardStacks = s.bz;
+          if (s.fz !== undefined) t.frozen = !!s.fz;
+          if (s.ddb !== undefined) t.defDebuff = s.ddb;
+          if (s.dfb !== undefined) t.defBuff = s.dfb;
+          if (s.adb !== undefined) t.atkDebuff = s.adb;
           t.updateTilt(true);
         });
       }
