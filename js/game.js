@@ -1328,19 +1328,17 @@
       if (this.modeType === 'score') {
         const aliveA = this.tanks.filter(t => t.team === 0 && t.alive).length;
         const aliveB = this.tanks.filter(t => t.team === 1 && t.alive).length;
-        const waitingA = this.tanks.some(t => t.team === 0 && t.isWaitingRespawn);
-        const waitingB = this.tanks.some(t => t.team === 1 && t.isWaitingRespawn);
         
-        // No modo Score: perde apenas se não houver NINGUÉM vivo E NINGUÉM aguardando respawn (vidas esgotadas)
-        const teamAWiped = aliveA === 0 && !waitingA;
-        const teamBWiped = aliveB === 0 && !waitingB;
+        // No modo Score: perde se o time for completamente eliminado (todo mundo morto ao mesmo tempo) OU zerando as vidas
+        const teamAWiped = aliveA === 0;
+        const teamBWiped = aliveB === 0;
         
         if (teamAWiped && teamBWiped) {
           return { over: true, winner: -1, alive: [] };
         } else if (teamAWiped) {
-          return { over: true, winner: 1, alive: this.tanks.filter(t => t.alive) };
+          return { over: true, winner: 1, alive: this.tanks.filter(t => t.team === 1 && t.alive) };
         } else if (teamBWiped) {
-          return { over: true, winner: 0, alive: this.tanks.filter(t => t.alive) };
+          return { over: true, winner: 0, alive: this.tanks.filter(t => t.team === 0 && t.alive) };
         }
         return { over: false, winner: -1, alive: this.tanks.filter(t => t.alive) };
       }
@@ -1366,12 +1364,11 @@
             if (curLives > 0) {
               this.teamLives[t.team] = curLives - 1;
               t.isWaitingRespawn = true;
-              const aliveCount = this.tanks.filter(o => o.alive && o !== t).length;
-              t.respawnTimer = Math.max(1, Math.min(aliveCount, 4));
+              t.respawnTimer = 4; // Nasce exatamente após 4 turnos
               t.respawnTargetX = Math.round(t.x);
               this.toast(t.fellOff
-                ? `💀 ${t.name} caiu! (Vidas restantes: ${this.teamLives[t.team]} | Respawn em ${t.respawnTimer} turnos)`
-                : `💀 ${t.name} K.O.! (Vidas restantes: ${this.teamLives[t.team]} | Respawn em ${t.respawnTimer} turnos)`, 3000);
+                ? `💀 ${t.name} caiu! (Vidas restantes: ${this.teamLives[t.team]} | Respawn em 4 turnos - Clique no mapa para escolher onde renascer!)`
+                : `💀 ${t.name} K.O.! (Vidas restantes: ${this.teamLives[t.team]} | Respawn em 4 turnos - Clique no mapa para escolher onde renascer!)`, 4000);
             } else {
               t.isWaitingRespawn = false;
               this.toast(t.fellOff ? `💀 ${t.name} caiu! Sem vidas de equipe restantes.` : `💀 ${t.name} K.O.! Sem vidas de equipe.`, 3000);
@@ -1736,24 +1733,27 @@
         this.evaluateEpicTurnEvents();
       }
 
+      // Se um dos times foi completamente eliminado (ou ambos), a vitória é imediata!
+      const earlyOver = this.checkMatchOver();
+      if (earlyOver.over) {
+        if (this.mode === 'online' && this.cfg && this.cfg.isHost) {
+          const wind = this.newWind();
+          this.send({
+            t: 'sync', turn: this.turn, wind, over: true, winner: earlyOver.winner,
+            tanks: this.tanks.map((t) => ({
+              x: t.x, y: t.y, hp: t.hp, al: t.alive, ss: t.ssCooldown, f: t.facing, a: t.angle, lp: t.lastPower,
+              dd: t.dmgDealt, u2: t.item2Unlocked, i2u: t.item2Used,
+              wr: t.isWaitingRespawn, rt: t.respawnTimer, rx: t.respawnTargetX,
+              sh: t.hasShield ? 1 : 0, oc: t.overcharged ? 1 : 0, asu: t.avatarSkillUsed ? 1 : 0,
+              fa: t.flameAura ? 1 : 0, dka: t.doubleKillAura ? 1 : 0, tka: t.tripleKillAura ? 1 : 0, cr: t.hasCrown ? 1 : 0
+            }))
+          });
+        }
+        return this.finish(earlyOver.winner);
+      }
+
       // Processa respawn no modo Score
       if (this.modeType === 'score') {
-        // Se não há nenhum jogador vivo em campo, zera o timer do próximo a renascer para não travar
-        if (!this.tanks.some(t => t.alive)) {
-          let minTimer = Infinity;
-          for (const t of this.tanks) {
-            if (!t.alive && t.isWaitingRespawn && t.respawnTimer < minTimer) {
-              minTimer = t.respawnTimer;
-            }
-          }
-          if (minTimer !== Infinity) {
-            for (const t of this.tanks) {
-              if (!t.alive && t.isWaitingRespawn) {
-                t.respawnTimer = Math.max(0, t.respawnTimer - minTimer);
-              }
-            }
-          }
-        }
 
         for (const t of this.tanks) {
           if (!t.alive && t.isWaitingRespawn) {
@@ -2151,18 +2151,24 @@
     bindInput() {
       const I = GB.Input;
 
-      // Clique no canvas para escolher onde renascer no modo Score
+      // Clique ou toque no canvas para escolher onde renascer no modo Score
       const canvasEl = document.getElementById('game');
       if (canvasEl && !this._boundRespawnClick) {
         this._boundRespawnClick = true;
-        canvasEl.addEventListener('click', (e) => {
+        let pDownPos = null;
+        canvasEl.addEventListener('pointerdown', (e) => {
+          pDownPos = { x: e.clientX, y: e.clientY };
+        });
+        canvasEl.addEventListener('pointerup', (e) => {
           if (this.modeType !== 'score') return;
+          if (pDownPos && Math.hypot(e.clientX - pDownPos.x, e.clientY - pDownPos.y) > 12) return; // Se arrastou a câmera, não conta como clique
           const myTank = this.tanks.find(t => t.kind === 'human');
           if (myTank && !myTank.alive && myTank.isWaitingRespawn) {
             const rect = canvasEl.getBoundingClientRect();
             const sx = (e.clientX - rect.left);
-            const wx = (sx - canvasEl.clientWidth / 2) / this.cam.zoom + this.cam.x;
-            const targetX = Math.round(Math.max(60, Math.min(this.terrain.W - 60, wx)));
+            const wx = this.cam.x + sx / this.cam.zoom;
+            const maxW = this.terrain ? this.terrain.W : GB.WORLD_W;
+            const targetX = Math.round(Math.max(60, Math.min(maxW - 60, wx)));
             myTank.respawnTargetX = targetX;
             this.toast(`🎯 Ponto de respawn marcado em X: ${targetX} (Respawn em ${myTank.respawnTimer} turnos)`);
             GB.Sfx.click();
@@ -2183,7 +2189,8 @@
           if (myTank && !myTank.alive && myTank.isWaitingRespawn) {
             const rect = mm.getBoundingClientRect();
             const ratio = (e.clientX - rect.left) / rect.width;
-            const targetX = Math.round(Math.max(60, Math.min(this.terrain.W - 60, ratio * GB.WORLD_W)));
+            const maxW = this.terrain ? this.terrain.W : GB.WORLD_W;
+            const targetX = Math.round(Math.max(60, Math.min(maxW - 60, ratio * maxW)));
             myTank.respawnTargetX = targetX;
             this.toast(`🎯 Ponto de respawn marcado em X: ${targetX} (Respawn em ${myTank.respawnTimer} turnos)`);
             GB.Sfx.click();
@@ -3788,6 +3795,30 @@
         c.fillStyle = t.color;
         c.beginPath(); c.arc(t.x * sx, (t.y - 10) * sy, 4, 0, 7); c.fill();
         c.strokeStyle = '#fff'; c.lineWidth = 1; c.stroke();
+      }
+      if (this.modeType === 'score') {
+        for (const t of this.tanks) {
+          if (!t.alive && t.isWaitingRespawn) {
+            const rx = t.respawnTargetX || t.x;
+            const rSy = this.terrain ? this.terrain.surfaceBelow(rx, 0) : 400;
+            c.save();
+            c.strokeStyle = t.color || '#ff4444';
+            c.lineWidth = 1.5;
+            c.beginPath();
+            c.moveTo(rx * sx, 0);
+            c.lineTo(rx * sx, rSy * sy);
+            c.stroke();
+
+            c.fillStyle = '#ffffff';
+            c.beginPath();
+            c.arc(rx * sx, rSy * sy, 3.5, 0, Math.PI * 2);
+            c.fill();
+            c.strokeStyle = t.color || '#ff4444';
+            c.lineWidth = 1.5;
+            c.stroke();
+            c.restore();
+          }
+        }
       }
       if (this.thor && this.thor.active) {
         c.fillStyle = '#00e5ff';
