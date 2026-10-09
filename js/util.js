@@ -102,6 +102,55 @@ window.GB = window.GB || {};
     win() { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => this.tone(f, 0.25, 0.12, 'triangle'), i * 120)); },
     lose() { [392, 330, 262].forEach((f, i) => setTimeout(() => this.tone(f, 0.3, 0.12, 'triangle'), i * 160)); },
     charge(p) { this.tone(200 + p * 6, 0.05, 0.03, 'sine'); },
+    epicNiceShot() {
+      [784, 1046, 1318].forEach((f, i) => setTimeout(() => this.tone(f, 0.22, 0.18, 'triangle'), i * 80));
+      GB.speakEpic('Nice shot!', 1.15, 1.2);
+    },
+    epicSuperShot() {
+      this.boom(1.8);
+      this.tone(130, 0.5, 0.35, 'sawtooth', 45);
+      [261, 329, 392, 523].forEach((f, i) => setTimeout(() => this.tone(f, 0.3, 0.16, 'sawtooth'), i * 90));
+      GB.speakEpic('Super shot!', 1.05, 0.95);
+    },
+    epicDoubleKill() {
+      this.boom(1.2);
+      setTimeout(() => {
+        this.boom(1.5);
+        this.tone(440, 0.35, 0.25, 'triangle', 880);
+      }, 140);
+      GB.speakEpic('Double kill!', 1.1, 1.0);
+    },
+    epicTripleKill() {
+      this.tone(300, 0.35, 0.25, 'sawtooth', 800);
+      setTimeout(() => {
+        this.boom(1.9);
+        [587, 740, 880, 1174].forEach((f, i) => setTimeout(() => this.tone(f, 0.3, 0.18, 'sawtooth'), i * 75));
+      }, 120);
+      GB.speakEpic('Triple kill!', 1.05, 0.85);
+    },
+    epicTeamWipe() {
+      this.boom(2.2);
+      [523, 659, 784, 1046, 1318].forEach((f, i) => setTimeout(() => this.tone(f, 0.45, 0.22, 'triangle'), i * 130));
+      GB.speakEpic('Full team wipe!', 0.95, 0.8);
+    }
   };
   GB.Sfx = Sfx;
+
+  GB.speakEpic = function (phrase, rate = 1.1, pitch = 1.1) {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    try {
+      window.speechSynthesis.cancel();
+      const utt = new SpeechSynthesisUtterance(phrase);
+      utt.rate = rate;
+      utt.pitch = pitch;
+      utt.volume = 1.0;
+      utt.lang = 'en-US';
+      const voices = window.speechSynthesis.getVoices();
+      if (voices && voices.length) {
+        const en = voices.find(v => v.lang && v.lang.startsWith('en')) || voices[0];
+        if (en) utt.voice = en;
+      }
+      window.speechSynthesis.speak(utt);
+    } catch (e) {}
+  };
 })(window.GB);

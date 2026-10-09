@@ -30,6 +30,10 @@
       this.shieldCharges = 0;
       this.overcharged = false;
       this.avatarSkillUsed = false;
+      this.flameAura = false;
+      this.hasCrown = false;
+      this.hasShades = false;
+      this.niceShotBubbleTimer = 0;
       this.fuel = GB.MAX_FUEL;
       this.alive = true;
       this.tilt = 0;
@@ -80,6 +84,7 @@
     updatePhysics(dt) {
       if (!this.alive) return false;
       this.hurt = Math.max(0, this.hurt - dt);
+      if (this.niceShotBubbleTimer > 0) this.niceShotBubbleTimer = Math.max(0, this.niceShotBubbleTimer - dt);
       this.dispHp = GB.lerp(this.dispHp, this.hp, Math.min(1, dt * 6));
       // Se o chão sumiu por baixo da posição atual, ajusta para baixo
       if (!this.supported()) {
@@ -282,6 +287,31 @@
         ctx.restore();
       }
 
+      // Aura de Super Shot (1000+ dano): chamas douradas incandescentes
+      if (this.flameAura) {
+        ctx.save();
+        const tSec = Date.now() * 0.005;
+        const auraR = 34 + Math.sin(tSec * 5.0) * 5;
+        const g = ctx.createRadialGradient(this.x, this.y - 14, 8, this.x, this.y - 14, auraR);
+        g.addColorStop(0, 'rgba(255, 230, 80, 0.65)');
+        g.addColorStop(0.5, 'rgba(255, 120, 20, 0.4)');
+        g.addColorStop(1, 'rgba(255, 60, 0, 0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y - 14, auraR, 0, Math.PI * 2);
+        ctx.fill();
+
+        for (let i = 0; i < 4; i++) {
+          const offX = Math.sin(tSec * 4 + i * 1.8) * 20;
+          const offY = -14 - ((tSec * 35 + i * 12) % 32);
+          ctx.beginPath();
+          ctx.arc(this.x + offX, this.y + offY, 5, 0, Math.PI * 2);
+          ctx.fillStyle = (i % 2 === 0) ? 'rgba(255, 220, 50, 0.55)' : 'rgba(255, 110, 20, 0.45)';
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
       ctx.save();
       ctx.translate(this.x + shake, this.y + 1);
       ctx.rotate(this.tilt);
@@ -290,10 +320,41 @@
       ctx.beginPath(); ctx.ellipse(0, 0, 24, 4, 0, 0, 7); ctx.fill();
       ctx.scale(this.facing, 1);
       if (this.avatarId && GB.drawAvatar) {
-        GB.drawAvatar(ctx, this.avatarId, this.mobileId);
+        GB.drawAvatar(ctx, this.avatarId, this.mobileId, null, { hasCrown: this.hasCrown, hasShades: this.hasShades });
       }
       GB.drawMobile(ctx, this.mobileId, this.relativeAngle, this.color);
       ctx.restore();
+
+      // Balãozinho "👍 NICE!" para Nice Shot
+      if (this.niceShotBubbleTimer > 0) {
+        ctx.save();
+        const bAlpha = Math.min(1, this.niceShotBubbleTimer);
+        ctx.globalAlpha = bAlpha;
+        const bx = this.x;
+        const by = this.y - 70;
+        ctx.font = "bold 13px 'Outfit', sans-serif";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        ctx.fillStyle = '#ffe066';
+        ctx.strokeStyle = '#b38600';
+        ctx.lineWidth = 2;
+        GB.roundRect(ctx, bx - 32, by - 12, 64, 24, 6);
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(bx - 4, by + 12);
+        ctx.lineTo(bx, by + 17);
+        ctx.lineTo(bx + 4, by + 12);
+        ctx.fillStyle = '#ffe066';
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#221100';
+        ctx.fillText('👍 NICE!', bx, by);
+        ctx.restore();
+      }
 
       // Cúpula protetora de Escudo (Avatar A): bolha ciano brilhante
       if (this.hasShield) {

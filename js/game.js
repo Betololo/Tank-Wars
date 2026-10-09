@@ -410,6 +410,8 @@
     registerEnemyDamage(attacker, target, dmg) {
       if (!attacker || !target || attacker.team === target.team || dmg <= 0) return;
       attacker.dmgDealt = (attacker.dmgDealt || 0) + dmg;
+      attacker.turnDamage = (attacker.turnDamage || 0) + dmg;
+      this.turnEnemyDamage = (this.turnEnemyDamage || 0) + dmg;
       if (!attacker.item2Unlocked && attacker.dmgDealt >= 900) {
         attacker.item2Unlocked = true;
         this.toast(`🔓 ${attacker.name} causou 900+ de dano e desbloqueou o Item 2 (${attacker.items2 ? attacker.items2.toUpperCase() : 'ESPECIAL'})!`, 3500);
@@ -485,6 +487,13 @@
       }
 
       if (t.ssCooldown > 0) t.ssCooldown--;
+      this.turnShooter = t;
+      this.turnEnemyDamage = 0;
+      this.epicEventTriggeredThisTurn = false;
+      this.tanks.forEach(tk => {
+        tk.aliveAtTurnStart = tk.alive;
+        tk.turnDamage = 0;
+      });
       t.fuel = GB.MAX_FUEL;
       this.timer = GB.TURN_TIME;
       this.power = 0;
@@ -558,6 +567,13 @@
     fire(shotIdx, power, fromRemote, shooterTank) {
       const t = shooterTank || this.active;
       if (!t) return;
+      this.turnShooter = t;
+      this.turnEnemyDamage = 0;
+      this.epicEventTriggeredThisTurn = false;
+      this.tanks.forEach(tk => {
+        tk.aliveAtTurnStart = tk.alive;
+        tk.turnDamage = 0;
+      });
       if (!fromRemote && this.phase !== 'aim') return;
       if (shotIdx === 2 && t.ssCooldown > 0) shotIdx = 0;
       
@@ -1363,10 +1379,225 @@
       }
     }
 
+    evaluateEpicTurnEvents() {
+      if (this.epicEventTriggeredThisTurn) return;
+      const shooter = this.turnShooter || this.active;
+      if (!shooter) return;
+
+      const killedEnemies = this.tanks.filter(t => t.aliveAtTurnStart && !t.alive && t.team !== shooter.team);
+      const killCount = killedEnemies.length;
+      const turnDmg = this.turnEnemyDamage || (shooter.turnDamage || 0);
+
+      let epicKind = null;
+      if (killCount >= 4) {
+        epicKind = 'team_wipe';
+      } else if (killCount === 3) {
+        epicKind = 'triple_kill';
+      } else if (killCount === 2) {
+        epicKind = 'double_kill';
+      } else if (turnDmg >= 1000) {
+        epicKind = 'super_shot';
+      } else if (turnDmg >= 500) {
+        epicKind = 'nice_shot';
+      }
+
+      if (epicKind) {
+        this.epicEventTriggeredThisTurn = true;
+        if (epicKind === 'team_wipe') {
+          shooter.hasCrown = true;
+          shooter.hasShades = true;
+        }
+        if (epicKind === 'super_shot' || turnDmg >= 1000) {
+          shooter.flameAura = true;
+        }
+
+        const payload = {
+          kind: epicKind,
+          shooterIdx: shooter.playerIdx,
+          damage: turnDmg,
+          kills: killCount
+        };
+
+        if (this.mode === 'online' && this.cfg && this.cfg.isHost) {
+          GB.Net.broadcast({
+            t: 'epic_event',
+            ...payload
+          });
+        }
+        this.triggerEpicEvent(payload);
+      }
+    }
+
+    triggerEpicEvent(evt) {
+      if (!evt || !evt.kind) return;
+      const shooter = (evt.shooterIdx != null && this.tanks[evt.shooterIdx]) ? this.tanks[evt.shooterIdx] : (this.active || this.tanks[0]);
+      const shooterName = shooter ? shooter.name : 'Jogador';
+      const damage = evt.damage || 0;
+      const kills = evt.kills || 0;
+      this.lastEpicEventTime = Date.now();
+
+      let bannerClass = '';
+      let title = '';
+      let subtitle = '';
+      let icon = '';
+
+      switch (evt.kind) {
+        case 'nice_shot':
+          bannerClass = 'epic-banner-nice';
+          title = 'NICE SHOT!';
+          subtitle = `🎯 ${shooterName} causou ${damage} de dano!`;
+          icon = '🎯';
+          this.shake = Math.max(this.shake, 14);
+          if (shooter) shooter.niceShotBubbleTimer = 3.2;
+          GB.Sfx.epicNiceShot && GB.Sfx.epicNiceShot();
+          break;
+
+        case 'super_shot':
+          bannerClass = 'epic-banner-super';
+          title = 'SUPER SHOT!';
+          subtitle = `🔥 ${shooterName} causou ${damage} DE DANO!`;
+          icon = '🔥';
+          this.shake = Math.max(this.shake, 28);
+          if (shooter) shooter.flameAura = true;
+          this.showScreenFlash();
+          if (shooter) {
+            this.effects.emp(shooter.x, shooter.y, 80);
+          }
+          GB.Sfx.epicSuperShot && GB.Sfx.epicSuperShot();
+          break;
+
+        case 'double_kill':
+          bannerClass = 'epic-banner-double';
+          title = 'DOUBLE KILL!';
+          if (damage >= 1000) subtitle = `💀💀 ${shooterName} eliminou 2 inimigos! (SUPER SHOT! ${damage} DANO)`;
+          else if (damage >= 500) subtitle = `💀💀 ${shooterName} eliminou 2 inimigos! (NICE SHOT! ${damage} DANO)`;
+          else subtitle = `💀💀 ${shooterName} eliminou 2 inimigos no mesmo turno!`;
+          icon = '💀💀';
+          this.hitStopTimer = 0.08;
+          this.shake = Math.max(this.shake, 22);
+          if (shooter && damage >= 1000) shooter.flameAura = true;
+          GB.Sfx.epicDoubleKill && GB.Sfx.epicDoubleKill();
+          break;
+
+        case 'triple_kill':
+          bannerClass = 'epic-banner-triple';
+          title = 'TRIPLE KILL!';
+          if (damage >= 1000) subtitle = `⚡💀⚡ ${shooterName} eliminou 3 inimigos! (SUPER SHOT! ${damage} DANO)`;
+          else if (damage >= 500) subtitle = `⚡💀⚡ ${shooterName} eliminou 3 inimigos! (NICE SHOT! ${damage} DANO)`;
+          else subtitle = `⚡💀⚡ ${shooterName} eliminou 3 inimigos no mesmo turno!`;
+          icon = '⚡💀⚡';
+          this.hitStopTimer = 0.12;
+          this.shake = Math.max(this.shake, 32);
+          if (shooter) {
+            if (damage >= 1000) shooter.flameAura = true;
+            this.effects.cosmicLightning && this.effects.cosmicLightning(shooter.x, shooter.y - 12);
+          }
+          this.showScreenVignette('triple');
+          GB.Sfx.epicTripleKill && GB.Sfx.epicTripleKill();
+          break;
+
+        case 'team_wipe':
+          bannerClass = 'epic-banner-wipe';
+          title = 'FULL TEAM WIPE!';
+          subtitle = `👑 ${shooterName} DESTRUIU O TIME INTEIRO (4 KILLS)!`;
+          icon = '👑⚔️👑';
+          this.cinematicZoomTimer = 3.5;
+          this.shake = Math.max(this.shake, 40);
+          if (shooter) {
+            shooter.hasCrown = true;
+            shooter.hasShades = true;
+            if (damage >= 1000) shooter.flameAura = true;
+          }
+          this.showScreenVignette('wipe');
+          this.spawnConfetti();
+          GB.Sfx.epicTeamWipe && GB.Sfx.epicTeamWipe();
+          break;
+      }
+
+      this.displayEpicBanner(bannerClass, icon, title, subtitle);
+
+      const combatLog = document.getElementById('combat-log');
+      if (combatLog) {
+        const div = document.createElement('div');
+        div.innerHTML = `<b>${icon} ${title}:</b> ${subtitle}`;
+        combatLog.prepend(div);
+      }
+    }
+
+    displayEpicBanner(bannerClass, icon, title, subtitle) {
+      const overlay = document.getElementById('epic-banner-overlay');
+      if (!overlay) return;
+      overlay.innerHTML = '';
+      const banner = document.createElement('div');
+      banner.className = `epic-banner ${bannerClass}`;
+      banner.innerHTML = `
+        <div class="epic-badge-icon">${icon}</div>
+        <div class="epic-banner-text">
+          <div class="epic-title">${title}</div>
+          <div class="epic-sub">${subtitle}</div>
+        </div>
+      `;
+      overlay.appendChild(banner);
+      setTimeout(() => {
+        if (banner.parentNode) banner.parentNode.removeChild(banner);
+      }, 3300);
+    }
+
+    showScreenFlash() {
+      const overlay = document.getElementById('epic-banner-overlay');
+      if (!overlay) return;
+      const flash = document.createElement('div');
+      flash.className = 'epic-screen-flash';
+      overlay.appendChild(flash);
+      setTimeout(() => {
+        if (flash.parentNode) flash.parentNode.removeChild(flash);
+      }, 350);
+    }
+
+    showScreenVignette(type) {
+      const overlay = document.getElementById('epic-banner-overlay');
+      if (!overlay) return;
+      const vig = document.createElement('div');
+      vig.className = `epic-vignette epic-vignette-${type}`;
+      overlay.appendChild(vig);
+      setTimeout(() => {
+        if (vig.parentNode) vig.parentNode.removeChild(vig);
+      }, 3100);
+    }
+
+    spawnConfetti() {
+      const overlay = document.getElementById('epic-banner-overlay');
+      if (!overlay) return;
+      const colors = ['#ffd700', '#ff4757', '#2ed573', '#1e90ff', '#e056fd', '#ffa502'];
+      for (let i = 0; i < 45; i++) {
+        const p = document.createElement('div');
+        p.className = 'epic-confetti-particle';
+        const c = colors[Math.floor(Math.random() * colors.length)];
+        p.style.backgroundColor = c;
+        p.style.left = `${Math.random() * 98}vw`;
+        const size = 6 + Math.random() * 8;
+        p.style.width = `${size}px`;
+        p.style.height = `${size * 0.7}px`;
+        p.style.borderRadius = Math.random() > 0.5 ? '2px' : '50%';
+        const dur = 2.0 + Math.random() * 1.5;
+        p.style.animationDuration = `${dur}s`;
+        p.style.animationDelay = `${Math.random() * 0.5}s`;
+        overlay.appendChild(p);
+        setTimeout(() => {
+          if (p.parentNode) p.parentNode.removeChild(p);
+        }, (dur + 0.6) * 1000);
+      }
+    }
+
     endTurn() {
       this.closeSkillModals && this.closeSkillModals();
       // mortes
       this.processTankDeaths();
+
+      // Avaliação autoritativa de Efeitos Épicos no Host (ou local/bots)
+      if (this.mode !== 'online' || (this.cfg && this.cfg.isHost)) {
+        this.evaluateEpicTurnEvents();
+      }
 
       // Processa respawn no modo Score
       if (this.modeType === 'score') {
@@ -1444,7 +1675,10 @@
             wr: t.isWaitingRespawn, rt: t.respawnTimer, rx: t.respawnTargetX,
             sh: t.hasShield ? 1 : 0,
             oc: t.overcharged ? 1 : 0,
-            asu: t.avatarSkillUsed ? 1 : 0
+            asu: t.avatarSkillUsed ? 1 : 0,
+            fa: t.flameAura ? 1 : 0,
+            cr: t.hasCrown ? 1 : 0,
+            shd: t.hasShades ? 1 : 0
           })),
           teamLives: this.teamLives,
           delays: this.tanks.map(t => t.delay),
@@ -1549,6 +1783,9 @@
           t.shieldCharges = s.sh ? 1 : 0;
           t.overcharged = !!s.oc;
           t.avatarSkillUsed = !!s.asu;
+          t.flameAura = !!s.fa;
+          t.hasCrown = !!s.cr;
+          t.hasShades = !!s.shd;
           t.updateTilt(true);
         });
       }
@@ -1604,7 +1841,8 @@
       this.phase = 'over';
       this.winner = winner;
       this.processTankDeaths();
-      setTimeout(() => { if (this.running) this.ui.gameOver(winner, this); }, 1600);
+      const delay = (this.lastEpicEventTime && (Date.now() - this.lastEpicEventTime < 3200)) ? 3600 : 1600;
+      setTimeout(() => { if (this.running) this.ui.gameOver(winner, this); }, delay);
     }
 
     // ================= Rede =================
@@ -1716,6 +1954,13 @@
           if (this.cfg && this.cfg.isHost) {
             GB.Net.broadcast(m);
           }
+        } else if (m.t === 'epic_event') {
+          this.triggerEpicEvent({
+            kind: m.kind,
+            shooterIdx: m.shooterIdx,
+            damage: m.damage,
+            kills: m.kills
+          });
         }
       }
     }
@@ -1930,6 +2175,13 @@
     }
 
     update(dt) {
+      if (this.hitStopTimer > 0) {
+        this.hitStopTimer -= dt;
+        return;
+      }
+      if (this.cinematicZoomTimer > 0) {
+        this.cinematicZoomTimer = Math.max(0, this.cinematicZoomTimer - dt);
+      }
       this.time += dt;
       if (this.thor && this.thor.active) {
         this.thor.curY = this.thor.y + Math.sin(this.time * 2.5) * 5;
@@ -3060,7 +3312,10 @@
 
     // ================= Câmera =================
     updateCamera(dt) {
-      const z = this.cam.zoom;
+      let z = this.cam.zoom;
+      if (this.cinematicZoomTimer > 0) {
+        z = Math.max(0.42, this.cam.zoom * 0.72);
+      }
       const vw = this.cw / z, vh = this.ch / z;
       if (!this.cam.manual) {
         let fx = null, fy = null;

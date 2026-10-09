@@ -1012,6 +1012,42 @@
       this.texts.push({ x, y, str, color, life: 1.4, max: 1.4, big });
     }
 
+    cosmicLightning(tx, ty) {
+      const segments = [];
+      let curX = tx + (Math.random() - 0.5) * 60;
+      let curY = 0;
+      const steps = 14;
+      const dy = ty / steps;
+      segments.push({ x: curX, y: curY });
+      for (let i = 1; i < steps; i++) {
+        curX += (Math.random() - 0.5) * 40;
+        curY += dy;
+        segments.push({ x: curX, y: curY });
+      }
+      segments.push({ x: tx, y: ty });
+
+      this.parts.push({
+        t: 'lightning',
+        segments,
+        life: 0.65,
+        max: 0.65,
+        color: '#c084fc',
+        coreColor: '#ffffff'
+      });
+      for (let i = 0; i < 20; i++) {
+        this.parts.push({
+          t: 'spark',
+          x: tx, y: ty,
+          vx: GB.rand(-160, 160),
+          vy: GB.rand(-190, -30),
+          life: 0.5,
+          max: 0.5,
+          size: 3.5,
+          color: '#a855f7'
+        });
+      }
+    }
+
     update(dt) {
       for (const p of this.parts) {
         p.life -= dt;
@@ -1071,6 +1107,29 @@
           ctx.globalAlpha = k;
           ctx.fillStyle = p.color;
           ctx.beginPath(); ctx.arc(p.x, p.y, p.size * k + 0.5, 0, 7); ctx.fill();
+        } else if (p.t === 'lightning') {
+          const k = p.life / p.max;
+          ctx.save();
+          ctx.globalAlpha = k;
+          ctx.strokeStyle = p.color;
+          ctx.lineWidth = 8 * k + 1.5;
+          ctx.shadowColor = '#c084fc';
+          ctx.shadowBlur = 18;
+          ctx.beginPath();
+          p.segments.forEach((pt, idx) => {
+            if (idx === 0) ctx.moveTo(pt.x, pt.y);
+            else ctx.lineTo(pt.x, pt.y);
+          });
+          ctx.stroke();
+          ctx.strokeStyle = p.coreColor;
+          ctx.lineWidth = 3 * k;
+          ctx.beginPath();
+          p.segments.forEach((pt, idx) => {
+            if (idx === 0) ctx.moveTo(pt.x, pt.y);
+            else ctx.lineTo(pt.x, pt.y);
+          });
+          ctx.stroke();
+          ctx.restore();
         }
       }
       ctx.globalCompositeOperation = 'source-over';

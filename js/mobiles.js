@@ -2762,7 +2762,7 @@
   });
 
   // Renderiza o avatar montado atrás do veículo
-  GB.drawAvatar = function (ctx, avatarId, mobileId, customScale) {
+  GB.drawAvatar = function (ctx, avatarId, mobileId, customScale, opts) {
     const aid = avatarId || 'a';
     const img = GB.avatarImages && GB.avatarImages[aid];
     if (!img || !img.complete || !img.naturalWidth) return;
@@ -2781,6 +2781,54 @@
     const dh = img.naturalHeight * s;
 
     ctx.drawImage(img, -ox, -oy, dw, dh);
+
+    // Óculos escuros pixel-art "Deal with it" do Full Team Wipe
+    if (opts && opts.hasShades) {
+      ctx.save();
+      const eyeX = (138 * s) - ox;
+      const eyeY = (168 * s) - oy;
+      const sw = 50 * s;
+      const sh = 14 * s;
+      ctx.fillStyle = '#050505';
+      ctx.fillRect(eyeX - sw * 0.45, eyeY, sw * 0.9, sh);
+      // Brilhos brancos pixelados
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(eyeX - sw * 0.38, eyeY + 2 * s, 4 * s, 4 * s);
+      ctx.fillRect(eyeX + sw * 0.08, eyeY + 2 * s, 4 * s, 4 * s);
+      ctx.restore();
+    }
+
+    // Coroa Real Dourada do Full Team Wipe
+    if (opts && opts.hasCrown) {
+      ctx.save();
+      const crownX = (135 * s) - ox;
+      const crownY = (75 * s) - oy - 10;
+      const cw = 44 * s;
+      const ch = 24 * s;
+
+      ctx.fillStyle = '#ffd700';
+      ctx.strokeStyle = '#b8860b';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(crownX - cw / 2, crownY + ch / 2);
+      ctx.lineTo(crownX + cw / 2, crownY + ch / 2);
+      ctx.lineTo(crownX + cw * 0.45, crownY - ch / 2);
+      ctx.lineTo(crownX + cw * 0.2, crownY - ch * 0.1);
+      ctx.lineTo(crownX, crownY - ch / 2);
+      ctx.lineTo(crownX - cw * 0.2, crownY - ch * 0.1);
+      ctx.lineTo(crownX - cw * 0.45, crownY - ch / 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Gemas vermelhas brilhantes
+      ctx.fillStyle = '#ff2244';
+      ctx.beginPath(); ctx.arc(crownX, crownY - ch / 2, 2.5 * s, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(crownX - cw * 0.45, crownY - ch / 2, 2.5 * s, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(crownX + cw * 0.45, crownY - ch / 2, 2.5 * s, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
     ctx.restore();
   };
 
