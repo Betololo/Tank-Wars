@@ -1107,8 +1107,9 @@
          const shot = p.shot;
          const r = (subOpts && subOpts.r) || shot.r;
          const isDocHeal = shot.isDoc_T2 || shot.isDoc_SS;
-         const noCarve = shot.isDJ_SS || isDocHeal || shot.isFrigoSS || shot.isDrillerT1 || shot.isDrillerT2 || shot.isDrillerSSMarker || shot.isKudaT2 || (subOpts && subOpts.noCarve);
+         const noCarve = shot.isDJ_SS || isDocHeal || shot.isFrigoSS || shot.isDrillerT1 || shot.isDrillerT2 || shot.isDrillerSSMarker || shot.isKudaT2 || shot.isWormSS || (subOpts && subOpts.noCarve);
          if (!noCarve) this.terrain.carve(x, y, r);
+         else if (shot.isWormSS) this.terrain.carve(x, y, 25); // Cava um pouco o solo (cratera de 25px ao invés do raio de dano 56)
          
          if (shot.isDJ_SS) {
              this.effects.explosion(x, y, r * 3, shot.color, this.terrainCss); // Animação maior sem cavar
@@ -1178,6 +1179,12 @@
              this.effects.explosion(x, y, 36, '#aa33ff', '#330066');
              GB.Sfx.boom(0.8);
              return;
+         } else if (shot.isWormSS) {
+             if (this.effects.wormSSExplosion) {
+               this.effects.wormSSExplosion(x, y, r);
+             } else {
+               this.effects.explosion(x, y, r * 1.25, '#d27bff', this.terrainCss);
+             }
          } else {
              this.effects.explosion(x, y, r, shot.color, this.terrainCss);
          }
@@ -2612,6 +2619,7 @@
            checkLivingEntity: (x, y) => this.checkLivingEntity(x, y),
            hitKudaSS: (p, target) => this.hitKudaSS(p, target),
            checkKudaLivingTarget: (p) => this.checkKudaLivingTarget(p),
+           wormSSPulse: (p, x, y) => this.wormSSPulse(p, x, y),
            getWeather: () => this.activeWeather,
            spawnWeatherFX: (type, x, y) => this.spawnWeatherFX(type, x, y)
         };
@@ -3438,6 +3446,44 @@
         }
         this.processDrillMines();
       }
+    }
+
+    wormSSPulse(p, x, y) {
+      const pulseR = 56;
+      let baseDmg = 50;
+      if (p.damageMult) baseDmg *= p.damageMult;
+      if (p.overchargeMult) baseDmg *= p.overchargeMult;
+      if (p.owner && p.owner.atkDebuff) baseDmg *= (1 - p.owner.atkDebuff);
+
+      for (const t of this.tanks) {
+        if (!t.alive) continue;
+        const c = t.center();
+        const d = GB.dist(c.x, c.y, x, y);
+        const reach = pulseR + t.mobile.hitR;
+        if (d >= reach) continue;
+
+        let dmgMultiplier = 1;
+        const distFromTankEdge = d - t.mobile.hitR;
+        if (distFromTankEdge > 0) {
+          dmgMultiplier = 1 - 0.5 * (distFromTankEdge / pulseR);
+        }
+        let finalDmg = baseDmg * dmgMultiplier;
+        if (t.defBuff) finalDmg *= (1 - t.defBuff);
+        if (t.defDebuff) finalDmg *= (1 + t.defDebuff);
+
+        const dealt = t.damage(finalDmg);
+        if (dealt > 0) {
+          this.effects.text(c.x, c.y - 30, '-' + dealt, t.team === p.owner.team ? '#ffb0b0' : '#fff35c', false);
+          if (p.owner) this.registerEnemyDamage(p.owner, t, dealt);
+        }
+      }
+
+      // Efeito visual do pulso (sem cavar o solo!)
+      if (this.effects.wormPulse) {
+        this.effects.wormPulse(x, y, pulseR);
+      }
+      this.shake = Math.min(10, this.shake + 1.8);
+      if (GB.Sfx.wormPulse) GB.Sfx.wormPulse();
     }
 
     explodeDrillMine(mine) {

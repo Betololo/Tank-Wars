@@ -61,8 +61,8 @@
       pivot: [-4, -21], barrel: 21, hitR: 18,
       shots: [
         { name: 'Tiro 1', delay: 730, bullets: [{}], r: 26, dmg: 250, size: 5, color: '#b6ff5c' },
-        { name: 'Tiro 2', delay: 930, bullets: [{ delay: 0, pm: 0.95 }, { delay: 0.08, pm: 1.0 }, { delay: 0.16, pm: 1.05 }, { delay: 0.24, pm: 0.9 }], r: 26, dmg: 100, size: 5, color: '#7dff9a', bouncy: true },
-        { name: 'SS', delay: 1400, bullets: [{}], r: 30, dmg: 125, size: 8, color: '#d27bff', trail: '#efc4ff', drill: 5, drillStep: 26 },
+        { name: 'Tiro 2', delay: 930, bullets: [{ delay: 0, pm: 1.0 }, { delay: 0.035, pm: 1.0 }, { delay: 0.07, pm: 1.0 }, { delay: 0.105, pm: 1.0 }], r: 26, dmg: 100, size: 5, color: '#7dff9a', bouncy: true },
+        { name: 'SS', delay: 1400, bullets: [{}], r: 56, dmg: 150, size: 8, color: '#d27bff', trail: '#efc4ff', bouncy: true, isWormSS: true },
       ],
     },
     dj: {

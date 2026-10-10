@@ -181,6 +181,13 @@ window.GB = window.GB || {};
       this.tone(560, 0.12, 0.18, 'triangle', 220);
       this.noise(0.12, 1600, 0.25);
     },
+    wormPulse() {
+      // Pulso bio-energético do SS do Worm a cada 0.3s
+      if (!this.ctx || !this.enabled) return;
+      this.tone(440, 0.075, 0.12, 'sine', 220);
+      this.tone(880, 0.045, 0.07, 'triangle');
+      this.noise(0.04, 3200, 0.08, 'bandpass');
+    },
     shootLightning(isT2) {
       // Doc: arco elétrico de plasma / descarga de alta voltagem
       this.tone(1800, 0.14, 0.3, 'sawtooth', 280);

@@ -28,10 +28,13 @@
       this.isFrigoT1 = !this.isTeleport && !isItem2Exclusive && !!o.shot.isFrigoT1;
       this.isFrigoT2 = !this.isTeleport && !isItem2Exclusive && !!o.shot.isFrigoT2;
       this.isFrigoSS = !this.isTeleport && !isItem2Exclusive && !!o.shot.isFrigoSS;
+      this.isWormSS = !this.isTeleport && !isItem2Exclusive && !!(o.shot && o.shot.isWormSS);
+      this.wormSSPulseTimer = 0;
       if (this.isTeleport || isItem2Exclusive) {
         this.bouncy = false;
         this.drillLeft = 0;
         this.drilling = false;
+        this.isWormSS = false;
       }
       this.isDrillerAirDrill = o.isDrillerAirDrill || false;
       this.isThorBeam = o.isThorBeam || (o.shot && o.shot.isThorBeam) || false;
@@ -327,6 +330,15 @@
 
         if (this.hasBounced) {
           this.bounceTimer += h;
+          if (this.isWormSS) {
+            this.wormSSPulseTimer = (this.wormSSPulseTimer || 0) + h;
+            if (this.wormSSPulseTimer >= 0.3) {
+              this.wormSSPulseTimer -= 0.3;
+              if (cb.wormSSPulse) {
+                cb.wormSSPulse(this, this.x, this.y);
+              }
+            }
+          }
           if (this.bounceTimer >= 3.0) {
             cb.explode(this, this.x, this.y, true);
             this.dead = true;
@@ -363,7 +375,7 @@
           for (const t of tanks) {
             if (!t.alive) continue;
             if (t === this.owner && this.age < 0.35) continue;
-            if (this.shot.isKhanT2 || this.shot.isDrillerT2) continue; // Khan T2 e Driller T2 ignoram contato direto com jogadores
+            if (this.shot.isKhanT2 || this.shot.isDrillerT2 || this.isWormSS) continue; // Khan T2, Driller T2 e Worm SS ignoram contato direto com jogadores
             const c = t.center();
             if (GB.dist(c.x, c.y, this.x, this.y) < t.mobile.hitR + (this.isDrillerAirDrill ? 4 : 0)) { hitTank = true; break; }
           }
@@ -873,6 +885,29 @@
         // Núcleo
         ctx.fillStyle = '#ffffff';
         ctx.beginPath(); ctx.arc(0, 0, sz * 0.8, 0, Math.PI * 2); ctx.fill();
+      } else if (this.isWormSS) {
+        // SS do Worm: Esfera bio-energética pulsante que quica, rola e emite pulsos
+        const sz = s.size || 8;
+        const pulse = this.hasBounced ? (1 + Math.sin(this.bounceTimer * 20) * 0.16) : (1 + Math.sin(this.age * 12) * 0.1);
+        const g = ctx.createRadialGradient(0, 0, 1, 0, 0, sz * 2.8 * pulse);
+        g.addColorStop(0, '#ffffff');
+        g.addColorStop(0.3, '#d27bff');
+        g.addColorStop(0.65, '#7dff9a');
+        g.addColorStop(1, 'rgba(125, 255, 154, 0)');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(0, 0, sz * 2.8 * pulse, 0, Math.PI * 2); ctx.fill();
+
+        // Anel giratório bio-plasmático
+        ctx.strokeStyle = this.hasBounced ? '#b6ff5c' : '#efc4ff';
+        ctx.lineWidth = 2.0;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, sz * 1.8, sz * 0.95, this.age * 12, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Núcleo biônico brilhante
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(0, 0, sz * 0.85, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#5a189a'; ctx.lineWidth = 1.2; ctx.stroke();
       } else {
         const g = ctx.createRadialGradient(-s.size * 0.3, -s.size * 0.3, 0, 0, 0, s.size * 2.2);
         g.addColorStop(0, '#fff');
@@ -1011,6 +1046,63 @@
           max: 0.8,
           size: GB.rand(2, 4),
           color: col
+        });
+      }
+    }
+
+    wormPulse(x, y, r) {
+      const P = this.parts;
+      // Pulso do SS do Worm: Onda e anéis bio-energéticos a cada 0.3s (sem cavar o solo)
+      P.push({ t: 'flash', x, y, r: r * 0.95, life: 0.22, max: 0.22 });
+      P.push({ t: 'ring', x, y, r: r, life: 0.30, max: 0.30 });
+      P.push({ t: 'ring', x, y, r: r * 0.6, life: 0.20, max: 0.20 });
+      for (let i = 0; i < 16; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const sp = GB.rand(60, 170);
+        const col = Math.random() < 0.5 ? '#d27bff' : (Math.random() < 0.8 ? '#7dff9a' : '#ffffff');
+        P.push({
+          t: 'spark',
+          x, y,
+          vx: Math.cos(a) * sp,
+          vy: Math.sin(a) * sp - 25,
+          life: GB.rand(0.25, 0.45),
+          max: 0.45,
+          size: GB.rand(2, 3.8),
+          color: col
+        });
+      }
+    }
+
+    wormSSExplosion(x, y, r) {
+      const P = this.parts;
+      // Explosão final aos 3 segundos do SS do Worm
+      P.push({ t: 'flash', x, y, r: r * 1.35, life: 0.32, max: 0.32 });
+      P.push({ t: 'ring', x, y, r: r * 1.15, life: 0.45, max: 0.45 });
+      P.push({ t: 'ring', x, y, r: r * 0.7, life: 0.35, max: 0.35 });
+      const n = Math.min(45, 15 + r * 0.6);
+      for (let i = 0; i < n; i++) {
+        const a = Math.random() * Math.PI * 2, sp = GB.rand(80, 260) * (r / 35);
+        P.push({
+          t: 'spark',
+          x, y,
+          vx: Math.cos(a) * sp,
+          vy: Math.sin(a) * sp - 60,
+          life: GB.rand(0.35, 0.75),
+          max: 0.75,
+          size: GB.rand(2, 4),
+          color: Math.random() < 0.4 ? '#d27bff' : (Math.random() < 0.8 ? '#7dff9a' : '#ffffff')
+        });
+      }
+      for (let i = 0; i < 8; i++) {
+        P.push({
+          t: 'smoke',
+          x: x + GB.rand(-r, r) * 0.4,
+          y: y + GB.rand(-r, r) * 0.4,
+          vx: GB.rand(-20, 20),
+          vy: GB.rand(-40, -15),
+          life: GB.rand(0.6, 1.2),
+          max: 1.2,
+          size: GB.rand(r * 0.3, r * 0.5)
         });
       }
     }
