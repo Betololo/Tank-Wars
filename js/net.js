@@ -160,7 +160,13 @@
               this.pings[fromId] = Math.max(1, Date.now() - (payload.t0 || Date.now()));
               return;
             }
-            if (this.onMessage) this.onMessage(payload, fromId);
+            if (this.onMessage) {
+              try {
+                this.onMessage(payload, fromId);
+              } catch (e) {
+                console.error('[Net Host] Erro ao processar mensagem:', e);
+              }
+            }
             return;
           }
         };
@@ -245,6 +251,7 @@
             clearTimeout(joinTimeout);
             this.code = msg.code || code;
             this.myId = msg.myId;
+            this.startPingLoop();
             cb.onConnect && cb.onConnect();
             return;
           }
@@ -269,7 +276,13 @@
               this.send({ t: 'pong', t0: payload.t0 });
               return;
             }
-            if (this.onMessage) this.onMessage(payload, fromId);
+            if (this.onMessage) {
+              try {
+                this.onMessage(payload, fromId);
+              } catch (e) {
+                console.error('[Net Guest] Erro ao processar mensagem:', e);
+              }
+            }
             return;
           }
         };
@@ -356,16 +369,24 @@
     startPingLoop() {
       this.stopPingLoop();
       this._pingInterval = setInterval(() => {
-        if (!this.isHost) return;
         const now = Date.now();
         if (this.mode === 'ws') {
           if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            this.send({ t: 'ping', t0: now });
+            if (this.isHost) {
+              this.send({ t: 'ping', t0: now });
+            } else {
+              // Guest envia ping nativo periodicamente para evitar timeout no servidor e proxy
+              try {
+                this.ws.send(JSON.stringify({ t: 'ping', t0: now }));
+              } catch (e) {}
+            }
           }
         } else {
-          for (const c of this.conns) {
-            if (c && c.open) {
-              try { c.send({ t: 'ping', t0: now }); } catch (e) {}
+          if (this.isHost) {
+            for (const c of this.conns) {
+              if (c && c.open) {
+                try { c.send({ t: 'ping', t0: now }); } catch (e) {}
+              }
             }
           }
         }

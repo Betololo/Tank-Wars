@@ -98,9 +98,14 @@ wss.on('connection', (ws, req) => {
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
   console.log(`[WS CONNECT] ${ws.id} IP=${ip}`);
 
-  ws.on('pong', () => { ws.isAlive = true; });
+  ws.on('pong', () => {
+    ws.isAlive = true;
+    ws.missedPings = 0;
+  });
 
   ws.on('message', (msgRaw) => {
+    ws.isAlive = true;
+    ws.missedPings = 0;
     let msg;
     try {
       msg = JSON.parse(msgRaw);
@@ -204,6 +209,8 @@ wss.on('connection', (ws, req) => {
 
     // 6. Ping / Pong
     if (msg.t === 'ping') {
+      ws.isAlive = true;
+      ws.missedPings = 0;
       safeSend(ws, { t: 'pong', t0: msg.t0 });
       return;
     }
@@ -237,12 +244,18 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-// Heartbeat a cada 20s para manter conexões Cloudflare Tunnel ativas sem timeout
+// Heartbeat a cada 20s para manter conexões Cloudflare Tunnel ativas sem timeout (com tolerância a 3 checagens para mobile)
 const heartbeat = setInterval(() => {
   for (const client of wss.clients) {
     if (!client.isAlive) {
-      try { client.terminate(); } catch (e) {}
-      continue;
+      client.missedPings = (client.missedPings || 0) + 1;
+      if (client.missedPings >= 3) {
+        console.log(`[WS Heartbeat] Cliente ${client.id || 'desconhecido'} inativo há 60s, encerrando.`);
+        try { client.terminate(); } catch (e) {}
+        continue;
+      }
+    } else {
+      client.missedPings = 0;
     }
     client.isAlive = false;
     try { client.ping(); } catch (e) {}

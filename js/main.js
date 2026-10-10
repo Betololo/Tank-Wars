@@ -691,7 +691,11 @@
 
         // Mensagens in-game (tiro, mira, sync)
         if (this.game && this.game.running) {
-          this.game.onNetMessage(m);
+          try {
+            this.game.onNetMessage(m);
+          } catch (e) {
+            console.error('[Game Net] Erro ao despachar mensagem:', e);
+          }
         }
       };
 
@@ -1095,6 +1099,7 @@
         }
 
         return {
+          id: p.id,
           name: p.name,
           team: p.team,
           color: p.team === 0 ? '#ff4444' : '#3b82f6',

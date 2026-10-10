@@ -120,6 +120,10 @@
     // Interpolação suave a 60 FPS para movimentos e rotação de mira de jogadores remotos
     updateRemote(dt) {
       if (!this.alive) return;
+      if (this.isParachuting && this.falling) {
+        // Durante a descida de paraquedas do respawn, a física autoritativa cuida da descida
+        return;
+      }
       if (this.targetX !== undefined) {
         const dx = this.targetX - this.x;
         if (Math.abs(dx) > 140) {

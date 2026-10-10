@@ -163,6 +163,8 @@
       this.tanks.forEach((t, i) => { 
         const p = players[i];
         t.playerIdx = i;
+        t.id = p.id;
+        t.slotIdx = p.slotIdx !== undefined ? p.slotIdx : i;
         t.kind = p.kind; 
         t.shotSel = 0; 
         t.delay = 0;
@@ -185,7 +187,8 @@
         };
         t.respawnTimer = 0;
         t.isWaitingRespawn = false;
-        t.respawnTargetX = t.x;
+        t.respawnTargetX = null;
+        t.respawnTargetLocked = false;
         t.deathShown = false;
       });
 
@@ -1366,7 +1369,7 @@
               t.isWaitingRespawn = true;
               t.respawnTargetLocked = false;
               t.respawnTimer = 4; // Nasce exatamente após 4 turnos
-              t.respawnTargetX = Math.round(t.x);
+              t.respawnTargetX = null; // Só define a posição e mostra o beacon quando o jogador clicar!
               this.toast(t.fellOff
                 ? `💀 ${t.name} caiu! (Vidas restantes: ${this.teamLives[t.team]} | Respawn em 4 turnos - Clique para travar onde vai cair!)`
                 : `💀 ${t.name} K.O.! (Vidas restantes: ${this.teamLives[t.team]} | Respawn em 4 turnos - Clique para travar onde vai cair!)`, 4000);
@@ -1744,7 +1747,7 @@
             tanks: this.tanks.map((t) => ({
               x: t.x, y: t.y, hp: t.hp, al: t.alive, ss: t.ssCooldown, f: t.facing, a: t.angle, lp: t.lastPower,
               dd: t.dmgDealt, u2: t.item2Unlocked, i2u: t.item2Used,
-              wr: t.isWaitingRespawn, rt: t.respawnTimer, rx: t.respawnTargetX, rl: t.respawnTargetLocked ? 1 : 0,
+              wr: t.isWaitingRespawn, rt: t.respawnTimer, rx: (t.respawnTargetX != null ? t.respawnTargetX : null), rl: t.respawnTargetLocked ? 1 : 0,
               sh: t.hasShield ? 1 : 0, oc: t.overcharged ? 1 : 0, asu: t.avatarSkillUsed ? 1 : 0,
               fa: t.flameAura ? 1 : 0, dka: t.doubleKillAura ? 1 : 0, tka: t.tripleKillAura ? 1 : 0, cr: t.hasCrown ? 1 : 0
             }))
@@ -1759,6 +1762,15 @@
         for (const t of this.tanks) {
           if (!t.alive && t.isWaitingRespawn) {
             t.respawnTimer--;
+            if (t.kind === 'cpu' && !t.respawnTargetLocked && this.terrain) {
+              const candX = Math.round(GB.WORLD_W * (0.15 + Math.random() * 0.7));
+              const sy = this.terrain.surfaceBelow(candX, 0);
+              if (sy > 0 && sy < GB.WORLD_H - 80) {
+                t.respawnTargetX = candX;
+                t.targetX = candX;
+                t.respawnTargetLocked = true;
+              }
+            }
             if (t.respawnTimer <= 0) {
               // Renasce o jogador!
               t.alive = true;
@@ -1769,8 +1781,11 @@
               t.respawnTargetLocked = false;
               t.deathShown = false;
               t.fellOff = false;
-              t.x = Math.max(30, Math.min(this.terrain.W - 30, t.respawnTargetX != null ? t.respawnTargetX : t.x));
+              const spawnX = Math.max(30, Math.min(this.terrain.W - 30, (t.respawnTargetX != null) ? t.respawnTargetX : Math.round(t.x)));
+              t.x = spawnX;
+              t.targetX = spawnX;
               t.y = -60; // Cai do céu, lá de cima do mapa
+              t.targetY = -60;
               t.falling = true;
               t.isParachuting = true;
               t.vy = 140;
@@ -1830,7 +1845,7 @@
           tanks: this.tanks.map((t) => ({
             x: t.x, y: t.y, hp: t.hp, al: t.alive, ss: t.ssCooldown, f: t.facing, a: t.angle, lp: t.lastPower,
             dd: t.dmgDealt, u2: t.item2Unlocked, i2u: t.item2Used,
-            wr: t.isWaitingRespawn, rt: t.respawnTimer, rx: t.respawnTargetX, rl: t.respawnTargetLocked ? 1 : 0,
+            wr: t.isWaitingRespawn, rt: t.respawnTimer, rx: (t.respawnTargetX != null ? t.respawnTargetX : null), rl: t.respawnTargetLocked ? 1 : 0,
             sh: t.hasShield ? 1 : 0,
             oc: t.overcharged ? 1 : 0,
             asu: t.avatarSkillUsed ? 1 : 0,
@@ -1945,8 +1960,13 @@
           t.item2Unlocked = !!s.u2;
           t.item2Used = !!s.i2u;
           t.isWaitingRespawn = !!s.wr;
-          t.respawnTimer = s.rt || 0;
-          t.respawnTargetX = s.rx || t.x;
+          t.respawnTimer = (s.rt !== undefined) ? s.rt : 0;
+          if (s.rx !== undefined && s.rx !== null) {
+            t.respawnTargetX = s.rx;
+            t.targetX = s.rx;
+          } else if (!t.respawnTargetLocked) {
+            t.respawnTargetX = null;
+          }
           t.respawnTargetLocked = !!s.rl;
           t.alive = !!s.al;
           t.hasShield = !!s.sh;
@@ -2126,9 +2146,11 @@
             if (this.cfg && this.cfg.isHost) GB.Net.broadcast(m);
           }
         } else if (m.t === 'respawn_pos') {
-          const targetTank = this.tanks[m.pIdx] || this.tanks.find(t => t.playerIdx === m.pIdx);
+          const targetTank = (m.pIdx !== undefined && this.tanks[m.pIdx]) ||
+                             this.tanks.find(t => (m.id && t.id === m.id) || (m.slotIdx != null && t.slotIdx === m.slotIdx) || t.playerIdx === m.pIdx);
           if (targetTank) {
             targetTank.respawnTargetX = m.x;
+            targetTank.targetX = m.x;
             if (m.locked) targetTank.respawnTargetLocked = true;
           }
           if (this.cfg && this.cfg.isHost) {
@@ -2172,11 +2194,19 @@
             const maxW = this.terrain ? this.terrain.W : GB.WORLD_W;
             const targetX = Math.round(Math.max(40, Math.min(maxW - 40, wx)));
             myTank.respawnTargetX = targetX;
+            myTank.targetX = targetX;
             myTank.respawnTargetLocked = true;
             this.toast(`🎯 Posição de queda travada em X: ${targetX}! O personagem cairá do céu nesta coordenada em ${myTank.respawnTimer} turnos.`, 4000);
             GB.Sfx.click();
             if (this.mode === 'online') {
-              this.send({ t: 'respawn_pos', pIdx: myTank.playerIdx, x: targetX, locked: true });
+              this.send({
+                t: 'respawn_pos',
+                pIdx: myTank.playerIdx,
+                slotIdx: myTank.slotIdx,
+                id: myTank.id,
+                x: targetX,
+                locked: true
+              });
             }
           }
         });
@@ -2199,11 +2229,19 @@
             const maxW = this.terrain ? this.terrain.W : GB.WORLD_W;
             const targetX = Math.round(Math.max(40, Math.min(maxW - 40, ratio * maxW)));
             myTank.respawnTargetX = targetX;
+            myTank.targetX = targetX;
             myTank.respawnTargetLocked = true;
             this.toast(`🎯 Posição de queda travada em X: ${targetX}! O personagem cairá do céu nesta coordenada em ${myTank.respawnTimer} turnos.`, 4000);
             GB.Sfx.click();
             if (this.mode === 'online') {
-              this.send({ t: 'respawn_pos', pIdx: myTank.playerIdx, x: targetX, locked: true });
+              this.send({
+                t: 'respawn_pos',
+                pIdx: myTank.playerIdx,
+                slotIdx: myTank.slotIdx,
+                id: myTank.id,
+                x: targetX,
+                locked: true
+              });
             }
           }
         });
@@ -3640,8 +3678,8 @@
       // Renderiza marcadores de respawn com paraquedas no modo Score
       if (this.modeType === 'score' && this.tanks) {
         for (const t of this.tanks) {
-          if (!t.alive && t.isWaitingRespawn) {
-            const rx = t.respawnTargetX || t.x;
+          if (!t.alive && t.isWaitingRespawn && t.respawnTargetX != null) {
+            const rx = t.respawnTargetX;
             const sy = this.terrain ? this.terrain.surfaceBelow(rx, 0) : 400;
             const isVoid = sy < 0;
             const targetY = isVoid ? (GB.WORLD_H + 40) : sy;
@@ -3817,8 +3855,8 @@
       }
       if (this.modeType === 'score') {
         for (const t of this.tanks) {
-          if (!t.alive && t.isWaitingRespawn) {
-            const rx = t.respawnTargetX || t.x;
+          if (!t.alive && t.isWaitingRespawn && t.respawnTargetX != null) {
+            const rx = t.respawnTargetX;
             const sy = this.terrain ? this.terrain.surfaceBelow(rx, 0) : 400;
             const isVoid = sy < 0;
             const rSy = isVoid ? GB.WORLD_H : sy;
