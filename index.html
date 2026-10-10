@@ -75,7 +75,16 @@
       <canvas id="minimap" width="200" height="90" aria-label="Minimapa"></canvas>
       <button class="icon-btn" id="btn-pause" aria-label="Pausar">❚❚</button>
       <button class="icon-btn" id="btn-center" aria-label="Centralizar câmera">◎</button>
-      <button class="icon-btn" id="btn-hud-bgm" title="Ligar/Desligar Música" aria-label="Música">🎵</button>
+      <div class="hud-bgm-wrap" id="hud-bgm-wrap">
+        <button class="icon-btn" id="btn-hud-bgm" title="Volume da Música (Clique para ajustar)" aria-label="Música">🎵</button>
+        <div class="hud-bgm-popover hidden" id="hud-bgm-popover">
+          <div class="hud-bgm-popover-inner">
+            <button class="btn-bgm-mute-icon" id="btn-hud-bgm-mute" type="button" title="Ligar / Desligar Música">🎵</button>
+            <input type="range" class="bgm-slider hud-slider" id="bgm-slider-hud" min="0" max="100" value="40" step="1" aria-label="Volume da música">
+            <span class="bgm-vol-val hud-val" id="bgm-val-hud">40%</span>
+          </div>
+        </div>
+      </div>
 
       <footer class="hud-bottom" id="controls">
         <div class="pad left-pad">
@@ -180,7 +189,16 @@
           <button class="btn primary" id="m-pve">🤖 Jogar vs CPU</button>
           <button class="btn" id="m-local">👥 2 Jogadores (mesmo celular)</button>
           <button class="btn accent" id="m-online">🌐 Online</button>
-          <button class="btn ghost small" id="btn-toggle-bgm" type="button">🎵 Música: Ligada</button>
+          <div class="bgm-control-bar" id="menu-bgm-bar">
+            <button class="btn-bgm-mute" id="btn-toggle-bgm" type="button" title="Ligar / Desligar Música">🎵</button>
+            <div class="bgm-slider-wrap">
+              <div class="bgm-slider-top">
+                <span class="bgm-label-text">Volume da Música</span>
+                <span class="bgm-vol-val" id="bgm-val-menu">40%</span>
+              </div>
+              <input type="range" class="bgm-slider" id="bgm-slider-menu" min="0" max="100" value="40" step="1" aria-label="Volume da música">
+            </div>
+          </div>
         </nav>
         <button class="link-btn" id="m-help">Como jogar</button>
       </div>
@@ -288,6 +306,11 @@
 
           <div class="gb-room-topright">
             <div class="gb-badge-server">Servidor P2P WebRTC</div>
+            <div class="bgm-control-compact" id="lobby-bgm-bar">
+              <button class="btn-bgm-mute small" id="btn-lobby-bgm" type="button" title="Ligar / Desligar Música">🎵</button>
+              <input type="range" class="bgm-slider compact" id="bgm-slider-lobby" min="0" max="100" value="40" step="1" aria-label="Volume da música" title="Volume da música">
+              <span class="bgm-vol-val compact" id="bgm-val-lobby">40%</span>
+            </div>
             <button class="btn ghost small" id="lobby-back" title="Sair da sala">✕ Sair</button>
           </div>
         </header>
@@ -485,7 +508,16 @@
         <h2>Pausado</h2>
         <div class="menu-buttons">
           <button class="btn primary" id="pause-resume">Continuar</button>
-          <button class="btn" id="btn-pause-bgm" type="button">🎵 Música: Ligada</button>
+          <div class="bgm-control-bar in-panel" id="pause-bgm-bar">
+            <button class="btn-bgm-mute" id="btn-pause-bgm" type="button" title="Ligar / Desligar Música">🎵</button>
+            <div class="bgm-slider-wrap">
+              <div class="bgm-slider-top">
+                <span class="bgm-label-text">Volume da Música</span>
+                <span class="bgm-vol-val" id="bgm-val-pause">40%</span>
+              </div>
+              <input type="range" class="bgm-slider" id="bgm-slider-pause" min="0" max="100" value="40" step="1" aria-label="Volume da música">
+            </div>
+          </div>
           <button class="btn ghost" id="pause-quit">Sair para o menu</button>
         </div>
       </div>

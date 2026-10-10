@@ -149,7 +149,8 @@ window.GB = window.GB || {};
   const Bgm = {
     audio: null,
     enabled: true,
-    volume: 0.42,
+    volume: 0.40,
+    lastNonZeroVolume: 0.40,
     _started: false,
 
     init() {
@@ -157,11 +158,19 @@ window.GB = window.GB || {};
       try {
         const saved = localStorage.getItem('gb_bgm_enabled');
         if (saved !== null) this.enabled = saved === '1';
+        const savedVol = localStorage.getItem('gb_bgm_volume');
+        if (savedVol !== null) {
+          const v = parseFloat(savedVol);
+          if (!isNaN(v) && v >= 0 && v <= 1) {
+            this.volume = v;
+            if (v > 0) this.lastNonZeroVolume = v;
+          }
+        }
       } catch (e) {}
 
       this.audio = new Audio();
       this.audio.loop = true;
-      this.audio.volume = this.volume;
+      this.audio.volume = (this.enabled && this.volume > 0) ? this.volume : 0;
       this.audio.preload = 'auto';
 
       // Seleciona formato OGG ou MP3 com base no suporte do navegador
@@ -170,8 +179,9 @@ window.GB = window.GB || {};
     },
 
     play() {
-      if (!this.enabled) return;
+      if (!this.enabled || this.volume <= 0) return;
       if (!this.audio) this.init();
+      this.audio.volume = this.volume;
       const p = this.audio.play();
       if (p && p.catch) p.catch(() => {});
     },
@@ -180,31 +190,95 @@ window.GB = window.GB || {};
       if (this.audio) this.audio.pause();
     },
 
-    toggle() {
-      this.enabled = !this.enabled;
+    setVolume(val) {
+      if (typeof val === 'string') val = parseFloat(val);
+      if (isNaN(val)) return;
+      if (val > 1.0) val = val / 100.0;
+      val = Math.max(0, Math.min(1, val));
+
+      this.volume = val;
+      if (val > 0) {
+        this.lastNonZeroVolume = val;
+        this.enabled = true;
+        try { localStorage.setItem('gb_bgm_enabled', '1'); } catch (e) {}
+      } else {
+        this.enabled = false;
+        try { localStorage.setItem('gb_bgm_enabled', '0'); } catch (e) {}
+      }
+
+      if (!this.audio) this.init();
+      if (this.audio) {
+        this.audio.volume = (this.enabled && this.volume > 0) ? this.volume : 0;
+        if (this.enabled && this.volume > 0) {
+          if (this.audio.paused && this._started) {
+            const p = this.audio.play();
+            if (p && p.catch) p.catch(() => {});
+          }
+        } else {
+          this.audio.pause();
+        }
+      }
+
       try {
-        localStorage.setItem('gb_bgm_enabled', this.enabled ? '1' : '0');
+        localStorage.setItem('gb_bgm_volume', this.volume.toFixed(2));
       } catch (e) {}
-      if (this.enabled) this.play();
-      else this.pause();
+
+      this.updateUI();
+    },
+
+    getVolume() {
+      return this.volume;
+    },
+
+    toggle() {
+      if (!this.audio) this.init();
+      if (this.enabled && this.volume > 0) {
+        this.enabled = false;
+        try { localStorage.setItem('gb_bgm_enabled', '0'); } catch (e) {}
+        this.pause();
+      } else {
+        this.enabled = true;
+        if (this.volume <= 0) {
+          this.volume = this.lastNonZeroVolume || 0.40;
+          try { localStorage.setItem('gb_bgm_volume', this.volume.toFixed(2)); } catch (e) {}
+        }
+        try { localStorage.setItem('gb_bgm_enabled', '1'); } catch (e) {}
+        if (this.audio) this.audio.volume = this.volume;
+        this.play();
+      }
       this.updateUI();
       return this.enabled;
     },
 
     updateUI() {
+      const isMuted = !this.enabled || this.volume <= 0;
+      const pct = isMuted ? 0 : Math.round(this.volume * 100);
+      const icon = isMuted ? '🔇' : (this.volume < 0.45 ? '🔉' : '🎵');
+
+      // Sliders
+      ['bgm-slider-menu', 'bgm-slider-pause', 'bgm-slider-lobby', 'bgm-slider-hud'].forEach(id => {
+        const slider = document.getElementById(id);
+        if (slider) slider.value = Math.round(this.volume * 100);
+      });
+
+      // Percentuais
+      ['bgm-val-menu', 'bgm-val-pause', 'bgm-val-lobby', 'bgm-val-hud'].forEach(id => {
+        const valEl = document.getElementById(id);
+        if (valEl) valEl.textContent = pct + '%';
+      });
+
+      // Botões de mute/toggle
+      ['btn-toggle-bgm', 'btn-pause-bgm', 'btn-lobby-bgm', 'btn-hud-bgm-mute', 'btn-hud-bgm'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.textContent = icon;
+        btn.classList.toggle('muted', isMuted);
+        btn.setAttribute('aria-label', isMuted ? 'Música silenciada' : `Volume da música: ${pct}%`);
+      });
+
       const hudBtn = document.getElementById('btn-hud-bgm');
       if (hudBtn) {
-        hudBtn.textContent = this.enabled ? '🎵' : '🔇';
-        hudBtn.classList.toggle('muted', !this.enabled);
-        hudBtn.title = this.enabled ? 'Música: Ligada (Clique para mutar)' : 'Música: Desligada (Clique para tocar)';
-      }
-      const menuBtn = document.getElementById('btn-toggle-bgm');
-      if (menuBtn) {
-        menuBtn.textContent = this.enabled ? '🎵 Música: Ligada' : '🔇 Música: Desligada';
-      }
-      const pauseBtn = document.getElementById('btn-pause-bgm');
-      if (pauseBtn) {
-        pauseBtn.textContent = this.enabled ? '🎵 Música: Ligada' : '🔇 Música: Desligada';
+        hudBtn.title = isMuted ? 'Música: Desligada (Clique para abrir volume)' : `Música: ${pct}% (Clique para ajustar)`;
       }
     },
 
@@ -212,7 +286,7 @@ window.GB = window.GB || {};
       if (this._started) return;
       this._started = true;
       this.init();
-      if (this.enabled) this.play();
+      if (this.enabled && this.volume > 0) this.play();
       this.updateUI();
     }
   };

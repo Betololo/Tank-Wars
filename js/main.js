@@ -310,14 +310,53 @@
       $('pass-ok').addEventListener('click', () => { GB.Sfx.click(); this.hideScreens(); if (this._onPassOk) this._onPassOk(); });
       $('pause-resume').addEventListener('click', () => { GB.Sfx.click(); this.hideScreens(); this.game.paused = false; });
       $('pause-quit').addEventListener('click', () => { GB.Sfx.click(); this.game.stop(); GB.Net.close(); this.showScreen('menu'); });
-      $('btn-pause-bgm')?.addEventListener('click', () => { GB.Sfx.click(); GB.Bgm.toggle(); });
-      $('btn-hud-bgm')?.addEventListener('click', () => { GB.Sfx.click(); GB.Bgm.toggle(); });
-      $('btn-toggle-bgm')?.addEventListener('click', () => {
-        GB.Sfx.init();
-        GB.Sfx.click();
-        GB.Bgm.init();
-        GB.Bgm.toggle();
+      // Controles de Volume da Música (Sliders em tempo real)
+      const bindBgmSlider = (id) => {
+        const slider = $(id);
+        if (!slider) return;
+        slider.addEventListener('input', (e) => {
+          GB.Bgm.init();
+          GB.Bgm.setVolume(parseFloat(e.target.value) / 100);
+        });
+      };
+      ['bgm-slider-menu', 'bgm-slider-pause', 'bgm-slider-lobby', 'bgm-slider-hud'].forEach(bindBgmSlider);
+
+      // Botões de Mute/Toggle
+      ['btn-toggle-bgm', 'btn-pause-bgm', 'btn-lobby-bgm', 'btn-hud-bgm-mute'].forEach(id => {
+        $(id)?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          GB.Sfx.init();
+          GB.Sfx.click();
+          GB.Bgm.init();
+          GB.Bgm.toggle();
+        });
       });
+
+      // HUD BGM Popover (abre ao clicar no ícone, fecha ao clicar fora ou no botão)
+      const hudBgmBtn = $('btn-hud-bgm');
+      const hudBgmPopover = $('hud-bgm-popover');
+      if (hudBgmBtn && hudBgmPopover) {
+        hudBgmBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          GB.Sfx.click();
+          const isHidden = hudBgmPopover.classList.contains('hidden');
+          hudBgmPopover.classList.toggle('hidden', !isHidden);
+        });
+        document.addEventListener('pointerdown', (e) => {
+          if (!hudBgmPopover.classList.contains('hidden')) {
+            const wrap = $('hud-bgm-wrap');
+            if (wrap && !wrap.contains(e.target)) {
+              hudBgmPopover.classList.add('hidden');
+            }
+          }
+        });
+        hudBgmBtn.addEventListener('dblclick', (e) => {
+          e.stopPropagation();
+          GB.Bgm.init();
+          GB.Bgm.toggle();
+        });
+      }
+
       $('btn-pause').addEventListener('click', () => {
         GB.Sfx.click();
         if (this.setup.mode === 'online') return this.game.toast('Pausa desativada no modo online');
