@@ -347,7 +347,8 @@
       const spinInterval = setInterval(() => {
         if (!this.running) { clearInterval(spinInterval); return; }
         tickCount++;
-        GB.Sfx.click();
+        if (GB.Sfx.coinSpin) GB.Sfx.coinSpin();
+        else GB.Sfx.click();
         if (tickCount >= 10) clearInterval(spinInterval);
       }, 180);
 
@@ -356,9 +357,12 @@
         clearInterval(spinInterval);
         if (!this.running) return;
 
-        // Efeito sonoro triunfante e impacto visual
-        GB.Sfx.boom(0.35);
-        if (GB.Sfx.win) GB.Sfx.win();
+        // Som triunfante e cristalino da moeda pousando no resultado (sem tiros ou explosões)
+        if (GB.Sfx.coinLand) {
+          GB.Sfx.coinLand();
+        } else if (GB.Sfx.win) {
+          GB.Sfx.win();
+        }
 
         if (startingTeam === 0) {
           coin.classList.add('landed-a');
@@ -824,7 +828,11 @@
         tank.hp = Math.max(1, tank.hp - cost);
         tank.overcharged = true;
 
-        this.effects.explosion(tank.x, tank.y - 12, 38, '#ff2222', '#ff7700');
+        if (this.effects.overchargeBurst) {
+          this.effects.overchargeBurst(tank.x, tank.y - 12);
+        } else {
+          this.effects.explosion(tank.x, tank.y - 12, 38, '#ff2222', '#ff7700');
+        }
         this.effects.text(tank.x, tank.y - 35, `-${cost} HP (OVERCHARGE)`, '#ff4444', true);
         GB.Sfx.avatarOvercharge && GB.Sfx.avatarOvercharge();
         this.toast(`🔥 OVERCHARGE! +50% dano no próximo tiro! (+300 Delay)`);

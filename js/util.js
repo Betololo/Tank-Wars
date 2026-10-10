@@ -104,6 +104,37 @@ window.GB = window.GB || {};
     charge(p) { this.tone(200 + p * 6, 0.05, 0.03, 'sine'); },
 
     // ==========================================
+    // 0.5. SORTEIO CARA OU COROA
+    // ==========================================
+    coinSpin() {
+      // Pequeno estalido/tilintar metálico da moeda girando no ar
+      if (!this.ctx || !this.enabled) return;
+      this.tone(2200, 0.03, 0.045, 'triangle');
+      this.tone(3400, 0.018, 0.03, 'sine');
+    },
+    coinLand() {
+      // Moeda aterrissando no sorteio: impacto metálico cristalino e arpejo alegre
+      // 100% sem tiros ou explosões!
+      if (!this.ctx || !this.enabled) return;
+      // 1. Tilintar metálico inicial de moeda de ouro tocando o solo
+      this.tone(2600, 0.09, 0.16, 'sine', 1900);
+      this.tone(4100, 0.06, 0.11, 'triangle');
+      setTimeout(() => {
+        // Segundo toque metálico (quique leve)
+        this.tone(3200, 0.07, 0.12, 'sine');
+      }, 70);
+
+      // 2. Arpejo celebratório e cristalino (estilo casual MMO coreano, alegre e suave)
+      const fanfare = [587, 784, 988, 1175, 1568]; // Ré, Sol, Si, Ré, Sol
+      fanfare.forEach((f, i) => {
+        setTimeout(() => {
+          this.tone(f, 0.22, 0.11, 'triangle');
+          this.tone(f * 2, 0.14, 0.035, 'sine');
+        }, 120 + i * 55);
+      });
+    },
+
+    // ==========================================
     // 1. CONTAGEM REGRESSIVA DO TURNO (TIMER)
     // ==========================================
     timerSubtleTick() {
@@ -467,20 +498,30 @@ window.GB = window.GB || {};
       setTimeout(() => this.noise(0.4, 2000, 0.38, 'bandpass'), 120);
     },
     avatarOvercharge() {
-      // Avatar C: Fúria de sangue e overcharge de dano
+      // Avatar C: Fúria de sangue e sobrecarga de poder (Overcharge)
+      // Som de pulso elétrico ascendente, plasma e energia concentrada (sem explosão de bomba!)
       if (!this.ctx || !this.enabled) return;
-      this.noise(0.35, 2200, 0.5);
-      this.tone(110, 0.55, 0.48, 'sawtooth', 350);
-      this.tone(220, 0.38, 0.32, 'sawtooth', 680);
-      setTimeout(() => this.boom(1.3), 60);
+      // 1. Carga de energia ascendente e ressonante
+      this.tone(150, 0.38, 0.22, 'triangle', 640);
+      this.tone(300, 0.32, 0.16, 'sawtooth', 1280);
+      // 2. Chiado elétrico / plasma de alta voltagem instantâneo
+      this.noise(0.24, 4500, 0.18, 'bandpass');
+      // 3. Clímax de fixação da sobrecarga: pulso de poder firme e ressonante
+      setTimeout(() => {
+        this.tone(680, 0.22, 0.18, 'square', 340);
+        this.tone(880, 0.30, 0.20, 'triangle', 440);
+        this.tone(130, 0.32, 0.24, 'sine', 60); // Sub-bass limpo de energia
+      }, 110);
     },
     avatarSwap() {
-      // Avatar D: Troca dimensional espaço-tempo
+      // Avatar D: Troca dimensional espaço-tempo (teleporte mútuo sem explosão)
       if (!this.ctx || !this.enabled) return;
-      this.tone(920, 0.18, 0.32, 'sine', 200);
-      setTimeout(() => this.tone(200, 0.24, 0.35, 'sine', 1040), 90);
-      this.noise(0.22, 3600, 0.32, 'bandpass');
-      setTimeout(() => this.boom(0.5), 100);
+      this.tone(920, 0.18, 0.28, 'sine', 200);
+      setTimeout(() => this.tone(200, 0.24, 0.32, 'sine', 1040), 90);
+      this.noise(0.22, 3600, 0.25, 'bandpass');
+      setTimeout(() => {
+        this.tone(580, 0.2, 0.18, 'triangle', 1160);
+      }, 100);
     },
     modalOpen() {
       if (!this.ctx || !this.enabled) return;

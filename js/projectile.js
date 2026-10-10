@@ -989,6 +989,32 @@
       }
     }
 
+    overchargeBurst(x, y) {
+      const P = this.parts;
+      // Flash de energia vermelha e dourada concentrada (sem fumaça ou pedras)
+      P.push({ t: 'flash', x, y, r: 46, life: 0.32, max: 0.32 });
+      // Anéis de choque de plasma expansivos
+      P.push({ t: 'ring', x, y, r: 38, life: 0.42, max: 0.42 });
+      P.push({ t: 'ring', x, y, r: 22, life: 0.28, max: 0.28 });
+      // Faíscas ascendentes de energia plasmática
+      for (let i = 0; i < 28; i++) {
+        const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.8;
+        const sp = GB.rand(80, 240);
+        const col = Math.random() < 0.4 ? '#ff2a2a' : (Math.random() < 0.7 ? '#ff9900' : '#ffe066');
+        P.push({
+          t: 'spark',
+          x,
+          y: y - 6,
+          vx: Math.cos(a) * sp,
+          vy: Math.sin(a) * sp - 50,
+          life: GB.rand(0.4, 0.8),
+          max: 0.8,
+          size: GB.rand(2, 4),
+          color: col
+        });
+      }
+    }
+
     emp(x, y, r) {
       const P = this.parts;
       P.push({ t: 'emp_flash', x, y, r: r * 1.5, life: 0.4, max: 0.4 });
