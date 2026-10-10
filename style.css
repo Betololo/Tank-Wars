@@ -314,6 +314,8 @@ button { font-family: inherit; color: inherit; border: 0; background: none; curs
 }
 #btn-pause { left: calc(8px + var(--safe-l)); }
 #btn-center { left: calc(50px + var(--safe-l)); font-size: 18px; }
+#btn-hud-bgm { left: calc(92px + var(--safe-l)); font-size: 15px; }
+#btn-hud-bgm.muted { opacity: 0.55; filter: grayscale(1); }
 
 .hud-bottom {
   position: absolute; bottom: calc(6px + var(--safe-b)); left: calc(8px + var(--safe-l)); right: calc(8px + var(--safe-r));

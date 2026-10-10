@@ -146,6 +146,78 @@ window.GB = window.GB || {};
   };
   GB.Sfx = Sfx;
 
+  const Bgm = {
+    audio: null,
+    enabled: true,
+    volume: 0.42,
+    _started: false,
+
+    init() {
+      if (this.audio) return;
+      try {
+        const saved = localStorage.getItem('gb_bgm_enabled');
+        if (saved !== null) this.enabled = saved === '1';
+      } catch (e) {}
+
+      this.audio = new Audio();
+      this.audio.loop = true;
+      this.audio.volume = this.volume;
+      this.audio.preload = 'auto';
+
+      // Seleciona formato OGG ou MP3 com base no suporte do navegador
+      const canOgg = this.audio.canPlayType && this.audio.canPlayType('audio/ogg; codecs="vorbis"');
+      this.audio.src = canOgg ? 'assets/bgm_theme.ogg' : 'assets/bgm_theme.mp3';
+    },
+
+    play() {
+      if (!this.enabled) return;
+      if (!this.audio) this.init();
+      const p = this.audio.play();
+      if (p && p.catch) p.catch(() => {});
+    },
+
+    pause() {
+      if (this.audio) this.audio.pause();
+    },
+
+    toggle() {
+      this.enabled = !this.enabled;
+      try {
+        localStorage.setItem('gb_bgm_enabled', this.enabled ? '1' : '0');
+      } catch (e) {}
+      if (this.enabled) this.play();
+      else this.pause();
+      this.updateUI();
+      return this.enabled;
+    },
+
+    updateUI() {
+      const hudBtn = document.getElementById('btn-hud-bgm');
+      if (hudBtn) {
+        hudBtn.textContent = this.enabled ? '🎵' : '🔇';
+        hudBtn.classList.toggle('muted', !this.enabled);
+        hudBtn.title = this.enabled ? 'Música: Ligada (Clique para mutar)' : 'Música: Desligada (Clique para tocar)';
+      }
+      const menuBtn = document.getElementById('btn-toggle-bgm');
+      if (menuBtn) {
+        menuBtn.textContent = this.enabled ? '🎵 Música: Ligada' : '🔇 Música: Desligada';
+      }
+      const pauseBtn = document.getElementById('btn-pause-bgm');
+      if (pauseBtn) {
+        pauseBtn.textContent = this.enabled ? '🎵 Música: Ligada' : '🔇 Música: Desligada';
+      }
+    },
+
+    handleFirstInteraction() {
+      if (this._started) return;
+      this._started = true;
+      this.init();
+      if (this.enabled) this.play();
+      this.updateUI();
+    }
+  };
+  GB.Bgm = Bgm;
+
   GB.speakEpic = function (phrase, rate = 1.24, pitch = 1.28) {
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
     try {

@@ -75,6 +75,7 @@
       <canvas id="minimap" width="200" height="90" aria-label="Minimapa"></canvas>
       <button class="icon-btn" id="btn-pause" aria-label="Pausar">❚❚</button>
       <button class="icon-btn" id="btn-center" aria-label="Centralizar câmera">◎</button>
+      <button class="icon-btn" id="btn-hud-bgm" title="Ligar/Desligar Música" aria-label="Música">🎵</button>
 
       <footer class="hud-bottom" id="controls">
         <div class="pad left-pad">
@@ -179,6 +180,7 @@
           <button class="btn primary" id="m-pve">🤖 Jogar vs CPU</button>
           <button class="btn" id="m-local">👥 2 Jogadores (mesmo celular)</button>
           <button class="btn accent" id="m-online">🌐 Online</button>
+          <button class="btn ghost small" id="btn-toggle-bgm" type="button">🎵 Música: Ligada</button>
         </nav>
         <button class="link-btn" id="m-help">Como jogar</button>
       </div>
@@ -483,6 +485,7 @@
         <h2>Pausado</h2>
         <div class="menu-buttons">
           <button class="btn primary" id="pause-resume">Continuar</button>
+          <button class="btn" id="btn-pause-bgm" type="button">🎵 Música: Ligada</button>
           <button class="btn ghost" id="pause-quit">Sair para o menu</button>
         </div>
       </div>

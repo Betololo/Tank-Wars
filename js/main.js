@@ -310,12 +310,28 @@
       $('pass-ok').addEventListener('click', () => { GB.Sfx.click(); this.hideScreens(); if (this._onPassOk) this._onPassOk(); });
       $('pause-resume').addEventListener('click', () => { GB.Sfx.click(); this.hideScreens(); this.game.paused = false; });
       $('pause-quit').addEventListener('click', () => { GB.Sfx.click(); this.game.stop(); GB.Net.close(); this.showScreen('menu'); });
+      $('btn-pause-bgm')?.addEventListener('click', () => { GB.Sfx.click(); GB.Bgm.toggle(); });
+      $('btn-hud-bgm')?.addEventListener('click', () => { GB.Sfx.click(); GB.Bgm.toggle(); });
+      $('btn-toggle-bgm')?.addEventListener('click', () => {
+        GB.Sfx.init();
+        GB.Sfx.click();
+        GB.Bgm.init();
+        GB.Bgm.toggle();
+      });
       $('btn-pause').addEventListener('click', () => {
         GB.Sfx.click();
         if (this.setup.mode === 'online') return this.game.toast('Pausa desativada no modo online');
         this.game.paused = true;
         this.showScreen('pause');
       });
+
+      const startBgmOnce = () => {
+        GB.Bgm.handleFirstInteraction();
+      };
+      window.addEventListener('pointerdown', startBgmOnce, { once: true });
+      window.addEventListener('keydown', startBgmOnce, { once: true });
+      GB.Bgm.init();
+      GB.Bgm.updateUI();
 
       $('res-again').addEventListener('click', () => {
         GB.Sfx.click();
