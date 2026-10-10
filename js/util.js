@@ -102,6 +102,265 @@ window.GB = window.GB || {};
     win() { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => this.tone(f, 0.25, 0.12, 'triangle'), i * 120)); },
     lose() { [392, 330, 262].forEach((f, i) => setTimeout(() => this.tone(f, 0.3, 0.12, 'triangle'), i * 160)); },
     charge(p) { this.tone(200 + p * 6, 0.05, 0.03, 'sine'); },
+
+    // ==========================================
+    // 1. CONTAGEM REGRESSIVA DO TURNO (TIMER)
+    // ==========================================
+    timerSubtleTick() {
+      if (!this.ctx || !this.enabled) return;
+      this.tone(1400, 0.025, 0.035, 'triangle');
+    },
+    timerTick(sec) {
+      if (!this.ctx || !this.enabled) return;
+      this.tone(1150, 0.045, 0.08, 'square');
+      this.noise(0.02, 3800, 0.04, 'highpass');
+    },
+    timerUrgent(sec) {
+      if (!this.ctx || !this.enabled) return;
+      // Beep de alerta urgente nos últimos 5 segundos (frequência cresce de 5s a 1s)
+      const f = 780 + Math.max(0, 6 - sec) * 90;
+      this.tone(f, 0.08, 0.22, 'sawtooth');
+      this.tone(f * 1.5, 0.05, 0.12, 'square');
+    },
+    timerTimeout() {
+      if (!this.ctx || !this.enabled) return;
+      // Buzzer descendente de tempo esgotado
+      this.tone(360, 0.28, 0.25, 'sawtooth', 120);
+      this.noise(0.22, 1200, 0.18);
+    },
+
+    // ==========================================
+    // 2. DISPAROS (SHOOTING POR MOBILE E TIPO)
+    // ==========================================
+    shootMortar(isT2) {
+      // Canhão de artilharia pesado: estrondo metálico com sub-grave
+      this.noise(0.35, isT2 ? 2200 : 1800, isT2 ? 0.65 : 0.5);
+      this.tone(180, 0.28, 0.4, 'sawtooth', 45);
+      this.tone(90, 0.35, 0.35, 'sine', 30);
+    },
+    shootMissile(isT2) {
+      // Yeti: ignição e silvo de foguete pressurizado
+      this.noise(0.28, 3800, 0.38, 'bandpass');
+      this.tone(480, 0.16, 0.22, 'sawtooth', 160);
+      this.tone(240, 0.22, 0.2, 'triangle', 80);
+    },
+    shootGrub(isT2) {
+      // Worm: lançamento orgânico biônico / estalo e assobio
+      this.tone(300, 0.15, 0.28, 'sine', 840);
+      this.tone(560, 0.12, 0.18, 'triangle', 220);
+      this.noise(0.12, 1600, 0.25);
+    },
+    shootLightning(isT2) {
+      // Doc: arco elétrico de plasma / descarga de alta voltagem
+      this.tone(1800, 0.14, 0.3, 'sawtooth', 280);
+      this.tone(950, 0.18, 0.22, 'square', 140);
+      this.noise(0.18, 4800, 0.4, 'highpass');
+    },
+    shootIce(isT2) {
+      // Frigo: estilhaço de gelo cristalino / tiro sub-zero
+      this.tone(2600, 0.16, 0.25, 'triangle', 650);
+      this.noise(0.25, 4200, 0.32, 'bandpass');
+      this.tone(360, 0.2, 0.22, 'sawtooth', 110);
+    },
+    shootAduka(isT2) {
+      // Kuda: blaster de partículas sci-fi / pulso de fótons
+      this.tone(1650, 0.18, 0.32, 'sawtooth', 220);
+      this.tone(820, 0.15, 0.22, 'square', 380);
+      this.noise(0.12, 3000, 0.22);
+    },
+    shootThor() {
+      // Disparo do satélite orbital Thor
+      this.tone(2200, 0.35, 0.45, 'sawtooth', 280);
+      this.tone(1100, 0.4, 0.35, 'square', 140);
+      this.boom(1.6);
+      this.noise(0.3, 5000, 0.4, 'highpass');
+    },
+    shootDriller(isT2) {
+      // Driller: pistão pneumático com rotação de broca mecânica
+      this.noise(0.34, 2400, 0.5);
+      this.tone(280, 0.25, 0.38, 'sawtooth', 75);
+      this.tone(640, 0.12, 0.25, 'square', 320);
+    },
+    shootTrico(isT2) {
+      // Khan: canhão triplo mecânico percussivo
+      this.noise(0.26, 2800, 0.45);
+      this.tone(240, 0.2, 0.35, 'sawtooth', 85);
+      this.tone(520, 0.1, 0.2, 'triangle', 260);
+    },
+    shootTurtle(isT2) {
+      // DJ: mola synth retrô / impacto elástico aquático
+      this.tone(260, 0.22, 0.32, 'sine', 720);
+      this.tone(520, 0.15, 0.22, 'triangle', 220);
+      this.noise(0.08, 1500, 0.18);
+    },
+    shootMage(isT2) {
+      // Launcher: vórtex arcano mágico
+      this.tone(920, 0.22, 0.28, 'triangle', 320);
+      this.tone(1380, 0.18, 0.2, 'sine', 460);
+      this.noise(0.2, 2600, 0.28);
+    },
+    shootSS(mobId) {
+      // Tiro Especial (SS): carga monumental com ressonância cósmica e explosão colossal
+      this.boom(2.0);
+      this.tone(110, 0.65, 0.5, 'sawtooth', 35);
+      [440, 660, 880, 1320].forEach((f, i) => setTimeout(() => this.tone(f, 0.18, 0.22, 'sawtooth'), i * 38));
+      this.noise(0.45, 2900, 0.55);
+    },
+    shootTeleport() {
+      // Lançamento do projétil de Teletransporte
+      this.tone(420, 0.25, 0.32, 'sine', 1600);
+      this.tone(1250, 0.2, 0.22, 'triangle', 280);
+      this.noise(0.2, 2400, 0.25);
+    },
+    shootNuclear() {
+      // Lançamento da Ogiva Nuclear
+      this.noise(0.55, 1700, 0.65);
+      this.tone(130, 0.5, 0.45, 'sawtooth', 35);
+      this.tone(750, 0.35, 0.28, 'square', 320);
+    },
+    shootNapalm() {
+      // Lançamento do Napalm Incendiário
+      this.noise(0.45, 2700, 0.6);
+      this.tone(220, 0.38, 0.38, 'sawtooth', 55);
+    },
+    shootOnda() {
+      // Lançamento da Onda de Choque Sísmica
+      this.tone(85, 0.55, 0.55, 'sine', 28);
+      this.noise(0.35, 1500, 0.5);
+      this.tone(380, 0.28, 0.28, 'triangle', 75);
+    },
+    playShoot(proj) {
+      if (!this.ctx || !this.enabled || !proj) return;
+      if (proj.isTeleport) return this.shootTeleport();
+      if (proj.isNuclear) return this.shootNuclear();
+      if (proj.isNapalm) return this.shootNapalm();
+      if (proj.isOnda) return this.shootOnda();
+
+      const mobId = (proj.owner && proj.owner.mobile && proj.owner.mobile.id) || 'armor';
+      const isSS = proj.shot && proj.shot.name === 'SS';
+      const isT2 = proj.shot && proj.shot.name === 'Tiro 2';
+
+      if (isSS) return this.shootSS(mobId);
+
+      switch (mobId) {
+        case 'armor': return this.shootMortar(isT2);
+        case 'bigfoot': return this.shootMissile(isT2);
+        case 'grub': return this.shootGrub(isT2);
+        case 'lightning': return this.shootLightning(isT2);
+        case 'ice': return this.shootIce(isT2);
+        case 'aduka': return this.shootAduka(isT2);
+        case 'driller': return this.shootDriller(isT2);
+        case 'trico': return this.shootTrico(isT2);
+        case 'turtle': return this.shootTurtle(isT2);
+        case 'mage': return this.shootMage(isT2);
+        default: return this.fire();
+      }
+    },
+
+    // ==========================================
+    // 3. USO DE ITEM 1 E ITEM 2
+    // ==========================================
+    itemDual() {
+      // Ativação do Dual: sequência dupla ascendente clássica de power-up
+      if (!this.ctx || !this.enabled) return;
+      [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => this.tone(f, 0.14, 0.18, 'triangle'), i * 50));
+      setTimeout(() => this.tone(1318, 0.24, 0.22, 'square'), 200);
+    },
+    itemDualPlus() {
+      // Ativação do Dual+: arpejo amplificado super brilhante
+      if (!this.ctx || !this.enabled) return;
+      [659, 784, 987, 1318].forEach((f, i) => setTimeout(() => this.tone(f, 0.14, 0.2, 'triangle'), i * 45));
+      setTimeout(() => this.tone(1568, 0.26, 0.25, 'square'), 180);
+    },
+    itemTeleport() {
+      // Ativação do Teleporte: onda dimensional suave
+      if (!this.ctx || !this.enabled) return;
+      this.tone(500, 0.22, 0.22, 'sine', 1400);
+      this.tone(920, 0.18, 0.18, 'triangle', 1820);
+      this.noise(0.15, 3200, 0.2, 'bandpass');
+    },
+    itemHeal() {
+      // Ativação de Cura: brilho celestial restaurador
+      if (!this.ctx || !this.enabled) return;
+      [440, 554, 659, 880, 1108].forEach((f, i) => setTimeout(() => this.tone(f, 0.28, 0.2, 'sine'), i * 60));
+    },
+    itemNuclear() {
+      // Sirene tática de alerta nuclear
+      if (!this.ctx || !this.enabled) return;
+      this.tone(880, 0.12, 0.28, 'sawtooth');
+      setTimeout(() => this.tone(700, 0.15, 0.3, 'sawtooth'), 120);
+      setTimeout(() => this.tone(880, 0.22, 0.32, 'sawtooth'), 270);
+      this.tone(90, 0.45, 0.38, 'sawtooth', 35);
+    },
+    itemNapalm() {
+      // Ignição de napalm incendiário
+      if (!this.ctx || !this.enabled) return;
+      this.noise(0.35, 2600, 0.5);
+      this.tone(280, 0.25, 0.28, 'sawtooth', 620);
+    },
+    itemSuperDual() {
+      // Sobrecarga de Super Dual: arpejo de poder quádruplo
+      if (!this.ctx || !this.enabled) return;
+      [440, 554, 659, 880, 1108, 1320].forEach((f, i) => setTimeout(() => this.tone(f, 0.18, 0.22, 'sawtooth'), i * 40));
+      this.tone(140, 0.45, 0.38, 'sawtooth', 55);
+    },
+    itemShockwave() {
+      // Ativação de Onda de Choque: zumbido de pressão sísmica
+      if (!this.ctx || !this.enabled) return;
+      this.tone(110, 0.38, 0.38, 'sine', 35);
+      this.noise(0.25, 1300, 0.32);
+      this.tone(480, 0.22, 0.22, 'triangle', 150);
+    },
+    itemEquip() {
+      if (!this.ctx || !this.enabled) return;
+      this.tone(880, 0.05, 0.12, 'triangle', 1320);
+    },
+    itemUnequip() {
+      if (!this.ctx || !this.enabled) return;
+      this.tone(1100, 0.05, 0.1, 'triangle', 660);
+    },
+
+    // ==========================================
+    // 4. HABILIDADES DOS AVATARES
+    // ==========================================
+    avatarShield() {
+      // Avatar A: Barreira protetora divina / cristal de escudo
+      if (!this.ctx || !this.enabled) return;
+      [523, 659, 784, 1046, 1568].forEach((f, i) => setTimeout(() => this.tone(f, 0.32, 0.22, 'triangle'), i * 55));
+      this.tone(330, 0.45, 0.28, 'sine', 660);
+      this.noise(0.22, 3000, 0.2, 'bandpass');
+    },
+    avatarWind() {
+      // Avatar B: Tempestade e vórtex eólico / ventania uivante
+      if (!this.ctx || !this.enabled) return;
+      this.noise(0.55, 3400, 0.5, 'bandpass');
+      this.tone(360, 0.48, 0.28, 'sine', 920);
+      setTimeout(() => this.noise(0.4, 2000, 0.38, 'bandpass'), 120);
+    },
+    avatarOvercharge() {
+      // Avatar C: Fúria de sangue e overcharge de dano
+      if (!this.ctx || !this.enabled) return;
+      this.noise(0.35, 2200, 0.5);
+      this.tone(110, 0.55, 0.48, 'sawtooth', 350);
+      this.tone(220, 0.38, 0.32, 'sawtooth', 680);
+      setTimeout(() => this.boom(1.3), 60);
+    },
+    avatarSwap() {
+      // Avatar D: Troca dimensional espaço-tempo
+      if (!this.ctx || !this.enabled) return;
+      this.tone(920, 0.18, 0.32, 'sine', 200);
+      setTimeout(() => this.tone(200, 0.24, 0.35, 'sine', 1040), 90);
+      this.noise(0.22, 3600, 0.32, 'bandpass');
+      setTimeout(() => this.boom(0.5), 100);
+    },
+    modalOpen() {
+      if (!this.ctx || !this.enabled) return;
+      this.tone(680, 0.08, 0.14, 'triangle', 1020);
+    },
+    power() {
+      this.itemDual();
+    },
+
     epicNiceShot() {
       [880, 1174, 1568, 1760].forEach((f, i) => setTimeout(() => this.tone(f, 0.24, 0.2, 'triangle'), i * 70));
       GB.speakEpic('Nice shot!!', 1.22, 1.28);

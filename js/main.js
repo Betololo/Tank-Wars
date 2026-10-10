@@ -992,6 +992,8 @@
         else return;
       }
 
+      GB.Sfx.itemEquip && GB.Sfx.itemEquip();
+
       if (this.setup.mode === 'online') {
         if (GB.Net.isHost) GB.Net.broadcast({ t: 'room_state', room: this.room });
         else GB.Net.send({ t: 'room_act', act: 'items', items: myP.items, items2: myP.items2 });
@@ -1010,6 +1012,8 @@
           myP.items.splice(slotIdx, 1);
         }
       }
+
+      GB.Sfx.itemUnequip && GB.Sfx.itemUnequip();
 
       if (this.setup.mode === 'online') {
         if (GB.Net.isHost) GB.Net.broadcast({ t: 'room_state', room: this.room });

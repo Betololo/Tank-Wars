@@ -500,6 +500,7 @@
       t.maxFuel = (t.mobile && t.mobile.fuel != null) ? t.mobile.fuel : GB.MAX_FUEL;
       t.fuel = t.maxFuel;
       this.timer = GB.TURN_TIME;
+      this._lastTimerSec = Math.ceil(this.timer);
       this.power = 0;
       this.targetPower = 0;
       this.charging = false;
@@ -733,7 +734,9 @@
 
       const ai = t.aimInfo();
       this.effects.muzzle(ai.mx, ai.my, ai.dx, ai.dy);
-      GB.Sfx.fire();
+      const firstBullet = this.projectiles[this.projectiles.length - bulletsToLaunch.length];
+      if (firstBullet && GB.Sfx.playShoot) GB.Sfx.playShoot(firstBullet);
+      else GB.Sfx.fire();
       this.power = power;
       this.charging = false;
       this.phase = 'flight';
@@ -800,7 +803,7 @@
 
         this.effects.explosion(target.x, target.y - 12, 38, '#70d6ff', '#ffffff');
         this.effects.text(target.x, target.y - 45, '🛡️ ESCUDO ATIVO!', '#5ce1ff', true);
-        GB.Sfx.power && GB.Sfx.power();
+        GB.Sfx.avatarShield && GB.Sfx.avatarShield();
         this.toast(`🛡️ ${tank.name} concedeu Escudo a ${target.name}! (+200 Delay)`);
 
       } else if (aid === 'b') {
@@ -815,7 +818,7 @@
 
         const centerX = this.cw ? (this.cam.x + this.cw / 2) : (GB.WORLD_W / 2);
         this.effects.text(centerX, 120, '🌬️ VENTO FIXADO POR 4T!', '#ffd27a', true);
-        GB.Sfx.power && GB.Sfx.power();
+        GB.Sfx.avatarWind && GB.Sfx.avatarWind();
         this.toast(`🌬️ Vento fixado em ${chosen > 0 ? '▶ +' : '◀ '}${chosen} por 4 turnos! (+50 Delay)`);
 
       } else if (aid === 'c') {
@@ -826,7 +829,7 @@
 
         this.effects.explosion(tank.x, tank.y - 12, 38, '#ff2222', '#ff7700');
         this.effects.text(tank.x, tank.y - 35, `-${cost} HP (OVERCHARGE)`, '#ff4444', true);
-        GB.Sfx.power && GB.Sfx.power();
+        GB.Sfx.avatarOvercharge && GB.Sfx.avatarOvercharge();
         this.toast(`🔥 OVERCHARGE! +50% dano no próximo tiro! (+300 Delay)`);
 
       } else if (aid === 'd') {
@@ -847,7 +850,7 @@
           tank.updateTilt(true);
           target.updateTilt(true);
           this.shake = Math.min(16, this.shake + 6);
-          GB.Sfx.boom && GB.Sfx.boom(0.4);
+          GB.Sfx.avatarSwap && GB.Sfx.avatarSwap();
           this.toast(`🌀 ${tank.name} trocou de lugar com ${target.name}! (+400 Delay)`);
         }
       }
@@ -893,6 +896,7 @@
         list.appendChild(btn);
       });
       modal.classList.remove('hidden');
+      GB.Sfx.modalOpen && GB.Sfx.modalOpen();
     }
 
     openWindPickerModal(t) {
@@ -946,6 +950,7 @@
 
       updateWindModalUI();
       modal.classList.remove('hidden');
+      GB.Sfx.modalOpen && GB.Sfx.modalOpen();
     }
 
     openSwapTargetModal(t) {
@@ -981,6 +986,7 @@
         list.appendChild(btn);
       });
       modal.classList.remove('hidden');
+      GB.Sfx.modalOpen && GB.Sfx.modalOpen();
     }
 
     explode(p, x, y, final, subOpts) {
@@ -2292,19 +2298,28 @@
              return;
           }
           
-          GB.Sfx.click();
           t.itemsUsed[i] = true;
           t.hasUsedItem1ThisTurn = true;
           this.aimSendT = 0;
           
-          if (item === 'dual' || item === 'dualplus') {
+          if (item === 'dual') {
+            GB.Sfx.itemDual ? GB.Sfx.itemDual() : GB.Sfx.click();
             this.itemActive = item;
-            this.toast(item === 'dual' ? 'Dual: 2 Tiros do mesmo tipo! (+400 Delay)' : 'Dual+: Tiro Misto (T1 + T2)! (+250 Delay - Menor que o Dual)');
+            this.toast('Dual: 2 Tiros do mesmo tipo! (+400 Delay)');
+            if (t.shotSel === 2) {
+               t.shotSel = 1;
+               this.toast('SS bloqueado pelo Dual! Tiro 2 selecionado.');
+            }
+          } else if (item === 'dualplus') {
+            GB.Sfx.itemDualPlus ? GB.Sfx.itemDualPlus() : GB.Sfx.click();
+            this.itemActive = item;
+            this.toast('Dual+: Tiro Misto (T1 + T2)! (+250 Delay - Menor que o Dual)');
             if (t.shotSel === 2) {
                t.shotSel = 1;
                this.toast('SS bloqueado pelo Dual! Tiro 2 selecionado.');
             }
           } else if (item === 'teleport') {
+            GB.Sfx.itemTeleport ? GB.Sfx.itemTeleport() : GB.Sfx.click();
             this.itemActive = 'teleport';
             this.toast('Teleport: Atire para mover! (+150 Delay)');
             if (t.shotSel === 2) {
@@ -2312,11 +2327,14 @@
                this.toast('SS não afeta Teleport! Tiro 2 selecionado.');
             }
           } else if (item === 'cure') {
+            GB.Sfx.itemHeal ? GB.Sfx.itemHeal() : GB.Sfx.click();
             t.delay += 150;
             const heal = t.damage(-t.maxHp * 0.25);
             this.effects.text(t.x, t.y - 30, '+' + (-heal), '#5cff8a', true);
             this.toast('Cura! (+150 Delay)');
             this.skipTurn();
+          } else {
+            GB.Sfx.click();
           }
         });
       }
@@ -2330,7 +2348,11 @@
             return;
          }
          if (t.item2Used) return;
-         GB.Sfx.click();
+         if (t.items2 === 'nuclear') (GB.Sfx.itemNuclear ? GB.Sfx.itemNuclear() : GB.Sfx.click());
+         else if (t.items2 === 'napalm') (GB.Sfx.itemNapalm ? GB.Sfx.itemNapalm() : GB.Sfx.click());
+         else if (t.items2 === 'superdual') (GB.Sfx.itemSuperDual ? GB.Sfx.itemSuperDual() : GB.Sfx.click());
+         else if (t.items2 === 'onda') (GB.Sfx.itemShockwave ? GB.Sfx.itemShockwave() : GB.Sfx.click());
+         else GB.Sfx.click();
          t.item2Used = true;
          this.itemActive2 = t.items2;
          this.aimSendT = 0;
@@ -2474,6 +2496,20 @@
         if (!t.alive) { this.phase = 'settle'; this.settleT = 0; }
         else {
           this.timer -= dt;
+
+          // Efeitos sonoros decrescentes do cronômetro de turno
+          const currentSec = Math.max(0, Math.ceil(this.timer));
+          if (this._lastTimerSec !== currentSec) {
+            this._lastTimerSec = currentSec;
+            if (currentSec <= 5 && currentSec > 0) {
+              GB.Sfx.timerUrgent && GB.Sfx.timerUrgent(currentSec);
+            } else if (currentSec > 5 && currentSec <= 10) {
+              GB.Sfx.timerTick && GB.Sfx.timerTick(currentSec);
+            } else if (currentSec > 10) {
+              GB.Sfx.timerSubtleTick && GB.Sfx.timerSubtleTick();
+            }
+          }
+
           if (t.kind === 'human') this.updateHuman(t, dt);
           else if (t.kind === 'cpu') this.updateAI(t, dt);
           else if (t.kind === 'remote') {
@@ -2487,6 +2523,7 @@
             }
           }
           if (this.timer <= 0) {
+            GB.Sfx.timerTimeout && GB.Sfx.timerTimeout();
             if (t.kind !== 'remote') {
               if (this.charging) this.fire(t.shotSel, Math.max(1, this.power));
               else this.skipTurn();
@@ -2502,7 +2539,10 @@
         this.flightTime += dt;
         const cb = { 
            explode: (p, x, y, final, subOpts) => this.explode(p, x, y, final, subOpts), 
-           launch: () => GB.Sfx.fire(),
+           launch: (p) => {
+             if (p && GB.Sfx.playShoot) GB.Sfx.playShoot(p);
+             else GB.Sfx.fire();
+           },
            spawnRobots: (p) => this.spawnRobots(p),
            checkLivingEntity: (x, y) => this.checkLivingEntity(x, y),
            hitKudaSS: (p, target) => this.hitKudaSS(p, target),
@@ -3259,7 +3299,8 @@
         isThorBeam: true
       }));
 
-      GB.Sfx.fire();
+      if (GB.Sfx.shootThor) GB.Sfx.shootThor();
+      else GB.Sfx.fire();
     }
 
     addThorExp(dmg) {
