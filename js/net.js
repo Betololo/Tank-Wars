@@ -263,6 +263,11 @@
             return;
           }
 
+          if (msg.t === 'pong') {
+            this.pings['server'] = Math.max(1, Date.now() - (msg.t0 || Date.now()));
+            return;
+          }
+
           if (msg.t === 'host_left') {
             if (this.onClose) this.onClose();
             this.close();

@@ -244,13 +244,13 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-// Heartbeat a cada 20s para manter conexões Cloudflare Tunnel ativas sem timeout (com tolerância a 3 checagens para mobile)
+// Heartbeat a cada 20s para manter conexões Cloudflare Tunnel ativas sem timeout (com tolerância a 6 checagens = 120s para mobile)
 const heartbeat = setInterval(() => {
   for (const client of wss.clients) {
     if (!client.isAlive) {
       client.missedPings = (client.missedPings || 0) + 1;
-      if (client.missedPings >= 3) {
-        console.log(`[WS Heartbeat] Cliente ${client.id || 'desconhecido'} inativo há 60s, encerrando.`);
+      if (client.missedPings >= 6) {
+        console.log(`[WS Heartbeat] Cliente ${client.id || 'desconhecido'} inativo há 120s, encerrando.`);
         try { client.terminate(); } catch (e) {}
         continue;
       }

@@ -380,9 +380,6 @@
 
         banner.classList.add('visible');
 
-        this.toast(`🪙 CARA OU COROA: ${coinWinnerName} começa jogando!`, 4000);
-        this.effects.text(GB.WORLD_W / 2, 140, `🪙 ${coinWinnerName.toUpperCase()} COMEÇA!`, coinWinnerColor, true);
-
         // Deixa o banner bem visível e claro por 1.8 segundos antes de fechar suavemente
         setTimeout(() => {
           if (!this.running) return;
@@ -1754,6 +1751,7 @@
               x: t.x, y: t.y, hp: t.hp, al: t.alive, ss: t.ssCooldown, f: t.facing, a: t.angle, lp: t.lastPower,
               dd: t.dmgDealt, u2: t.item2Unlocked, i2u: t.item2Used,
               wr: t.isWaitingRespawn, rt: t.respawnTimer, rx: (t.respawnTargetX != null ? t.respawnTargetX : null), rl: t.respawnTargetLocked ? 1 : 0,
+              para: t.isParachuting ? 1 : 0, fall: t.falling ? 1 : 0,
               sh: t.hasShield ? 1 : 0, oc: t.overcharged ? 1 : 0, asu: t.avatarSkillUsed ? 1 : 0,
               fa: t.flameAura ? 1 : 0, dka: t.doubleKillAura ? 1 : 0, tka: t.tripleKillAura ? 1 : 0, cr: t.hasCrown ? 1 : 0
             }))
@@ -1852,6 +1850,7 @@
             x: t.x, y: t.y, hp: t.hp, al: t.alive, ss: t.ssCooldown, f: t.facing, a: t.angle, lp: t.lastPower,
             dd: t.dmgDealt, u2: t.item2Unlocked, i2u: t.item2Used,
             wr: t.isWaitingRespawn, rt: t.respawnTimer, rx: (t.respawnTargetX != null ? t.respawnTargetX : null), rl: t.respawnTargetLocked ? 1 : 0,
+            para: t.isParachuting ? 1 : 0, fall: t.falling ? 1 : 0,
             sh: t.hasShield ? 1 : 0,
             oc: t.overcharged ? 1 : 0,
             asu: t.avatarSkillUsed ? 1 : 0,
@@ -1970,11 +1969,49 @@
           if (s.rx !== undefined && s.rx !== null) {
             t.respawnTargetX = s.rx;
             t.targetX = s.rx;
+            t.respawnTargetLocked = true;
+          } else if (s.rl) {
+            t.respawnTargetLocked = true;
           } else if (!t.respawnTargetLocked) {
             t.respawnTargetX = null;
           }
-          t.respawnTargetLocked = !!s.rl;
-          t.alive = !!s.al;
+          if (s.rl !== undefined) {
+            t.respawnTargetLocked = !!s.rl;
+          }
+
+          if (!t.alive && s.al) {
+            t.alive = true;
+            t.hp = s.hp;
+            t.x = s.x;
+            t.targetX = s.x;
+            t.y = s.y;
+            t.targetY = s.y;
+            t.isParachuting = !!s.para;
+            t.falling = !!s.fall;
+            t.vy = 140;
+            t.fellOff = false;
+            t.deathShown = false;
+            t.isWaitingRespawn = false;
+            t.respawnTargetLocked = false;
+            this.effects.text(t.x, 60, '🪂 RESPAWN!', '#5cff8a', true);
+            this.toast(`🪂 ${t.name} renasceu no campo de batalha!`, 3000);
+            GB.Sfx.click();
+          } else {
+            t.alive = !!s.al;
+            if (s.para !== undefined) t.isParachuting = !!s.para;
+            if (s.fall !== undefined) t.falling = !!s.fall;
+          }
+
+          if (t.kind === 'human' && t.isWaitingRespawn && t.respawnTargetLocked && t.respawnTargetX != null && (!s.rx || s.rx !== t.respawnTargetX)) {
+            this.send({
+              t: 'respawn_pos',
+              pIdx: t.playerIdx,
+              slotIdx: t.slotIdx,
+              id: t.id,
+              x: t.respawnTargetX,
+              locked: true
+            });
+          }
           t.hasShield = !!s.sh;
           t.shieldCharges = s.sh ? 1 : 0;
           t.overcharged = !!s.oc;
@@ -2151,13 +2188,29 @@
             this.executeAvatarSkill(shooter, m.skill, m.targetIdx, m.wind, true);
             if (this.cfg && this.cfg.isHost) GB.Net.broadcast(m);
           }
+        } else if (m.t === 'item_used') {
+          const t = (m.pIdx !== undefined && this.tanks[m.pIdx]) || this.active;
+          if (t && m.item) {
+            this.showItemUseCard(t, m.item);
+            if (m.item === 'dual') (GB.Sfx.itemDual ? GB.Sfx.itemDual() : GB.Sfx.click());
+            else if (m.item === 'dualplus') (GB.Sfx.itemDualPlus ? GB.Sfx.itemDualPlus() : GB.Sfx.click());
+            else if (m.item === 'teleport') (GB.Sfx.itemTeleport ? GB.Sfx.itemTeleport() : GB.Sfx.click());
+            else if (m.item === 'cure') (GB.Sfx.itemHeal ? GB.Sfx.itemHeal() : GB.Sfx.click());
+            else if (m.item === 'nuclear') (GB.Sfx.itemNuclear ? GB.Sfx.itemNuclear() : GB.Sfx.click());
+            else if (m.item === 'napalm') (GB.Sfx.itemNapalm ? GB.Sfx.itemNapalm() : GB.Sfx.click());
+            else if (m.item === 'superdual') (GB.Sfx.itemSuperDual ? GB.Sfx.itemSuperDual() : GB.Sfx.click());
+            else if (m.item === 'onda') (GB.Sfx.itemShockwave ? GB.Sfx.itemShockwave() : GB.Sfx.click());
+          }
+          if (this.cfg && this.cfg.isHost) {
+            GB.Net.broadcast(m);
+          }
         } else if (m.t === 'respawn_pos') {
           const targetTank = (m.pIdx !== undefined && this.tanks[m.pIdx]) ||
                              this.tanks.find(t => (m.id && t.id === m.id) || (m.slotIdx != null && t.slotIdx === m.slotIdx) || t.playerIdx === m.pIdx);
           if (targetTank) {
             targetTank.respawnTargetX = m.x;
             targetTank.targetX = m.x;
-            if (m.locked) targetTank.respawnTargetLocked = true;
+            targetTank.respawnTargetLocked = true;
           }
           if (this.cfg && this.cfg.isHost) {
             GB.Net.broadcast(m);
@@ -2188,7 +2241,7 @@
         canvasEl.addEventListener('pointerup', (e) => {
           if (this.modeType !== 'score') return;
           if (pDownPos && Math.hypot(e.clientX - pDownPos.x, e.clientY - pDownPos.y) > 12) return; // Se arrastou a câmera, não conta como clique
-          const myTank = this.tanks.find(t => t.kind === 'human');
+          const myTank = this.tanks.find(t => (this.cfg && this.cfg.mySlotIdx !== undefined && t.slotIdx === this.cfg.mySlotIdx) || t.kind === 'human');
           if (myTank && !myTank.alive && myTank.isWaitingRespawn) {
             if (myTank.respawnTargetLocked) {
               this.toast('🔒 Posição de queda já travada! Você não pode mais alterar onde vai cair.', 2500);
@@ -2224,7 +2277,7 @@
         this._boundMmRespawnClick = true;
         mm.addEventListener('click', (e) => {
           if (this.modeType !== 'score') return;
-          const myTank = this.tanks.find(t => t.kind === 'human');
+          const myTank = this.tanks.find(t => (this.cfg && this.cfg.mySlotIdx !== undefined && t.slotIdx === this.cfg.mySlotIdx) || t.kind === 'human');
           if (myTank && !myTank.alive && myTank.isWaitingRespawn) {
             if (myTank.respawnTargetLocked) {
               this.toast('🔒 Posição de queda já travada! Você não pode mais alterar onde vai cair.', 2500);
@@ -2305,7 +2358,8 @@
           if (item === 'dual') {
             GB.Sfx.itemDual ? GB.Sfx.itemDual() : GB.Sfx.click();
             this.itemActive = item;
-            this.toast('Dual: 2 Tiros do mesmo tipo! (+400 Delay)');
+            this.showItemUseCard(t, item);
+            if (this.mode === 'online') this.send({ t: 'item_used', pIdx: t.playerIdx, item });
             if (t.shotSel === 2) {
                t.shotSel = 1;
                this.toast('SS bloqueado pelo Dual! Tiro 2 selecionado.');
@@ -2313,7 +2367,8 @@
           } else if (item === 'dualplus') {
             GB.Sfx.itemDualPlus ? GB.Sfx.itemDualPlus() : GB.Sfx.click();
             this.itemActive = item;
-            this.toast('Dual+: Tiro Misto (T1 + T2)! (+250 Delay - Menor que o Dual)');
+            this.showItemUseCard(t, item);
+            if (this.mode === 'online') this.send({ t: 'item_used', pIdx: t.playerIdx, item });
             if (t.shotSel === 2) {
                t.shotSel = 1;
                this.toast('SS bloqueado pelo Dual! Tiro 2 selecionado.');
@@ -2321,7 +2376,8 @@
           } else if (item === 'teleport') {
             GB.Sfx.itemTeleport ? GB.Sfx.itemTeleport() : GB.Sfx.click();
             this.itemActive = 'teleport';
-            this.toast('Teleport: Atire para mover! (+150 Delay)');
+            this.showItemUseCard(t, item);
+            if (this.mode === 'online') this.send({ t: 'item_used', pIdx: t.playerIdx, item });
             if (t.shotSel === 2) {
                t.shotSel = 1;
                this.toast('SS não afeta Teleport! Tiro 2 selecionado.');
@@ -2331,7 +2387,8 @@
             t.delay += 150;
             const heal = t.damage(-t.maxHp * 0.25);
             this.effects.text(t.x, t.y - 30, '+' + (-heal), '#5cff8a', true);
-            this.toast('Cura! (+150 Delay)');
+            this.showItemUseCard(t, item);
+            if (this.mode === 'online') this.send({ t: 'item_used', pIdx: t.playerIdx, item });
             this.skipTurn();
           } else {
             GB.Sfx.click();
@@ -2356,8 +2413,8 @@
          t.item2Used = true;
          this.itemActive2 = t.items2;
          this.aimSendT = 0;
-         const delays = { 'nuclear': 1500, 'napalm': 1000, 'superdual': 1200, 'onda': 1000 };
-         this.toast(`Ativou ${t.items2.toUpperCase()}! (+${delays[t.items2] || 1000} Delay)`);
+         this.showItemUseCard(t, t.items2);
+         if (this.mode === 'online') this.send({ t: 'item_used', pIdx: t.playerIdx, item: t.items2 });
          if (t.items2 === 'superdual' && t.shotSel === 2 && (this.itemActive === 'dual' || this.itemActive === 'dualplus')) {
              t.shotSel = 1;
              this.toast('SS bloqueado pelo Dual! Tiro 2 selecionado.');
@@ -4138,6 +4195,62 @@
       el.classList.add('show');
       clearTimeout(this._toastT);
       this._toastT = setTimeout(() => el.classList.remove('show'), 1300);
+    }
+
+    showItemUseCard(tank, itemKey) {
+      const card = document.getElementById('item-notif-card');
+      if (!card) return;
+      const info = GB.ITEMS ? GB.ITEMS[itemKey] : null;
+      if (!info) return;
+
+      const iconBox = document.getElementById('item-notif-icon');
+      const userEl = document.getElementById('item-notif-user');
+      const nameEl = document.getElementById('item-notif-name');
+      const descEl = document.getElementById('item-notif-desc');
+      const delayEl = document.getElementById('item-notif-delay');
+
+      const itemDelays = {
+        dual: 400,
+        dualplus: 250,
+        teleport: 150,
+        cure: 150,
+        nuclear: 1500,
+        napalm: 1000,
+        superdual: 1200,
+        onda: 1000
+      };
+
+      const itemDescs = {
+        dual: '2 Tiros do mesmo tipo',
+        dualplus: 'Tiro Misto (T1 + T2)',
+        teleport: 'Dispare para teleportar',
+        cure: 'Recupera +25% de HP',
+        nuclear: 'Explosão atômica massiva',
+        napalm: 'Chuva incendiária de fogo',
+        superdual: 'Disparo cósmico duplo',
+        onda: 'Tsunami de impacto destruidor'
+      };
+
+      if (iconBox) iconBox.innerHTML = GB.itemLabelHTML(itemKey) || '';
+      if (userEl) {
+        userEl.textContent = tank ? tank.name : 'Jogador';
+        userEl.style.color = (tank && tank.team === 1) ? '#60a5fa' : '#f87171';
+      }
+      if (nameEl) nameEl.textContent = info.name.toUpperCase();
+      if (descEl) descEl.textContent = itemDescs[itemKey] || '';
+      if (delayEl) delayEl.textContent = `+${itemDelays[itemKey] || 0} Delay`;
+
+      if (info.level === 2) {
+        card.classList.add('level-2');
+      } else {
+        card.classList.remove('level-2');
+      }
+
+      card.classList.add('show');
+      if (this._itemNotifTimer) clearTimeout(this._itemNotifTimer);
+      this._itemNotifTimer = setTimeout(() => {
+        card.classList.remove('show');
+      }, 2500);
     }
   }
 
