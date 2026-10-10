@@ -321,6 +321,135 @@ window.GB = window.GB || {};
     },
 
     // ==========================================
+    // 3.5. SONS DE LOCOMOÇÃO (RODAS, ESTEIRAS, MOLAS, PATAS, HOVER)
+    // ==========================================
+    // --- 1. Rodas (Wheels / Tires) ---
+    moveWheelsHeavy() {
+      // Bigfoot (Yeti): Pneus gigantes off-road / monster truck sobre terra
+      if (!this.ctx || !this.enabled) return;
+      this.tone(72, 0.048, 0.12, 'triangle', 48);
+      this.noise(0.055, 380, 0.16, 'lowpass');
+    },
+    moveWheelsSkate() {
+      // Launcher: Rodas de patins inline com rolamentos rápidos
+      if (!this.ctx || !this.enabled) return;
+      this.tone(260, 0.04, 0.07, 'sine', 220);
+      this.noise(0.04, 1800, 0.10, 'bandpass');
+    },
+
+    // --- 2. Esteiras (Tracks / Caterpillar Treads) ---
+    moveTracksArmor() {
+      // Mortar (Armor): Esteira triangular metálica clássica com roletes
+      if (!this.ctx || !this.enabled) return;
+      this.tone(380, 0.035, 0.09, 'square', 240);
+      this.noise(0.045, 950, 0.14, 'bandpass');
+    },
+    moveTracksDoc() {
+      // Doc: Esteira militar tática com roletes e dentes de aço
+      if (!this.ctx || !this.enabled) return;
+      this.tone(310, 0.04, 0.10, 'square', 160);
+      this.tone(820, 0.025, 0.05, 'triangle');
+      this.noise(0.045, 800, 0.12, 'lowpass');
+    },
+    moveTracksDriller() {
+      // Driller: Esteira pesadíssima de escavadeira/mineração e dentes robustos
+      if (!this.ctx || !this.enabled) return;
+      this.tone(90, 0.055, 0.16, 'sawtooth', 50);
+      this.tone(210, 0.04, 0.12, 'square', 120);
+      this.noise(0.06, 550, 0.18, 'lowpass');
+    },
+
+    // --- 3. Molas (Springs / Fole / Sanfona) ---
+    moveSpringDJ() {
+      // DJ: Pés de mola helicoidal saltitantes ("boing-boing!")
+      if (!this.ctx || !this.enabled) return;
+      this.tone(240, 0.075, 0.16, 'sine', 680);
+      this.tone(480, 0.045, 0.08, 'triangle', 860);
+    },
+    moveSpringGrub() {
+      // Worm (Grub): Fole sanfonado elástico / compressão de lagarta bio-mecânica
+      if (!this.ctx || !this.enabled) return;
+      this.tone(340, 0.065, 0.13, 'triangle', 180);
+      this.noise(0.045, 1100, 0.12, 'bandpass');
+    },
+
+    // --- 4. Patas (Legs / Paws / Articuladas) ---
+    moveLegsKhan() {
+      // Khan: 6 Patas mecânicas de besouro / passos secos e rápidos no solo
+      if (!this.ctx || !this.enabled) return;
+      this.tone(620, 0.03, 0.11, 'triangle', 280);
+      this.noise(0.02, 3400, 0.15, 'highpass');
+    },
+    moveLegsKuda() {
+      // Kuda: Centopeia mecânica / scuttle veloz de patinhas metálicas sequenciais
+      if (!this.ctx || !this.enabled) return;
+      this.tone(880, 0.025, 0.08, 'sine', 550);
+      this.noise(0.018, 4500, 0.12, 'highpass');
+    },
+    moveLegsFrigo() {
+      // Frigo: Mecha-gorila com patas/punhos dianteiros pesados no chão
+      if (!this.ctx || !this.enabled) return;
+      this.tone(115, 0.055, 0.17, 'triangle', 55);
+      this.tone(440, 0.035, 0.10, 'square', 200);
+      this.noise(0.045, 800, 0.16, 'lowpass');
+    },
+
+    // --- 5. Os que não têm nada (Hover / Levitando / Deslizando) ---
+    moveHover() {
+      // Hovercraft / levitação antigravidade / propulsão aérea suave
+      if (!this.ctx || !this.enabled) return;
+      this.tone(180, 0.065, 0.08, 'sine', 150);
+      this.noise(0.05, 2000, 0.09, 'bandpass');
+    },
+
+    // Despachante sonoro por Mobile ID:
+    playMoveSound(mobileId) {
+      if (!this.ctx || !this.enabled) return;
+      const now = (this.ctx && this.ctx.currentTime) || 0;
+      if (this._lastMoveSoundTime && (now - this._lastMoveSoundTime) < 0.06) return;
+      this._lastMoveSoundTime = now;
+
+      const mid = (mobileId || 'armor').toLowerCase();
+      switch (mid) {
+        // 1. Rodas
+        case 'bigfoot':
+        case 'yeti':
+          return this.moveWheelsHeavy();
+        case 'launcher':
+          return this.moveWheelsSkate();
+
+        // 2. Esteiras
+        case 'armor':
+        case 'mortar':
+          return this.moveTracksArmor();
+        case 'doc':
+          return this.moveTracksDoc();
+        case 'driller':
+          return this.moveTracksDriller();
+
+        // 3. Molas
+        case 'dj':
+          return this.moveSpringDJ();
+        case 'grub':
+        case 'worm':
+          return this.moveSpringGrub();
+
+        // 4. Patas
+        case 'khan':
+        case 'nak':
+          return this.moveLegsKhan();
+        case 'kuda':
+          return this.moveLegsKuda();
+        case 'frigo':
+          return this.moveLegsFrigo();
+
+        // 5. Os que não têm nada / Hover
+        default:
+          return this.moveHover();
+      }
+    },
+
+    // ==========================================
     // 4. HABILIDADES DOS AVATARES
     // ==========================================
     avatarShield() {

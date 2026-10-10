@@ -52,6 +52,27 @@
       this.targetY = this.y;
       this.targetAngle = this.angle;
       this.updateTilt(true);
+
+      // Distância entre passos/sons de locomoção de acordo com a mecânica do mobile
+      const stepDists = {
+        dj: 15,        // Pés de mola: pulos saltitantes espaçados
+        grub: 14,      // Lagarta sanfona: ciclo de compressão/fole
+        worm: 14,
+        bigfoot: 13,   // Monster truck: passadas de pneu grande off-road
+        yeti: 13,
+        frigo: 12,     // Mecha-gorila: passadas firmes com punhos
+        driller: 11,   // Esteira pesada: elos industriais de mineração
+        armor: 9,      // Esteira triangular clássica
+        mortar: 9,
+        doc: 9,        // Esteira militar tática
+        launcher: 8,   // Patins inline: rolamento rápido
+        khan: 8,       // Besouro: 6 patas rápidas
+        nak: 8,
+        kuda: 7,       // Centopeia: scuttle contínuo
+      };
+      this.stepSoundDistance = stepDists[this.mobileId] || 10;
+      this._walkDist = 0;
+      this._remoteWalkDist = 0;
     }
 
     supported() {
@@ -129,7 +150,16 @@
         if (Math.abs(dx) > 140) {
           this.x = this.targetX;
         } else if (Math.abs(dx) > 0.05) {
-          this.x += dx * Math.min(1, dt * 20);
+          const step = dx * Math.min(1, dt * 20);
+          this.x += step;
+          this.wheelRot = (this.wheelRot || 0) + Math.sign(dx) * Math.abs(step) * 0.22;
+          this._remoteWalkDist = (this._remoteWalkDist || 0) + Math.abs(step);
+          if (this._remoteWalkDist >= (this.stepSoundDistance || 10)) {
+            this._remoteWalkDist = 0;
+            if (GB.Sfx && GB.Sfx.playMoveSound) {
+              GB.Sfx.playMoveSound(this.mobileId);
+            }
+          }
         } else {
           this.x = this.targetX;
         }
@@ -190,6 +220,13 @@
       }
       if (moved > 0) {
         this.wheelRot = (this.wheelRot || 0) + dir * moved * 0.22;
+        this._walkDist = (this._walkDist || 0) + moved;
+        if (this._walkDist >= (this.stepSoundDistance || 10)) {
+          this._walkDist = 0;
+          if (GB.Sfx && GB.Sfx.playMoveSound) {
+            GB.Sfx.playMoveSound(this.mobileId);
+          }
+        }
       }
       this._carry = steps;
       return moved;
